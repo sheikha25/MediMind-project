@@ -1,0 +1,266 @@
+html,
+body,
+#root {
+  margin: 0;
+  padding: 0;
+  min-height: 100%;
+  font-family: Arial, Helvetica, sans-serif;
+  background-color: #f5f9fc;
+}
+
+
+.login-row {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+}
+
+.login-col {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+
+.card {
+  border-radius: 15px;
+  padding: 20px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  border: none;
+}
+
+
+.logo {
+  display: block;
+  width: 120px;
+  margin: 0 auto 20px auto;
+}
+
+
+.form-control {
+  border-radius: 8px;
+  height: 42px;
+  margin-top: 5px;
+}
+
+button,
+.btn {
+  border-radius: 10px;
+  height: 45px;
+  font-weight: 500;
+}
+
+.btn-primary {
+  background-color: #0d6efd;
+  border: none;
+}
+
+.btn-primary:hover {
+  background-color: #0b5ed7;
+}
+
+
+.nav-link-custom {
+  margin: 10px;
+  text-decoration: none;
+  color: #0d6efd;
+  font-weight: 500;
+}
+
+.nav-link-custom:hover {
+  text-decoration: underline;
+}
+
+
+h2 {
+  color: #1f2937;
+  font-weight: 600;
+}
+
+
+.error-message {
+  color: red;
+  font-size: 14px;
+}
+
+.success-message {
+  color: green;
+  font-size: 14px;
+}
+
+
+@media (max-width: 768px) {
+  .login-row {
+    padding: 20px;
+  }
+
+  .logo {
+  display: block;
+  width: 120px;
+  margin: 0 auto 20px auto;
+}
+
+  .nav-link-custom {
+    display: inline-block;
+    margin: 6px;
+  }
+}
+
+.home-page {
+  background-color: white;
+  min-height: 100vh;
+}
+
+.medication-card {
+  border-radius: 16px;
+  border: none;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.07);
+}
+
+.time-options {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+
+.time-options button {
+  border: 1px solid #d1d5db;
+  background-color: #f9fafb;
+  border-radius: 10px;
+  height: 45px;
+}
+
+.time-options button:hover {
+  background-color: #e0f2fe;
+  border-color: #0d6efd;
+}
+
+.instruction-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+.instruction-grid label {
+  border: 1px solid #e5e7eb;
+  padding: 12px;
+  border-radius: 10px;
+  background-color: #f9fafb;
+}
+
+.preview-box {
+  height: 220px;
+  background-color: #f1f5f9;
+  border: 2px dashed #cbd5e1;
+  border-radius: 12px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: #64748b;
+  margin-top: 15px;
+}
+
+.dashboard-page {
+  background-color: #f5f9fc;
+  min-height: 100vh;
+}
+
+.dashboard-card {
+  border-radius: 16px;
+  border: none;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.07);
+  margin-bottom: 20px;
+}
+
+.dashboard-card h5 {
+  color: #64748b;
+}
+
+.dashboard-card h2 {
+  color: #0d6efd;
+  font-weight: bold;
+}
+
+.missed-card h2 {
+  color: #ef4444;
+}
+
+.adherence-card h2 {
+  color: #22c55e;
+}
+
+.dashboard-table {
+  width: 100%;
+  margin-top: 20px;
+  border-collapse: collapse;
+}
+
+.dashboard-table th {
+  background-color: #0d6efd;
+  color: white;
+  padding: 12px;
+}
+
+.dashboard-table td {
+  padding: 12px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.status-taken {
+  color: #22c55e;
+  font-weight: bold;
+}
+
+.status-missed {
+  color: #ef4444;
+  font-weight: bold;
+}
+
+.status-upcoming {
+  color: #0d6efd;
+  font-weight: bold;
+}
+
+.reminder-box {
+  background-color: #eef6ff;
+  padding: 15px;
+  border-radius: 12px;
+}
+
+.reminder-box span {
+  color: #0d6efd;
+  font-weight: bold;
+}
+
+.settings-sidebar {
+  background-color: #0d6efd;
+  min-height: 85vh;
+  padding-top: 25px;
+  color: white;
+}
+
+.settings-sidebar h4 {
+  padding-left: 30px;
+  margin-bottom: 10px;
+}
+
+.settings-link {
+  display: block;
+  color: white;
+  text-decoration: none;
+  padding: 12px 30px;
+  border-top: 1px solid rgba(255, 255, 255, 0.4);
+  font-weight: 500;
+}
+
+.settings-link:hover {
+  background-color: #0b5ed7;
+  color: white;
+}
+
+.circle-image {
+  width: 150px;
+  height: 150px;
+  border-radius: 50%;
+  object-fit: cover;
+}
