@@ -7,7 +7,6 @@ import { logout } from "../features/UserSlice";
 const AdminHeader = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
-
   const handleLogout = () => {
     if (window.confirm("Are you sure you want to logout from MediMind?")) {
       dispatch(logout());
@@ -25,13 +24,9 @@ const AdminHeader = () => {
         boxShadow: "0 2px 6px rgba(0,0,0,0.05)",
       }}
     >
-      {/* LEFT SIDE */}
+     
       <div className="d-flex align-items-center">
-        <NavbarBrand
-          tag={Link}
-          to="/admin-home"
-          className="d-flex align-items-center"
-        >
+        <NavbarBrand tag={Link} to="/admin-home" className="d-flex align-items-center">
           <img
             src={medimindlogo}
             width="120px"
@@ -63,12 +58,11 @@ const AdminHeader = () => {
         </Nav>
       </div>
 
-      {/* RIGHT SIDE */}
       <div
         className="d-flex align-items-center"
         style={{ gap: "15px" }}
       >
-        {/* PROFILE */}
+        
         <div className="d-flex align-items-center">
           <img
             src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png"
@@ -85,15 +79,8 @@ const AdminHeader = () => {
           
         </div>
 
-        {/* LOGOUT */}
-        <button
-          className="btn btn-danger"
-          style={{
-            borderRadius: "8px",
-            padding: "6px 15px",
-          }}
-          onClick={handleLogout}
-        >
+        
+        <button className="btn btn-danger" style={{borderRadius: "8px",padding: "6px 15px",}} onClick={handleLogout}>
           Logout
         </button>
       </div>
