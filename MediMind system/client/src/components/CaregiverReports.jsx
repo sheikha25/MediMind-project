@@ -8,13 +8,10 @@ const CaregiverReports = () => {
   return (
     <Container fluid>
       <CaregiverHeader/>
-
-      {/* Header with Export */}
       <Row className="mt-5 px-4 align-items-center justify-content-between">
         <Col md="6">
           <h2>Adherence Reports</h2>
         </Col>
-
         <Col md="6" className="text-end">
           <button className="btn btn-primary" style={{ borderRadius: "10px" }}>
   Export
@@ -22,7 +19,7 @@ const CaregiverReports = () => {
         </Col>
       </Row>
 
-      {/* Reports */}
+      
       <Row className="px-4 mt-3">
         <Col md="8" className="mx-auto">
 
