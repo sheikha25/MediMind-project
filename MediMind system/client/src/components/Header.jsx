@@ -33,7 +33,7 @@ const Header = () => {
         md="12"
         className="d-flex align-items-center justify-content-between"
       >
-        {/* LEFT SIDE */}
+       
         <div className="d-flex align-items-center">
           <img
             src={medimindlogo}
@@ -70,12 +70,12 @@ const Header = () => {
           </div>
         </div>
 
-        {/* RIGHT SIDE */}
+       
         <div
           className="d-flex align-items-center"
           style={{ gap: "15px" }}
         >
-          {/* PROFILE */}
+        
           <div className="d-flex align-items-center">
             <img
               src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png"
@@ -90,7 +90,7 @@ const Header = () => {
             />
           </div>
 
-          {/* LOGOUT */}
+         
           <button
             className="btn btn-danger"
             style={{
