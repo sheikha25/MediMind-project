@@ -6,11 +6,9 @@ import Footer from "./footer";
 const AdminSettings = () => {
   const user = useSelector((state) => state.user.user);
   const [activePage, setActivePage] = useState("profile");
-
   return (
     <Container fluid className="dashboard-page">
       <AdminHeader/>
-
       <Row style={{ minHeight: "85vh" }}>
         <Col md="3" className="settings-sidebar">
           <h4>Settings</h4>
@@ -62,7 +60,6 @@ const AdminSettings = () => {
           placeholder="24"
         />
       </Col>
-
       <Col md="6">
         <label>
           Height <small>(cm)</small>
@@ -100,13 +97,11 @@ const AdminSettings = () => {
       className="form-control mb-3"
       placeholder="91234567"
     />
-
     <label>Profile Picture</label>
     <input
       type="file"
       className="form-control mb-3"
     />
-
     <label>Role</label>
     <input
       type="text"
@@ -118,7 +113,6 @@ const AdminSettings = () => {
     <Button color="primary" className="w-100">
       Save Changes
     </Button>
-
   </CardBody>
 </Card>
             </>
