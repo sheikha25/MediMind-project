@@ -9,7 +9,7 @@ const Reports = () => {
     <Container fluid>
       <Header />
 
-      {/* Header with Export */}
+    
       <Row className="mt-5 px-4 align-items-center justify-content-between">
         <Col md="6">
           <h2>Adherence Reports</h2>
@@ -22,7 +22,7 @@ const Reports = () => {
         </Col>
       </Row>
 
-      {/* Reports */}
+     
       <Row className="px-4 mt-3">
         <Col md="8" className="mx-auto">
 
