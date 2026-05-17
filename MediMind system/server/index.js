@@ -56,7 +56,6 @@ app.post("/register", async (req, res) => {
       role,
       medicalCondition,
     });
-
     await newuser.save();
 await transporter.sendMail({
   from: "MediMind <yourgmail@gmail.com>",
