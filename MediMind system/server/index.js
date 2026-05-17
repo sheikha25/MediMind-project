@@ -58,7 +58,7 @@ app.post("/register", async (req, res) => {
     });
     await newuser.save();
 await transporter.sendMail({
-  from: "MediMind <yourgmail@gmail.com>",
+  from: "MediMind <MediMindproject@gmail.com>",
   to: email,
   subject: "Welcome to MediMind",
   text: `Hello ${name},
@@ -118,7 +118,7 @@ app.post("/forgot-password", async (req, res) => {
     otpStore[email] = otp;
 
     await transporter.sendMail({
-      from: "MediMind <YOUR_GMAIL@gmail.com>",
+      from: "MediMind <MediMindproject@gmail.com>",
       to: email,
       subject: "MediMind Password Reset OTP",
       text: `Your MediMind password reset OTP is: ${otp}`,
