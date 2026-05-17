@@ -6,12 +6,10 @@ const SettingsLayout = ({ children }) => {
   return (
     <Container fluid className="dashboard-page">
       <Header />
-
       <Row style={{ minHeight: "85vh" }}>
         <Col md="3">
           <SettingsSidebar />
         </Col>
-
         <Col md="9" className="p-5">
           {children}
         </Col>
