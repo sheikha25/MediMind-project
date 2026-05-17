@@ -78,7 +78,7 @@ Thank you for choosing MediMind `,
   }
 });
 
-// logining
+// login
 app.post("/login", async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -129,7 +129,7 @@ app.post("/forgot-password", async (req, res) => {
     res.send({ message: "Forgot password error: " + error });
   }
 });
-
+//reset password 
 app.post("/reset-password", async (req, res) => {
   try {
     const { email, otp, newPassword } = req.body;
@@ -153,78 +153,4 @@ app.post("/reset-password", async (req, res) => {
   }
 });
 
-// adding medication
-/*app.post("/addMedication", upload.single("prescriptionImage"), async (req, res) => {
-  try {
-    const { email, medicationName, dosage, frequency, timing } = req.body;
 
-    const newMedication = new MedicationModel({
-      email,
-      medicationName,
-      dosage,
-      frequency,
-      timing,
-      prescriptionImage: req.file ? req.file.path : "",
-    });
-
-    await newMedication.save();
-
-    res.send({ message: "Medication Added Successfully" });
-  } catch (error) {
-    res.send({ message: "Medication Error.." + error });
-  }
-});*/
-
-// getting medication by email
-/*app.get("/getMedications/:email", async (req, res) => {
-  try {
-    const email = req.params.email;
-
-    const medications = await MedicationModel.find({ email: email });
-
-    res.send(medications);
-  } catch (error) {
-    res.send({ message: "Read Medication Error.." + error });
-  }
-});*/
-
-// adding caregiver
-/*app.post("/addCaregiverLink", async (req, res) => {
-  try {
-    const { patientEmail, caregiverEmail } = req.body;
-
-    const existingLink = await CaregiverLinkModel.findOne({
-      patientEmail,
-      caregiverEmail,
-    });
-
-    if (existingLink) {
-      res.send({ message: "Caregiver link already exists" });
-    } else {
-      const newLink = new CaregiverLinkModel({
-        patientEmail,
-        caregiverEmail,
-      });
-
-      await newLink.save();
-
-      res.send({ message: "Caregiver linked successfully" });
-    }
-  } catch (error) {
-    res.send({ message: "Caregiver Link Error.." + error });
-  }
-});*/
-
-
-// getting patients for caregiver
-/*app.get("/getPatients/:caregiverEmail", async (req, res) => {
-  try {
-    const caregiverEmail = req.params.caregiverEmail;
-
-    const links = await CaregiverLinkModel.find({ caregiverEmail });
-
-    res.send(links);
-  } catch (error) {
-    res.send({ message: "Read Patients Error.." + error });
-  }
-});*/
