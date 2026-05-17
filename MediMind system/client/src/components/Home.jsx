@@ -14,7 +14,7 @@ const Home = () => {
     <Container fluid className="dashboard-page">
       <Header />
 
-      {/* TOP SECTION */}
+      
       <Row className="p-4 align-items-center justify-content-between">
         <Col md="6">
           <h4 className="mt-3">Welcome Back, {user?.name || "User"}</h4>
@@ -45,7 +45,6 @@ const Home = () => {
           </button>
         </Col>
       </Row>
-{/* FEATURE CIRCLES */}
 <Row className="px-4 mb-4 text-center">
   <Col md="3">
     <img src={medicine} alt="Medication" className="circle-image" />
@@ -67,7 +66,7 @@ const Home = () => {
     <h6 className="mt-3">Patient Care</h6>
   </Col>
 </Row>
-      {/* CARDS */}
+      
       <Row className="px-4">
         <Col md="3">
           <Card className="dashboard-card">
@@ -110,7 +109,7 @@ const Home = () => {
         </Col>
       </Row>
 
-      {/* TABLE + REMINDERS */}
+     
       <Row className="p-4">
         <Col md="8">
           <Card className="dashboard-card">
