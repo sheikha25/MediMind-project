@@ -1,16 +1,4 @@
-import {
-  Container,
-  Row,
-  Col,
-  Card,
-  CardBody,
-  Button,
-  Modal,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
-  Badge,
-} from "reactstrap";
+import {Container,Row,Col,Card,CardBody,Button,Modal,ModalHeader,ModalBody,ModalFooter,Badge,} from "reactstrap";
 
 import { useEffect, useState } from "react";
 import axios from "axios";
