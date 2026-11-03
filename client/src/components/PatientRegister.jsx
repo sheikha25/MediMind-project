@@ -1,21 +1,12 @@
 import { useEffect, useState } from "react";
-import {
-  Button,
-  Card,
-  CardBody,
-  Col,
-  Container,
-  FormGroup,
-  Label,
-  Row,
-} from "reactstrap";
+import {Button,Card,CardBody,Col,Container,FormGroup,Label,Row,} from "reactstrap";
 import { Link, useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { useDispatch, useSelector } from "react-redux";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { FaEye, FaEyeSlash, FaPlus, FaTimes } from "react-icons/fa";
 
-import medimindlogo from "../assets/medimindlogo.jpg";
+import medimindlogo from "../assets/medimind-symbol.png";
 import { RegisterValidation } from "../validations/RegisterValidation";
 import {addUser,clearUserMessage,} from "../features/UserSlice";
 import Footer from "./footer";
@@ -163,7 +154,6 @@ const PatientRegister = () => {
     transform: "translateY(-50%)",
     border: "none",
     background: "transparent",
-    color: "#1e3a8a",
     cursor: "pointer",
     padding: 0,
     display: "flex",
@@ -190,11 +180,16 @@ const PatientRegister = () => {
                 Go Back
               </Button>
 
-              <img
-                src={medimindlogo}
-                alt="MediMind logo"
-                className="logo"
-              />
+              <div className="patient-register-brand">
+  <img
+    src={medimindlogo}
+    alt="MediMind symbol"
+    className="patient-register-logo"
+  />
+  <div className="patient-register-brand-name">
+    MEDIMIND
+  </div>
+</div>
 
               <h2 className="text-center">
                 Patient Registration
@@ -404,7 +399,7 @@ const PatientRegister = () => {
                       {...register("password")}
                     />
 
-                    <button
+                    <button className="patient-password-toggle"
                       type="button"
                       onClick={() =>
                         setShowPassword(
@@ -453,7 +448,7 @@ const PatientRegister = () => {
                       {...register("confirmPassword")}
                     />
 
-                    <button
+                    <button className="patient-password-toggle"
                       type="button"
                       onClick={() =>
                         setShowConfirmPassword(
