@@ -194,10 +194,6 @@ const DailyRoutineSettings = () => {
     return "";
   };
 
-  const getToken = () =>
-    localStorage.getItem("token") ||
-    sessionStorage.getItem("token");
-
   const handleSubmit = async (event) => {
     event.preventDefault();
 
@@ -211,30 +207,28 @@ const DailyRoutineSettings = () => {
       return;
     }
 
-    const token = getToken();
-
-    if (!token) {
-      setError(
-        t(
-          "Please log in again.",
-          "يرجى تسجيل الدخول مرة أخرى."
-        )
-      );
-      return;
-    }
+if (!user?.email) {
+  setError(
+    t(
+      "Please log in again.",
+      "يرجى تسجيل الدخول مرة أخرى."
+    )
+  );
+  return;
+}
 
     try {
       setLoading(true);
 
-      const response = await axios.put(
-        "http://localhost:3002/patient/daily-routine",
-        { dailyRoutine },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+
+const response = await axios.put(
+  "http://localhost:3002/patient/daily-routine",
+  {
+    patientEmail: user.email,
+    dailyRoutine,
+  }
+);
+
 
       dispatch(
         updateUser({
