@@ -236,17 +236,14 @@ const handleNext = () => {
     });
   };
 
-  const getToken = () =>
-    localStorage.getItem("token") ||
-    sessionStorage.getItem("token");
+ 
+
 
   // Skip onboarding.
   const handleSkip = async () => {
     setError("");
 
-    const token = getToken();
-
-    if (!token) {
+    if (!user?.email) {
       setError(
         t(
           "Please log in again.",
@@ -259,15 +256,14 @@ const handleNext = () => {
     try {
       setLoading(true);
 
-      await axios.put(
-        "http://localhost:3002/patient/daily-routine/skip",
-        {},
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+     
+await axios.put(
+  "http://localhost:3002/patient/daily-routine/skip",
+  {
+    patientEmail: user.email,
+  }
+);
+
 
       dispatch(
         updateUser({
@@ -291,6 +287,7 @@ const handleNext = () => {
       setLoading(false);
     }
   };
+
 
   // Validate and save to MongoDB.
   
@@ -322,30 +319,28 @@ const handleNext = () => {
     }
 
     
-    const token = getToken();
-
-    if (!token) {
-      setError(
-        t(
-          "Please log in again.",
-          "يرجى تسجيل الدخول مرة أخرى."
-        )
-      );
-      return;
-    }
+if (!user?.email) {
+  setError(
+    t(
+      "Please log in again.",
+      "يرجى تسجيل الدخول مرة أخرى."
+    )
+  );
+  return;
+}
 
     try {
       setLoading(true);
 
-      const response = await axios.put(
-        "http://localhost:3002/patient/daily-routine",
-        { dailyRoutine },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+
+const response = await axios.put(
+  "http://localhost:3002/patient/daily-routine",
+  {
+    patientEmail: user.email,
+    dailyRoutine,
+  }
+);
+
 
       dispatch(
         updateUser({
