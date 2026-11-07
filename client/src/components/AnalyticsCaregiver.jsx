@@ -1,82 +1,43 @@
-import {
-  useEffect,
-  useMemo,
-  useState,
-} from "react";
-
+import {useEffect,useMemo,useState,} from "react";
 import axios from "axios";
-
-import {
-  Container,
-  Row,
-  Col,
-  Card,
-  CardBody,
-  Alert,
-  Input,
-} from "reactstrap";
-
-import {
-  useSelector,
-} from "react-redux";
-
-import {
-  ResponsiveContainer,
-  AreaChart,
-  Area,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  BarChart,
-  Bar,
-  PieChart,
-  Pie,
-  Cell,
-} from "recharts";
-
+import {Container,Row,Col,Card,CardBody,Alert,Input,} from "reactstrap";
+import {useSelector,} from "react-redux";
+import {ResponsiveContainer,AreaChart,Area,XAxis,YAxis,CartesianGrid,Tooltip,Legend,BarChart,Bar,PieChart,Pie,Cell,} from "recharts";
 import CaregiverHeader from "./CaregiverHeader";
+import Footer from "./Footer";
 
 const AnalyticsCaregiver = () => {
+  const [language, setLanguage] = useState(
+    () => localStorage.getItem("medimindLanguage") === "ar" ? "ar" : "en");
+  const [theme, setTheme] = useState(
+    () => localStorage.getItem("medimind-theme") === "dark" ? "dark" : "light"
+  );
+  const isArabic = language === "ar";
+  const isDark = theme === "dark";
+
+  useEffect(() => {
+    const syncPreferences = () => {
+      setLanguage(localStorage.getItem("medimindLanguage") === "ar" ? "ar" : "en");
+      setTheme(localStorage.getItem("medimind-theme") === "dark" ? "dark" : "light");
+    };
+    const events = [
+      "medimind-language-change", "medimindLanguageChanged",
+      "medimind-theme-change", "medimindThemeChanged", "storage"
+    ];
+    events.forEach((name) => window.addEventListener(name, syncPreferences));
+    return () => events.forEach((name) => window.removeEventListener(name, syncPreferences));
+  }, []);
+
   const user = useSelector(
     (state) => state.user.user
   );
-
-  const [
-    patients,
-    setPatients,
-  ] = useState([]);
-
-  const [
-    selectedPatientEmail,
-    setSelectedPatientEmail,
-  ] = useState("");
-
-  const [
-    reportData,
-    setReportData,
-  ] = useState(null);
-
-  const [
-    patientInfo,
-    setPatientInfo,
-  ] = useState(null);
-
-  const [
-    loadingPatients,
-    setLoadingPatients,
-  ] = useState(true);
-
-  const [
-    loadingAnalytics,
-    setLoadingAnalytics,
-  ] = useState(false);
-
-  const [
-    error,
-    setError,
-  ] = useState("");
+  const [patients,setPatients,] = useState([]);
+  const [selectedPatientEmail,setSelectedPatientEmail,] = useState("");
+  const [reportData,setReportData,] = useState(null);
+  const [patientInfo,setPatientInfo,] = useState(null);
+  const [loadingPatients,setLoadingPatients,] = useState(true);
+  const [loadingAnalytics,setLoadingAnalytics,] = useState(false);
+  const [error,setError,] = useState("");
 
   useEffect(() => {
     const fetchPatients =
@@ -121,7 +82,7 @@ const AnalyticsCaregiver = () => {
           setError(
             error.response?.data
               ?.message ||
-              "Unable to load linked patients."
+            (isArabic ? "تعذر تحميل المرضى المرتبطين." : "Unable to load linked patients.")
           );
         } finally {
           setLoadingPatients(
@@ -163,12 +124,12 @@ const AnalyticsCaregiver = () => {
 
           setReportData(
             response.data?.report ||
-              null
+            null
           );
 
           setPatientInfo(
             response.data?.patient ||
-              null
+            null
           );
         } catch (error) {
           console.error(
@@ -179,7 +140,7 @@ const AnalyticsCaregiver = () => {
           setError(
             error.response?.data
               ?.message ||
-              "Unable to load patient analytics."
+            (isArabic ? "تعذر تحميل تحليلات المريض." : "Unable to load patient analytics.")
           );
 
           setReportData(null);
@@ -228,7 +189,7 @@ const AnalyticsCaregiver = () => {
 
           return {
             day:
-              day.dayName,
+              isArabic ? ({ Sunday: "الأحد", Monday: "الإثنين", Tuesday: "الثلاثاء", Wednesday: "الأربعاء", Thursday: "الخميس", Friday: "الجمعة", Saturday: "السبت" }[day.dayName] || day.dayName) : day.dayName,
 
             adherence:
               completed > 0
@@ -261,8 +222,8 @@ const AnalyticsCaregiver = () => {
       return reportData.dailyBreakdown.filter(
         (day) =>
           (day.taken || 0) +
-            (day.missed || 0) +
-            (day.skipped || 0) >
+          (day.missed || 0) +
+          (day.skipped || 0) >
           0
       );
     }, [reportData]);
@@ -357,17 +318,31 @@ const AnalyticsCaregiver = () => {
       return periods;
     }, [reportData]);
 
+
+  const translatePeriod = (period) => {
+    if (!isArabic) return period;
+
+    const translations = {
+      morning: "الصباح",
+      afternoon: "الظهيرة",
+      evening: "المساء",
+      night: "الليل",
+    };
+
+    return translations[period.toLowerCase()] || period;
+  };
+
   const missedTimeData =
     useMemo(() => {
       return Object.entries(
         missedPeriods
       ).map(
         ([period, missed]) => ({
-          period,
+          period: translatePeriod(period),
           missed,
         })
       );
-    }, [missedPeriods]);
+    }, [missedPeriods, isArabic]);
 
   const doseDistribution =
     useMemo(() => {
@@ -377,19 +352,19 @@ const AnalyticsCaregiver = () => {
 
       return [
         {
-          name: "Taken",
+          name: isArabic ? "تم أخذها" : "Taken",
           value:
             reportData.taken || 0,
           color: "#51a77b",
         },
         {
-          name: "Missed",
+          name: isArabic ? "فائتة" : "Missed",
           value:
             reportData.missed || 0,
           color: "#de6663",
         },
         {
-          name: "Skipped",
+          name: isArabic ? "تم تخطيها" : "Skipped",
           value:
             reportData.skipped || 0,
           color: "#e6ad48",
@@ -426,7 +401,7 @@ const AnalyticsCaregiver = () => {
       if (
         totalMissed === 0
       ) {
-        return "No missed doses were recorded for this patient during the last 7 days.";
+        return isArabic ? "لم تُسجل جرعات فائتة لهذا المريض خلال الأيام السبعة الماضية." : "No missed doses were recorded for this patient during the last 7 days.";
       }
 
       const highestCount =
@@ -453,18 +428,18 @@ const AnalyticsCaregiver = () => {
         highestPeriods.length ===
         1
       ) {
-        return `Most missed doses occurred during the ${highestPeriods[0]}. This may be a useful time for caregiver follow-up.`;
+        return isArabic ? `حدثت معظم الجرعات الفائتة خلال ${translatePeriod(highestPeriods[0])}. وقد يكون هذا وقتًا مناسبًا للمتابعة.` : `Most missed doses occurred during the ${highestPeriods[0]}. This may be a useful time for caregiver follow-up.`;
       }
 
       if (
         highestPeriods.length ===
         2
       ) {
-        return `Missed doses were equally common during the ${highestPeriods[0]} and ${highestPeriods[1]}. These may be useful times for additional reminders.`;
+        return isArabic ? `تساوت الجرعات الفائتة خلال ${translatePeriod(highestPeriods[0])} و${translatePeriod(highestPeriods[1])}. قد تفيد التذكيرات الإضافية في هذين الوقتين.` : `Missed doses were equally common during the ${highestPeriods[0]} and ${highestPeriods[1]}. These may be useful times for additional reminders.`;
       }
 
-      return "Missed doses were spread across different times of the day.";
-    }, [missedPeriods]);
+      return isArabic ? "توزعت الجرعات الفائتة على أوقات مختلفة من اليوم." : "Missed doses were spread across different times of the day.";
+    }, [missedPeriods, isArabic]);
 
   const needsAttention =
     useMemo(() => {
@@ -473,10 +448,10 @@ const AnalyticsCaregiver = () => {
           level: "none",
 
           title:
-            "No analytics available",
+            (isArabic ? "لا تتوفر تحليلات" : "No analytics available"),
 
           message:
-            "Select a patient with medication history to view attention indicators.",
+            (isArabic ? "اختر مريضًا لديه سجل أدوية لعرض مؤشرات المتابعة." : "Select a patient with medication history to view attention indicators."),
         };
       }
 
@@ -497,10 +472,10 @@ const AnalyticsCaregiver = () => {
           level: "info",
 
           title:
-            "Not enough data yet",
+            (isArabic ? "البيانات غير كافية بعد" : "Not enough data yet"),
 
           message:
-            "There are not enough completed doses to assess this patient's adherence pattern.",
+            (isArabic ? "لا توجد جرعات مكتملة كافية لتقييم نمط التزام هذا المريض." : "There are not enough completed doses to assess this patient's adherence pattern."),
         };
       }
 
@@ -512,10 +487,10 @@ const AnalyticsCaregiver = () => {
           level: "high",
 
           title:
-            "Needs attention",
+            (isArabic ? "يحتاج إلى متابعة" : "Needs attention"),
 
           message:
-            "This patient has low adherence or several missed doses this week. A check-in may be helpful.",
+            (isArabic ? "التزام هذا المريض منخفض أو لديه عدة جرعات فائتة هذا الأسبوع. قد تكون المتابعة مفيدة." : "This patient has low adherence or several missed doses this week. A check-in may be helpful."),
         };
       }
 
@@ -528,10 +503,10 @@ const AnalyticsCaregiver = () => {
           level: "medium",
 
           title:
-            "Monitor adherence",
+            (isArabic ? "راقب الالتزام" : "Monitor adherence"),
 
           message:
-            "Some doses were missed or skipped this week. Continued monitoring may be helpful.",
+            (isArabic ? "فاتت بعض الجرعات أو تم تخطيها هذا الأسبوع. يُنصح باستمرار المتابعة." : "Some doses were missed or skipped this week. Continued monitoring may be helpful."),
         };
       }
 
@@ -539,14 +514,15 @@ const AnalyticsCaregiver = () => {
         level: "good",
 
         title:
-          "Adherence looks stable",
+          (isArabic ? "الالتزام مستقر" : "Adherence looks stable"),
 
         message:
-          "The patient has maintained strong medication adherence during the last 7 days.",
+          (isArabic ? "حافظ المريض على التزام جيد بالأدوية خلال الأيام السبعة الماضية." : "The patient has maintained strong medication adherence during the last 7 days."),
       };
     }, [
       reportData,
       completedDoseCount,
+      isArabic,
     ]);
 
   const attentionStyle =
@@ -600,38 +576,77 @@ const AnalyticsCaregiver = () => {
     }, [needsAttention]);
 
   const cardStyle = {
-    border: "none",
+    border: isDark
+      ? "1px solid #40566f"
+      : "1px solid #e5e7eb",
     borderRadius: "18px",
-    backgroundColor: "#ffffff",
-
-    boxShadow:
-      "0 6px 18px rgba(30, 58, 138, 0.07)",
+    backgroundColor: isDark ? "#192b40" : "#ffffff",
+    color: isDark ? "#f8fafc" : "#24364b",
+    boxShadow: "0 6px 18px rgba(0, 0, 0, 0.12)",
   };
 
   const titleStyle = {
-    color: "#1e3a8a",
+    color: isDark ? "#ffffff" : "#1e3a8a",
     fontWeight: "700",
   };
 
   const tooltipStyle = {
-    border: "none",
+    backgroundColor: isDark ? "#243b53" : "#ffffff",
+    color: isDark ? "#f8fafc" : "#24364b",
+    border: isDark ? "1px solid #40566f" : "none",
     borderRadius: "12px",
-
-    boxShadow:
-      "0 8px 24px rgba(30, 58, 138, 0.13)",
+    boxShadow: "0 8px 24px rgba(0,0,0,0.13)",
   };
 
   return (
+
     <Container
       fluid
-      className="dashboard-page"
+      className={`dashboard-page caregiver-analytics ${isDark ? "caregiver-analytics-dark" : ""}`}
+      dir={isArabic ? "rtl" : "ltr"}
       style={{
         minHeight: "100vh",
-        backgroundColor:
-          "#f7f9fc",
+        paddingLeft: 0,
+        paddingRight: 0,
+        backgroundColor: "transparent",
       }}
     >
+
       <CaregiverHeader />
+
+      <style>{`
+  .caregiver-analytics-dark .card .text-muted {
+    color: #cbd5e1 !important;
+  }
+
+  .caregiver-analytics-dark .card label,
+  .caregiver-analytics-dark .card strong {
+    color: #f8fafc !important;
+  }
+
+  .caregiver-analytics-dark .form-select {
+    background-color: #243b53 !important;
+    color: #ffffff !important;
+    border-color: #40566f !important;
+  }
+
+  .caregiver-analytics-dark .form-select option {
+    background-color: #243b53;
+    color: #ffffff;
+  }
+
+  .caregiver-analytics-dark .recharts-cartesian-axis-tick-value {
+    fill: #e2e8f0 !important;
+  }
+
+  .caregiver-analytics-dark .recharts-legend-item-text {
+    color: #e2e8f0 !important;
+  }
+
+  .caregiver-analytics-dark .recharts-cartesian-grid line {
+    stroke: #40566f !important;
+  }
+`}</style>
 
       <Row className="py-4 px-3">
         <Col
@@ -642,22 +657,30 @@ const AnalyticsCaregiver = () => {
           <div className="mb-4">
             <h2
               style={{
-                color:
-                  "#1e3a8a",
+                color: "#ffffff",
+                textShadow: "0 2px 6px rgba(0, 0, 0, 0.65)",
                 fontWeight:
                   "700",
                 marginBottom:
                   "5px",
               }}
-            >
-              Patient Analytics
-            </h2>
+            >{isArabic ? "تحليلات المرضى" : "Patient Analytics"}</h2>
 
-            <p className="text-muted mb-0">
-              Discover adherence
-              patterns for your linked
-              patients.
+
+            <p
+              className="mb-0"
+              style={{
+                color: "#f1f5f9",
+                fontSize: isArabic ? "18px" : "16px",
+                fontWeight: "500",
+                textShadow: "0 2px 6px rgba(0, 0, 0, 0.65)",
+              }}
+            >
+              {isArabic
+                ? "اكتشف أنماط الالتزام بالأدوية لدى مرضاك المرتبطين."
+                : "Discover adherence patterns for your linked patients."}
             </p>
+
           </div>
 
           {error && (
@@ -668,25 +691,17 @@ const AnalyticsCaregiver = () => {
 
           {loadingPatients ? (
             <Card style={cardStyle}>
-              <CardBody className="text-center py-5">
-                Loading linked
-                patients...
-              </CardBody>
+              <CardBody className="text-center py-5">{isArabic ? "جارٍ تحميل المرضى المرتبطين..." : "Loading linked patients..."}</CardBody>
             </Card>
           ) : patients.length ===
             0 ? (
             <Card style={cardStyle}>
               <CardBody className="text-center py-5">
-                <h5>
-                  No linked patients yet
+                <h5 style={{ color: "#1e3a8a", fontWeight: "700" }}>
+                  {isArabic ? "لا يوجد مرضى مرتبطون بعد" : "No linked patients yet"}
                 </h5>
 
-                <p className="text-muted mb-0">
-                  Patient analytics will
-                  appear after a patient
-                  accepts your caregiver
-                  request.
-                </p>
+                <p className="text-muted mb-0">{isArabic ? "ستظهر تحليلات المرضى بعد قبول أحد المرضى طلب الربط." : "Patient analytics will appear after a patient accepts your caregiver request."}</p>
               </CardBody>
             </Card>
           ) : (
@@ -707,9 +722,7 @@ const AnalyticsCaregiver = () => {
                           marginBottom:
                             "7px",
                         }}
-                      >
-                        Select Patient
-                      </label>
+                      >{isArabic ? "اختر المريض" : "Select Patient"}</label>
 
                       <Input
                         type="select"
@@ -805,10 +818,7 @@ const AnalyticsCaregiver = () => {
 
               {loadingAnalytics ? (
                 <Card style={cardStyle}>
-                  <CardBody className="text-center py-5">
-                    Loading patient
-                    analytics...
-                  </CardBody>
+                  <CardBody className="text-center py-5">{isArabic ? "جارٍ تحميل تحليلات المريض..." : "Loading patient analytics..."}</CardBody>
                 </Card>
               ) : reportData ? (
                 <>
@@ -831,16 +841,9 @@ const AnalyticsCaregiver = () => {
                               marginBottom:
                                 "4px",
                             }}
-                          >
-                            Adherence Trend
-                          </h5>
+                          >{isArabic ? "اتجاه الالتزام" : "Adherence Trend"}</h5>
 
-                          <p className="text-muted small mb-3">
-                            How has this
-                            patient's
-                            adherence changed
-                            this week?
-                          </p>
+                          <p className="text-muted small mb-3">{isArabic ? "كيف تغيّر التزام هذا المريض خلال الأسبوع؟" : "How has this patient's adherence changed this week?"}</p>
 
                           <div
                             style={{
@@ -855,17 +858,12 @@ const AnalyticsCaregiver = () => {
                               height="100%"
                             >
                               <AreaChart
-                                data={
-                                  trendData
-                                }
+                                data={trendData}
                                 margin={{
                                   top: 10,
-                                  right:
-                                    15,
-                                  left:
-                                    -20,
-                                  bottom:
-                                    0,
+                                  right: 20,
+                                  left: 15,
+                                  bottom: 5,
                                 }}
                               >
                                 <defs>
@@ -913,31 +911,13 @@ const AnalyticsCaregiver = () => {
                                 />
 
                                 <YAxis
-                                  domain={[
-                                    0,
-                                    100,
-                                  ]}
-                                  ticks={[
-                                    0,
-                                    25,
-                                    50,
-                                    75,
-                                    100,
-                                  ]}
-                                  width={
-                                    45
-                                  }
-                                  axisLine={
-                                    false
-                                  }
-                                  tickLine={
-                                    false
-                                  }
-                                  tickFormatter={(
-                                    value
-                                  ) =>
-                                    `${value}%`
-                                  }
+                                  domain={[0, 100]}
+                                  ticks={[0, 25, 50, 75, 100]}
+                                  width={60}
+                                  tickMargin={8}
+                                  axisLine={false}
+                                  tickLine={false}
+                                  tickFormatter={(value) => `${value}%`}
                                 />
 
                                 <Tooltip
@@ -947,12 +927,12 @@ const AnalyticsCaregiver = () => {
                                   formatter={(
                                     value
                                   ) => [
-                                    value ===
-                                    null
-                                      ? "No completed doses"
-                                      : `${value}%`,
-                                    "Adherence",
-                                  ]}
+                                      value ===
+                                        null
+                                        ? (isArabic ? "لا توجد جرعات مكتملة" : "No completed doses")
+                                        : `${value}%`,
+                                      isArabic ? "الالتزام" : "Adherence",
+                                    ]}
                                 />
 
                                 <Area
@@ -1004,16 +984,9 @@ const AnalyticsCaregiver = () => {
                               marginBottom:
                                 "4px",
                             }}
-                          >
-                            Daily Pattern
-                          </h5>
+                          >{isArabic ? "النمط اليومي" : "Daily Pattern"}</h5>
 
-                          <p className="text-muted small mb-3">
-                            What happened
-                            with this
-                            patient's doses
-                            each day?
-                          </p>
+                          <p className="text-muted small mb-3">{isArabic ? "ماذا حدث لجرعات هذا المريض كل يوم؟" : "What happened with this patient's doses each day?"}</p>
 
                           <div
                             style={{
@@ -1028,17 +1001,12 @@ const AnalyticsCaregiver = () => {
                               height="100%"
                             >
                               <BarChart
-                                data={
-                                  trendData
-                                }
+                                data={trendData}
                                 margin={{
                                   top: 10,
-                                  right:
-                                    15,
-                                  left:
-                                    -20,
-                                  bottom:
-                                    0,
+                                  right: 15,
+                                  left: 15,
+                                  bottom: 5,
                                 }}
                               >
                                 <CartesianGrid
@@ -1060,18 +1028,11 @@ const AnalyticsCaregiver = () => {
                                 />
 
                                 <YAxis
-                                  allowDecimals={
-                                    false
-                                  }
-                                  width={
-                                    35
-                                  }
-                                  axisLine={
-                                    false
-                                  }
-                                  tickLine={
-                                    false
-                                  }
+                                  allowDecimals={false}
+                                  width={45}
+                                  tickMargin={8}
+                                  axisLine={false}
+                                  tickLine={false}
                                 />
 
                                 <Tooltip
@@ -1084,7 +1045,7 @@ const AnalyticsCaregiver = () => {
 
                                 <Bar
                                   dataKey="taken"
-                                  name="Taken"
+                                  name={isArabic ? "تم أخذها" : "Taken"}
                                   stackId="dose"
                                   fill="#51a77b"
                                   maxBarSize={
@@ -1094,7 +1055,7 @@ const AnalyticsCaregiver = () => {
 
                                 <Bar
                                   dataKey="missed"
-                                  name="Missed"
+                                  name={isArabic ? "فائتة" : "Missed"}
                                   stackId="dose"
                                   fill="#de6663"
                                   maxBarSize={
@@ -1104,7 +1065,7 @@ const AnalyticsCaregiver = () => {
 
                                 <Bar
                                   dataKey="skipped"
-                                  name="Skipped"
+                                  name={isArabic ? "تم تخطيها" : "Skipped"}
                                   stackId="dose"
                                   fill="#e6ad48"
                                   maxBarSize={
@@ -1144,19 +1105,12 @@ const AnalyticsCaregiver = () => {
                               marginBottom:
                                 "4px",
                             }}
-                          >
-                            Dose Status
-                          </h5>
+                          >{isArabic ? "حالة الجرعات" : "Dose Status"}</h5>
 
-                          <p className="text-muted small mb-0">
-                            How were the
-                            patient's
-                            completed doses
-                            distributed?
-                          </p>
+                          <p className="text-muted small mb-0">{isArabic ? "كيف توزعت جرعات المريض المكتملة؟" : "How were the patient's completed doses distributed?"}</p>
 
                           {completedDoseCount >
-                          0 ? (
+                            0 ? (
                             <div
                               style={{
                                 width:
@@ -1257,17 +1211,12 @@ const AnalyticsCaregiver = () => {
                                   }
                                 </strong>
 
-                                <small className="text-muted">
-                                  Completed
-                                </small>
+                                <small className="text-muted">{isArabic ? "مكتملة" : "Completed"}</small>
                               </div>
                             </div>
                           ) : (
                             <div className="text-center py-5">
-                              <p className="text-muted mb-0">
-                                No completed
-                                doses yet.
-                              </p>
+                              <p className="text-muted mb-0">{isArabic ? "لا توجد جرعات مكتملة بعد." : "No completed doses yet."}</p>
                             </div>
                           )}
                         </CardBody>
@@ -1292,17 +1241,9 @@ const AnalyticsCaregiver = () => {
                               marginBottom:
                                 "4px",
                             }}
-                          >
-                            Missed Dose
-                            Pattern
-                          </h5>
+                          >{isArabic ? "نمط الجرعات الفائتة" : "Missed Dose Pattern"}</h5>
 
-                          <p className="text-muted small mb-2">
-                            When are this
-                            patient's missed
-                            doses most likely
-                            to happen?
-                          </p>
+                          <p className="text-muted small mb-2">{isArabic ? "متى يُرجّح أن تفوت جرعات هذا المريض؟" : "When are this patient's missed doses most likely to happen?"}</p>
 
                           <div
                             style={{
@@ -1373,7 +1314,7 @@ const AnalyticsCaregiver = () => {
 
                                 <Bar
                                   dataKey="missed"
-                                  name="Missed Doses"
+                                  name={isArabic ? "الجرعات الفائتة" : "Missed Doses"}
                                   fill="#6c8fc2"
                                   barSize={
                                     20
@@ -1403,8 +1344,7 @@ const AnalyticsCaregiver = () => {
                           ...cardStyle,
                           height:
                             "100%",
-                          backgroundColor:
-                            "#eef4ff",
+                          backgroundColor: isDark ? "#233955" : "#eef4ff",
                         }}
                       >
                         <CardBody className="p-4">
@@ -1414,14 +1354,11 @@ const AnalyticsCaregiver = () => {
                               marginBottom:
                                 "14px",
                             }}
-                          >
-                            Weekly Insight
-                          </h5>
+                          >{isArabic ? "ملخص الأسبوع" : "Weekly Insight"}</h5>
 
                           <p
                             style={{
-                              color:
-                                "#40516a",
+                              color: isDark ? "#cbd5e1" : "#40516a",
                               lineHeight:
                                 "1.7",
                             }}
@@ -1443,9 +1380,7 @@ const AnalyticsCaregiver = () => {
                               }}
                             >
                               <Col xs="6">
-                                <small className="text-muted">
-                                  Best day
-                                </small>
+                                <small className="text-muted">{isArabic ? "أفضل يوم" : "Best day"}</small>
 
                                 <div
                                   style={{
@@ -1469,9 +1404,7 @@ const AnalyticsCaregiver = () => {
                               </Col>
 
                               <Col xs="6">
-                                <small className="text-muted">
-                                  Lowest day
-                                </small>
+                                <small className="text-muted">{isArabic ? "أقل يوم التزامًا" : "Lowest day"}</small>
 
                                 <div
                                   style={{
@@ -1495,14 +1428,7 @@ const AnalyticsCaregiver = () => {
                               </Col>
                             </Row>
                           ) : (
-                            <small className="text-muted">
-                              More completed
-                              doses are
-                              needed before
-                              daily
-                              highlights can
-                              be calculated.
-                            </small>
+                            <small className="text-muted">{isArabic ? "نحتاج إلى جرعات مكتملة إضافية لحساب أبرز النتائج اليومية." : "More completed doses are needed before daily highlights can be calculated."}</small>
                           )}
                         </CardBody>
                       </Card>
@@ -1517,8 +1443,9 @@ const AnalyticsCaregiver = () => {
                           ...cardStyle,
                           height:
                             "100%",
-                          backgroundColor:
-                            attentionStyle.backgroundColor,
+                          backgroundColor: isDark
+                            ? "#24364d"
+                            : attentionStyle.backgroundColor,
                         }}
                       >
                         <CardBody className="p-4">
@@ -1539,8 +1466,7 @@ const AnalyticsCaregiver = () => {
 
                           <p
                             style={{
-                              color:
-                                "#40516a",
+                              color: isDark ? "#cbd5e1" : "#40516a",
                               lineHeight:
                                 "1.7",
                               marginBottom:
@@ -1554,15 +1480,8 @@ const AnalyticsCaregiver = () => {
 
                           {reportData.missed >
                             0 && (
-                            <small className="text-muted">
-                              Use the
-                              patterns above
-                              to identify
-                              when follow-up
-                              may be most
-                              useful.
-                            </small>
-                          )}
+                              <small className="text-muted">{isArabic ? "استخدم الأنماط أعلاه لتحديد أنسب أوقات المتابعة." : "Use the patterns above to identify when follow-up may be most useful."}</small>
+                            )}
                         </CardBody>
                       </Card>
                     </Col>
@@ -1571,11 +1490,7 @@ const AnalyticsCaregiver = () => {
               ) : (
                 <Card style={cardStyle}>
                   <CardBody className="text-center py-5">
-                    <p className="text-muted mb-0">
-                      No analytics data
-                      is available for
-                      this patient yet.
-                    </p>
+                    <p className="text-muted mb-0">{isArabic ? "لا تتوفر بيانات تحليلية لهذا المريض بعد." : "No analytics data is available for this patient yet."}</p>
                   </CardBody>
                 </Card>
               )}
@@ -1583,6 +1498,7 @@ const AnalyticsCaregiver = () => {
           )}
         </Col>
       </Row>
+      <Footer />
     </Container>
   );
 };
