@@ -1,34 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import axios from "axios";
-
-import {
-  Container,
-  Row,
-  Col,
-  Card,
-  CardBody,
-} from "reactstrap";
-
+import {Container,Row,Col,Card,CardBody,} from "reactstrap";
 import { useSelector } from "react-redux";
-
-import {
-  ResponsiveContainer,
-  AreaChart,
-  Area,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  BarChart,
-  Bar,
-  Legend,
-  PieChart,
-  Pie,
-  Cell,
-} from "recharts";
-
+import {ResponsiveContainer,AreaChart,Area,XAxis,YAxis,CartesianGrid,Tooltip,BarChart,Bar,Legend,PieChart,Pie,Cell,} from "recharts";
 import Header from "./Header";
-import Footer from "./footer";
+import Footer from "./Footer";
 
 const medicationTips = [
   "Try linking your medication to a regular daily habit, such as breakfast or brushing your teeth.",
@@ -38,7 +14,41 @@ const medicationTips = [
   "If you keep missing doses, consider discussing your routine with your pharmacist or doctor.",
 ];
 
+const arabicDays = {
+  Sun: "الأحد", Mon: "الاثنين", Tue: "الثلاثاء", Wed: "الأربعاء",
+  Thu: "الخميس", Fri: "الجمعة", Sat: "السبت",
+  Sunday: "الأحد", Monday: "الاثنين", Tuesday: "الثلاثاء",
+  Wednesday: "الأربعاء", Thursday: "الخميس", Friday: "الجمعة", Saturday: "السبت",
+};
+const arabicPeriods = {
+  Morning: "الصباح", Afternoon: "بعد الظهر", Evening: "المساء", Night: "الليل",
+};
+const arabicTips = [
+  "حاولي ربط تناول الدواء بعادة يومية، مثل الإفطار أو تنظيف الأسنان.",
+  "اضبطي تذكيرًا قبل موعد الدواء المعتاد بقليل.",
+  "احتفظي بالدواء في مكان واضح وآمن عندما يكون ذلك مناسبًا.",
+  "استخدمي منظم الحبوب إذا كنتِ تتناولين عدة أدوية خلال اليوم.",
+  "إذا تكرر نسيان الجرعات، ناقشي روتينك مع الصيدلي أو الطبيب.",
+];
+
 const Analytics = () => {
+  const [language, setLanguage] = useState(
+    () => localStorage.getItem("medimindLanguage") || "en"
+  );
+  const isArabic = language === "ar";
+  const t = (english, arabic) => isArabic ? arabic : english;
+  const dayLabel = (name) => isArabic ? (arabicDays[name] || name) : name;
+  const periodLabel = (name) => isArabic ? (arabicPeriods[name] || name) : name;
+  const statusLabel = (name) => t(name, ({
+    Taken: "تم التناول", Missed: "فائتة", Skipped: "تم التخطي",
+  })[name] || name);
+
+  useEffect(() => {
+    const onLanguageChange = () => setLanguage(localStorage.getItem("medimindLanguage") || "en");
+    window.addEventListener("medimind-language-change", onLanguageChange);
+    return () => window.removeEventListener("medimind-language-change", onLanguageChange);
+  }, []);
+
   const user = useSelector(
     (state) => state.user.user
   );
@@ -52,12 +62,12 @@ const Analytics = () => {
   const [error, setError] =
     useState("");
 
-  const [medicationTip] = useState(() => {
+  const [medicationTipIndex] = useState(() => {
     const randomIndex = Math.floor(
       Math.random() * medicationTips.length
     );
 
-    return medicationTips[randomIndex];
+    return randomIndex;
   });
 
   useEffect(() => {
@@ -87,7 +97,7 @@ const Analytics = () => {
 
         setError(
           error.response?.data?.message ||
-            "Unable to load analytics."
+          "Unable to load analytics."
         );
       } finally {
         setLoading(false);
@@ -96,6 +106,10 @@ const Analytics = () => {
 
     fetchAnalytics();
   }, [user?.email]);
+
+  const medicationTip = isArabic
+    ? arabicTips[medicationTipIndex]
+    : medicationTips[medicationTipIndex];
 
   const trendData = useMemo(() => {
     if (
@@ -137,8 +151,8 @@ const Analytics = () => {
     return weeklyReport.dailyBreakdown.filter(
       (day) =>
         (day.taken || 0) +
-          (day.missed || 0) +
-          (day.skipped || 0) >
+        (day.missed || 0) +
+        (day.skipped || 0) >
         0
     );
   }, [weeklyReport]);
@@ -245,6 +259,18 @@ const Analytics = () => {
       },
     ];
   }, [weeklyReport]);
+
+  const translatedTrendData = useMemo(() => trendData.map((item) => ({
+    ...item, day: dayLabel(item.day),
+  })), [trendData, isArabic]);
+
+  const translatedMissedTimeData = useMemo(() => missedTimeData.map((item) => ({
+    ...item, period: periodLabel(item.period),
+  })), [missedTimeData, isArabic]);
+
+  const translatedDoseDistribution = useMemo(() => doseDistribution.map((item) => ({
+    ...item, name: statusLabel(item.name),
+  })), [doseDistribution, isArabic]);
 
   const completedDoseCount = useMemo(() => {
     return doseDistribution.reduce(
@@ -435,6 +461,27 @@ const Analytics = () => {
     };
   }, [weeklyReport]);
 
+  const localizedWeeklyInsight = useMemo(() => {
+    if (!isArabic) return weeklyInsight;
+    const entries = Object.entries(missedPeriods);
+    const total = entries.reduce((sum, [, count]) => sum + count, 0);
+    if (!total) return "لم يُكتشف نمط لتفويت الجرعات هذا الأسبوع.";
+    const max = Math.max(...entries.map(([, count]) => count));
+    const periods = entries.filter(([, count]) => count === max)
+      .map(([period]) => arabicPeriods[period]);
+    if (periods.length === 1) return `حدثت معظم الجرعات الفائتة خلال ${periods[0]}.`;
+    if (periods.length === 2) return `تساوت الجرعات الفائتة خلال ${periods[0]} و${periods[1]}.`;
+    return "توزعت الجرعات الفائتة على أوقات مختلفة من اليوم.";
+  }, [isArabic, weeklyInsight, missedPeriods]);
+
+  const localizedMedicationPeriod = (periodText) => {
+    if (!isArabic || !periodText) return periodText;
+    if (periodText === "different times of the day") return "أوقات مختلفة من اليوم";
+    return periodText.replace(/morning|afternoon|evening|night/gi,
+      (period) => arabicPeriods[period.charAt(0).toUpperCase() + period.slice(1)] || period)
+      .replace(/ and /g, " و");
+  };
+
   const cardStyle = {
     border: "none",
     borderRadius: "18px",
@@ -458,13 +505,44 @@ const Analytics = () => {
   return (
     <Container
       fluid
-      className="dashboard-page"
+      className={`dashboard-page analytics-page ${isArabic ? "analytics-ar" : ""}`}
+      dir={isArabic ? "rtl" : "ltr"}
       style={{
         backgroundColor: "#f7f9fc",
         minHeight: "100vh",
       }}
     >
       <Header />
+      <style>{`
+        .analytics-page { background: #f7f9fc !important; }
+        .analytics-page h2 { font-size: 36px; }
+        .analytics-page h5 { font-size: 23px; }
+        .analytics-page p { font-size: 17px; }
+        .analytics-page .card { color: #24354d; }
+        .analytics-page .recharts-text, .analytics-page .recharts-legend-item-text { font-size: 14px; }
+        .analytics-ar { text-align: right; font-family: Tahoma, Arial, sans-serif; }
+        .analytics-ar .recharts-wrapper { direction: ltr; }
+        .analytics-ar .recharts-legend-wrapper { direction: rtl; }
+        body.dark-theme .analytics-page { background: transparent !important; }
+        body.dark-theme .analytics-page .card {
+          background: #17283a !important; color: #f1f5f9 !important;
+          border: 1px solid #304358 !important;
+        }
+        body.dark-theme .analytics-page h2,
+        body.dark-theme .analytics-page h5,
+        body.dark-theme .analytics-page .card strong { color: #e2ecff !important; }
+        body.dark-theme .analytics-page p,
+        body.dark-theme .analytics-page .text-muted,
+        body.dark-theme .analytics-page small { color: #c4d0e0 !important; }
+        body.dark-theme .analytics-page .recharts-cartesian-axis-tick-value,
+        body.dark-theme .analytics-page .recharts-legend-item-text { fill: #e2e8f0 !important; color: #e2e8f0 !important; }
+        body.dark-theme .analytics-page .recharts-cartesian-grid line { stroke: #34485f !important; }
+        body.dark-theme .analytics-page .recharts-default-tooltip {
+          background: #22374d !important; border: 1px solid #456078 !important;
+        }
+        body.dark-theme .analytics-page .recharts-tooltip-item,
+        body.dark-theme .analytics-page .recharts-tooltip-label { color: #f1f5f9 !important; }
+      `}</style>
 
       <Row className="py-4 px-3">
         <Col
@@ -480,19 +558,18 @@ const Analytics = () => {
                 marginBottom: "5px",
               }}
             >
-              Analytics
+              {t("Analytics", "التحليلات")}
             </h2>
 
             <p className="text-muted mb-0">
-              Discover patterns in your
-              medication adherence.
+              {t("Discover patterns in your medication adherence.", "اكتشف أنماط الالتزام بتناول أدويتك.")}
             </p>
           </div>
 
           {loading ? (
             <Card style={cardStyle}>
               <CardBody className="text-center py-5">
-                Loading analytics...
+                {t("Loading analytics...", "جارٍ تحميل التحليلات...")}
               </CardBody>
             </Card>
           ) : error ? (
@@ -517,13 +594,11 @@ const Analytics = () => {
                             "4px",
                         }}
                       >
-                        Adherence Trend
+                        {t("Adherence Trend", "اتجاه الالتزام")}
                       </h5>
 
                       <p className="text-muted small mb-3">
-                        How has your
-                        adherence changed
-                        this week?
+                        {t("How has your adherence changed this week?", "كيف تغير التزامك خلال هذا الأسبوع؟")}
                       </p>
 
                       <div
@@ -537,12 +612,12 @@ const Analytics = () => {
                           height="100%"
                         >
                           <AreaChart
-                            data={trendData}
+                            data={translatedTrendData}
                             margin={{
                               top: 10,
-                              right: 15,
-                              left: -20,
-                              bottom: 0,
+                              right: 20,
+                              left: 15,
+                              bottom: 5,
                             }}
                           >
                             <defs>
@@ -601,7 +676,7 @@ const Analytics = () => {
                                 75,
                                 100,
                               ]}
-                              width={45}
+                              width={55}
                               axisLine={
                                 false
                               }
@@ -622,12 +697,12 @@ const Analytics = () => {
                               formatter={(
                                 value
                               ) => [
-                                value ===
-                                null
-                                  ? "No completed doses"
-                                  : `${value}%`,
-                                "Adherence",
-                              ]}
+                                  value ===
+                                    null
+                                    ? t("No completed doses", "لا توجد جرعات مكتملة")
+                                    : `${value}%`,
+                                  t("Adherence", "الالتزام"),
+                                ]}
                             />
 
                             <Area
@@ -676,12 +751,11 @@ const Analytics = () => {
                             "4px",
                         }}
                       >
-                        Daily Pattern
+                        {t("Daily Pattern", "النمط اليومي")}
                       </h5>
 
                       <p className="text-muted small mb-3">
-                        What happened with
-                        your doses each day?
+                        {t("What happened with your doses each day?", "ما حالة جرعاتك في كل يوم؟")}
                       </p>
 
                       <div
@@ -695,11 +769,11 @@ const Analytics = () => {
                           height="100%"
                         >
                           <BarChart
-                            data={trendData}
+                            data={translatedTrendData}
                             margin={{
                               top: 10,
                               right: 15,
-                              left: -20,
+                              left: 10,
                               bottom: 0,
                             }}
                           >
@@ -744,7 +818,7 @@ const Analytics = () => {
 
                             <Bar
                               dataKey="taken"
-                              name="Taken"
+                              name={t("Taken", "تم التناول")}
                               stackId="dose"
                               fill="#51a77b"
                               maxBarSize={
@@ -754,7 +828,7 @@ const Analytics = () => {
 
                             <Bar
                               dataKey="missed"
-                              name="Missed"
+                              name={t("Missed", "فائتة")}
                               stackId="dose"
                               fill="#de6663"
                               maxBarSize={
@@ -764,7 +838,7 @@ const Analytics = () => {
 
                             <Bar
                               dataKey="skipped"
-                              name="Skipped"
+                              name={t("Skipped", "تم التخطي")}
                               stackId="dose"
                               fill="#e6ad48"
                               maxBarSize={
@@ -801,17 +875,15 @@ const Analytics = () => {
                             "4px",
                         }}
                       >
-                        Dose Status
+                        {t("Dose Status", "حالة الجرعات")}
                       </h5>
 
                       <p className="text-muted small mb-0">
-                        How were your
-                        completed doses
-                        distributed?
+                        {t("How were your completed doses distributed?", "كيف توزعت الجرعات المكتملة؟")}
                       </p>
 
                       {completedDoseCount >
-                      0 ? (
+                        0 ? (
                         <div
                           style={{
                             width: "100%",
@@ -827,9 +899,7 @@ const Analytics = () => {
                           >
                             <PieChart>
                               <Pie
-                                data={
-                                  doseDistribution
-                                }
+                                data={translatedDoseDistribution}
                                 cx="50%"
                                 cy="47%"
                                 dataKey="value"
@@ -910,15 +980,14 @@ const Analytics = () => {
                             </strong>
 
                             <small className="text-muted">
-                              Completed
+                              {t("Completed", "مكتملة")}
                             </small>
                           </div>
                         </div>
                       ) : (
                         <div className="text-center py-5">
                           <p className="text-muted mb-0">
-                            No completed
-                            doses yet.
+                            {t("No completed doses yet.", "لا توجد جرعات مكتملة حتى الآن.")}
                           </p>
                         </div>
                       )}
@@ -941,13 +1010,11 @@ const Analytics = () => {
                             "4px",
                         }}
                       >
-                        Missed Dose Pattern
+                        {t("Missed Dose Pattern", "نمط الجرعات الفائتة")}
                       </h5>
 
                       <p className="text-muted small mb-2">
-                        When are missed
-                        doses most likely
-                        to happen?
+                        {t("When are missed doses most likely to happen?", "في أي وقت يُحتمل تفويت الجرعات أكثر؟")}
                       </p>
 
                       <div
@@ -962,9 +1029,7 @@ const Analytics = () => {
                         >
                           <BarChart
                             layout="vertical"
-                            data={
-                              missedTimeData
-                            }
+                            data={translatedMissedTimeData}
                             margin={{
                               top: 10,
                               right: 25,
@@ -1013,7 +1078,7 @@ const Analytics = () => {
 
                             <Bar
                               dataKey="missed"
-                              name="Missed Doses"
+                              name={t("Missed Doses", "الجرعات الفائتة")}
                               fill="#6c8fc2"
                               barSize={20}
                               radius={[
@@ -1049,7 +1114,7 @@ const Analytics = () => {
                             "14px",
                         }}
                       >
-                        Weekly Insight
+                        {t("Weekly Insight", "ملخص الأسبوع")}
                       </h5>
 
                       <p
@@ -1060,7 +1125,7 @@ const Analytics = () => {
                             "1.7",
                         }}
                       >
-                        {weeklyInsight}
+                        {localizedWeeklyInsight}
                       </p>
 
                       {bestDay ? (
@@ -1076,7 +1141,7 @@ const Analytics = () => {
                         >
                           <Col xs="6">
                             <small className="text-muted">
-                              Best day
+                              {t("Best day", "أفضل يوم")}
                             </small>
 
                             <div
@@ -1090,7 +1155,7 @@ const Analytics = () => {
                               }}
                             >
                               {
-                                bestDay.dayName
+                                dayLabel(bestDay.dayName)
                               }{" "}
                               ·{" "}
                               {
@@ -1102,7 +1167,7 @@ const Analytics = () => {
 
                           <Col xs="6">
                             <small className="text-muted">
-                              Lowest day
+                              {t("Lowest day", "أقل يوم التزامًا")}
                             </small>
 
                             <div
@@ -1116,7 +1181,7 @@ const Analytics = () => {
                               }}
                             >
                               {
-                                lowestDay.dayName
+                                dayLabel(lowestDay.dayName)
                               }{" "}
                               ·{" "}
                               {
@@ -1128,11 +1193,7 @@ const Analytics = () => {
                         </Row>
                       ) : (
                         <small className="text-muted">
-                          More completed
-                          doses are needed
-                          before daily
-                          highlights can be
-                          calculated.
+                          {t("More completed doses are needed before daily highlights can be calculated.", "نحتاج إلى المزيد من الجرعات المكتملة لحساب أفضل الأيام وأقلها التزامًا.")}
                         </small>
                       )}
                     </CardBody>
@@ -1158,7 +1219,7 @@ const Analytics = () => {
                             "14px",
                         }}
                       >
-                        Medication Insight
+                        {t("Medication Insight", "ملاحظات حول الأدوية")}
                       </h5>
 
                       {medicationPattern ? (
@@ -1173,30 +1234,23 @@ const Analytics = () => {
                                 "14px",
                             }}
                           >
-                            You missed{" "}
-                            <strong>
-                              {
-                                medicationPattern.name
-                              }
-
-                              {medicationPattern.dosage
-                                ? ` ${medicationPattern.dosage}`
-                                : ""}
-                            </strong>{" "}
-
-                            <strong>
-                              {
-                                medicationPattern.count
-                              }{" "}
-                              times
-                            </strong>{" "}
-
-                            this week
-
-                            {medicationPattern.periodText
-                              ? `, mostly in the ${medicationPattern.periodText}`
-                              : ""}
-                            .
+                            {isArabic ? (
+                              <>
+                                فاتتك جرعات من <strong>{medicationPattern.name}{medicationPattern.dosage ? ` ${medicationPattern.dosage}` : ""}</strong>{" "}
+                                <strong>{medicationPattern.count} مرات</strong> هذا الأسبوع
+                                {medicationPattern.periodText
+                                  ? `، غالبًا خلال ${localizedMedicationPeriod(medicationPattern.periodText)}`
+                                  : ""}.
+                              </>
+                            ) : (
+                              <>
+                                You missed <strong>{medicationPattern.name}{medicationPattern.dosage ? ` ${medicationPattern.dosage}` : ""}</strong>{" "}
+                                <strong>{medicationPattern.count} times</strong> this week
+                                {medicationPattern.periodText
+                                  ? `, mostly in the ${medicationPattern.periodText}`
+                                  : ""}.
+                              </>
+                            )}
                           </p>
 
                           <p className="small mb-2">
@@ -1206,14 +1260,10 @@ const Analytics = () => {
                                   "#1e3a8a",
                               }}
                             >
-                              Why consistency
-                              matters:
+                              {t("Why consistency matters:", "لماذا الانتظام مهم؟")}
                             </strong>{" "}
 
-                            Taking medication
-                            regularly helps
-                            treatment work as
-                            intended.
+                            {t("Taking medication regularly helps treatment work as intended.", "يساعد الانتظام في تناول الدواء على تحقيق الفائدة المرجوة من العلاج.")}
                           </p>
 
                           <p className="small mb-0">
@@ -1223,7 +1273,7 @@ const Analytics = () => {
                                   "#1e3a8a",
                               }}
                             >
-                              Tip:
+                              {t("Tip:", "نصيحة:")}
                             </strong>{" "}
 
                             {medicationTip}
@@ -1237,17 +1287,11 @@ const Analytics = () => {
                                 "#198754",
                             }}
                           >
-                            No repeated
-                            missed-medication
-                            pattern detected.
+                            {t("No repeated missed-medication pattern detected.", "لم يُكتشف نمط متكرر لتفويت دواء معين.")}
                           </strong>
 
                           <p className="text-muted small mt-2 mb-0">
-                            An insight will
-                            appear when the
-                            same medication
-                            is missed
-                            repeatedly.
+                            {t("An insight will appear when the same medication is missed repeatedly.", "ستظهر ملاحظة عند تفويت الدواء نفسه بشكل متكرر.")}
                           </p>
                         </>
                       )}
@@ -1259,8 +1303,7 @@ const Analytics = () => {
           ) : (
             <Card style={cardStyle}>
               <CardBody className="text-center py-5">
-                No analytics data is
-                available yet.
+                {t("No analytics data is available yet.", "لا تتوفر بيانات تحليلية حتى الآن.")}
               </CardBody>
             </Card>
           )}
