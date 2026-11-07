@@ -33,8 +33,34 @@ import {
 } from "react-router-dom";
 
 import CaregiverHeader from "./CaregiverHeader";
+import Footer from "./Footer";
 
 const CaregiverReports = () => {
+  const [language, setLanguage] = useState(
+    () => localStorage.getItem("medimindLanguage") || "en"
+  );
+  const isArabic = language === "ar";
+  const [isDark, setIsDark] = useState(() => localStorage.getItem("medimind-theme") === "dark");
+  useEffect(() => {
+    const syncTheme = () => setIsDark(localStorage.getItem("medimind-theme") === "dark");
+    ["medimind-theme-change", "medimindThemeChanged", "storage"].forEach((event) => window.addEventListener(event, syncTheme));
+    return () => ["medimind-theme-change", "medimindThemeChanged", "storage"].forEach((event) => window.removeEventListener(event, syncTheme));
+  }, []);
+
+  useEffect(() => {
+    const syncLanguage = () =>
+      setLanguage(localStorage.getItem("medimindLanguage") || "en");
+    window.addEventListener("medimind-language-change", syncLanguage);
+    window.addEventListener("medimindLanguageChanged", syncLanguage);
+    window.addEventListener("storage", syncLanguage);
+    return () => {
+      window.removeEventListener("medimind-language-change", syncLanguage);
+      window.removeEventListener("medimindLanguageChanged", syncLanguage);
+      window.removeEventListener("storage", syncLanguage);
+    };
+  }, []);
+
+
   const user = useSelector(
     (state) => state.user.user
   );
@@ -100,19 +126,10 @@ const CaregiverReports = () => {
           setError("");
 
          
-const token =
-  localStorage.getItem("token") ||
-  sessionStorage.getItem("token");
-
 const response = await axios.get(
   `http://localhost:3002/caregiver/my-patients/${encodeURIComponent(
     user.email
-  )}`,
-  {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  }
+  )}`
 );
 
 
@@ -150,7 +167,7 @@ const response = await axios.get(
           setError(
             error.response?.data
               ?.message ||
-              "Unable to load linked patients."
+              (isArabic ? "تعذر تحميل المرضى المرتبطين." : "Unable to load linked patients.")
           );
         } finally {
           setLoadingPatients(
@@ -163,6 +180,7 @@ const response = await axios.get(
   }, [
     user?.email,
     patientFromURL,
+    isArabic,
   ]);
 
   useEffect(() => {
@@ -202,21 +220,12 @@ const response = await axios.get(
           }
 
           
-const token =
-  localStorage.getItem("token") ||
-  sessionStorage.getItem("token");
-
 const response = await axios.get(
   `http://localhost:3002/caregiver/${endpoint}/${encodeURIComponent(
     user.email
   )}/${encodeURIComponent(
     selectedPatientEmail
-  )}`,
-  {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  }
+  )}`
 );
 
 
@@ -233,7 +242,7 @@ const response = await axios.get(
           setError(
             error.response?.data
               ?.message ||
-              "Unable to load patient report."
+              (isArabic ? "تعذر تحميل تقرير المريض." : "Unable to load patient report.")
           );
         } finally {
           setReportLoading(false);
@@ -245,6 +254,7 @@ const response = await axios.get(
     user?.email,
     selectedPatientEmail,
     selectedReport,
+    isArabic,
   ]);
 
   const selectedPatient =
@@ -278,7 +288,7 @@ const response = await axios.get(
     }
 
     return parsedDate.toLocaleDateString(
-      "en-US",
+      isArabic ? "ar-OM" : "en-US",
       {
         day: "numeric",
         month: "short",
@@ -305,7 +315,9 @@ const response = await axios.get(
     numericHour =
       numericHour % 12 || 12;
 
-    return `${numericHour}:${minute} ${period}`;
+    return isArabic
+      ? `${numericHour}:${minute} ${period === "AM" ? "ص" : "م"}`
+      : `${numericHour}:${minute} ${period}`;
   };
 
   const getReportTitle = () => {
@@ -437,7 +449,7 @@ const response = await axios.get(
     if (total === 0) {
       return {
         main:
-          "No scheduled doses",
+          (isArabic ? "لا توجد جرعات مجدولة" : "No scheduled doses"),
         secondary: "",
       };
     }
@@ -447,13 +459,11 @@ const response = await axios.get(
       upcoming > 0
     ) {
       return {
-        main: "Upcoming",
+        main: isArabic ? "قادمة" : "Upcoming",
         secondary:
-          `${upcoming} dose${
-            upcoming === 1
-              ? ""
-              : "s"
-          } pending`,
+          isArabic
+            ? `${upcoming} جرعة قادمة`
+            : `${upcoming} dose${upcoming === 1 ? "" : "s"} pending`,
       };
     }
 
@@ -462,13 +472,9 @@ const response = await axios.get(
         `${day.adherenceRate}%`,
 
       secondary:
-        `${day.taken || 0} taken · ${
-          day.missed || 0
-        } missed${
-          (day.skipped || 0) > 0
-            ? ` · ${day.skipped} skipped`
-            : ""
-        }`,
+        isArabic
+          ? `${day.taken || 0} تم تناولها · ${day.missed || 0} فائتة${(day.skipped || 0) > 0 ? ` · ${day.skipped} تم تخطيها` : ""}`
+          : `${day.taken || 0} taken · ${day.missed || 0} missed${(day.skipped || 0) > 0 ? ` · ${day.skipped} skipped` : ""}`,
     };
   };
 
@@ -478,7 +484,7 @@ const response = await axios.get(
         return {
           value: "N/A",
           note:
-            "No report data available.",
+            (isArabic ? "لا توجد بيانات تقرير متاحة." : "No report data available."),
         };
       }
 
@@ -493,8 +499,8 @@ const response = await axios.get(
 
           note:
             reportData.total === 0
-              ? "No medication doses were scheduled for this period."
-              : "The scheduled doses are still upcoming.",
+              ? (isArabic ? "لم تُجدول جرعات دوائية لهذه الفترة." : "No medication doses were scheduled for this period.")
+              : (isArabic ? "الجرعات المجدولة لم يحن موعدها بعد." : "The scheduled doses are still upcoming."),
         };
       }
 
@@ -505,11 +511,11 @@ const response = await axios.get(
         note:
           selectedReport ===
           "daily"
-            ? "Today's adherence"
+            ? (isArabic ? "الالتزام اليوم" : "Today's adherence")
             : selectedReport ===
               "weekly"
-            ? "Weekly adherence"
-            : "Monthly adherence",
+            ? (isArabic ? "الالتزام الأسبوعي" : "Weekly adherence")
+            : (isArabic ? "الالتزام الشهري" : "Monthly adherence"),
       };
     };
 
@@ -768,7 +774,7 @@ const response = await axios.get(
 
     const adherenceNote =
       doc.splitTextToSize(
-        adherence.note,
+        isArabic ? (selectedReport === "daily" ? "Today's adherence" : selectedReport === "weekly" ? "Weekly adherence" : "Monthly adherence") : adherence.note,
         180
       );
 
@@ -1021,39 +1027,39 @@ const response = await axios.get(
     const rows = [];
 
     rows.push([
-      "MediMind Caregiver Report",
+      (isArabic ? "تقرير مقدم الرعاية من MediMind" : "MediMind Caregiver Report"),
     ]);
 
     rows.push([
-      "Patient",
+      (isArabic ? "المريض" : "Patient"),
       selectedPatient
         ?.patientName ||
-        "Patient",
+        (isArabic ? "المريض" : "Patient"),
     ]);
 
     rows.push([
-      "Patient Email",
+      (isArabic ? "البريد الإلكتروني للمريض" : "Patient Email"),
       selectedPatientEmail,
     ]);
 
     rows.push([
-      "Report Type",
-      getReportTitle(),
+      (isArabic ? "نوع التقرير" : "Report Type"),
+      isArabic ? (selectedReport === "daily" ? "التقرير اليومي" : selectedReport === "weekly" ? "التقرير الأسبوعي" : "التقرير الشهري") : getReportTitle(),
     ]);
 
     rows.push([
-      "Period",
+      (isArabic ? "الفترة" : "Period"),
       getPeriodLabel(),
     ]);
 
     rows.push([]);
 
     rows.push([
-      "Taken",
-      "Missed",
-      "Skipped",
-      "Upcoming",
-      "Adherence",
+      (isArabic ? "تم تناولها" : "Taken"),
+      (isArabic ? "فائتة" : "Missed"),
+      (isArabic ? "تم تخطيها" : "Skipped"),
+      (isArabic ? "قادمة" : "Upcoming"),
+      (isArabic ? "الالتزام" : "Adherence"),
     ]);
 
     rows.push([
@@ -1073,17 +1079,17 @@ const response = await axios.get(
         ?.length > 0
     ) {
       rows.push([
-        "Daily Breakdown",
+        (isArabic ? "التفصيل اليومي" : "Daily Breakdown"),
       ]);
 
       rows.push([
-        "Day",
-        "Date",
-        "Taken",
-        "Missed",
-        "Skipped",
-        "Upcoming",
-        "Adherence",
+        (isArabic ? "اليوم" : "Day"),
+        (isArabic ? "التاريخ" : "Date"),
+        (isArabic ? "تم تناولها" : "Taken"),
+        (isArabic ? "فائتة" : "Missed"),
+        (isArabic ? "تم تخطيها" : "Skipped"),
+        (isArabic ? "قادمة" : "Upcoming"),
+        (isArabic ? "الالتزام" : "Adherence"),
       ]);
 
       reportData.dailyBreakdown.forEach(
@@ -1096,8 +1102,8 @@ const response = await axios.get(
           rows.push([
             selectedReport ===
             "weekly"
-              ? day.dayName
-              : `${day.dayNumber} ${day.dayName}`,
+              ? (isArabic ? new Date(`${day.date}T00:00:00`).toLocaleDateString("ar-OM", { weekday: "long" }) : day.dayName)
+              : `${day.dayNumber} ${isArabic ? new Date(`${day.date}T00:00:00`).toLocaleDateString("ar-OM", { weekday: "long" }) : day.dayName}`,
 
             day.date || "",
 
@@ -1118,15 +1124,15 @@ const response = await axios.get(
     }
 
     rows.push([
-      "Medication Doses",
+      (isArabic ? "الجرعات الدوائية" : "Medication Doses"),
     ]);
 
     rows.push([
-      "Medication",
-      "Dosage",
-      "Date",
-      "Time",
-      "Status",
+      (isArabic ? "الدواء" : "Medication"),
+      (isArabic ? "الجرعة" : "Dosage"),
+      (isArabic ? "التاريخ" : "Date"),
+      (isArabic ? "الوقت" : "Time"),
+      (isArabic ? "الحالة" : "Status"),
     ]);
 
     (reportData.doses ||
@@ -1148,7 +1154,7 @@ const response = await axios.get(
           dose.scheduledTime
         ),
 
-        dose.status || "",
+        isArabic ? (dose.status === "Taken" ? "تم تناولها" : dose.status === "Missed" ? "فائتة" : dose.status === "Skipped" ? "تم تخطيها" : dose.status === "Upcoming" ? "قادمة" : dose.status || "") : dose.status || "",
       ]);
     });
 
@@ -1228,15 +1234,99 @@ const response = await axios.get(
   return (
     <Container
       fluid
-      className="dashboard-page"
-      style={{
-        backgroundColor: "#f7f9fc",
-        minHeight: "100vh",
-      }}
+      className={`dashboard-page mm-caregiver-reports ${isDark ? "mm-reports-dark" : ""}`}
+      dir={isArabic ? "rtl" : "ltr"}
+      style={{ minHeight: "100vh" }}
     >
+      <style>{`
+        .mm-caregiver-reports {
+          background: #f7f9fc;
+          min-width: 0;
+          padding-left: 0 !important;
+          padding-right: 0 !important;
+          display: flex;
+          flex-direction: column;
+        }
+        .mm-caregiver-reports .mm-caregiver-reports-body {
+          flex: 1;
+          min-width: 0;
+        }
+        .mm-caregiver-reports .mm-report-panel {
+          min-width: 0;
+        }
+        .mm-caregiver-reports .mm-report-panel-content {
+          padding: 30px;
+        }
+        .mm-caregiver-reports .mm-report-heading {
+          display: flex;
+          align-items: flex-start;
+          justify-content: space-between;
+          gap: 12px;
+          flex-wrap: wrap;
+        }
+        .mm-caregiver-reports .mm-report-dose-row {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          gap: 12px;
+          min-width: 0;
+        }
+        .mm-caregiver-reports .mm-report-dose-row > div {
+          min-width: 0;
+          overflow-wrap: anywhere;
+        }
+        .mm-caregiver-reports .mm-report-dose-row > span {
+          flex-shrink: 0;
+        }
+        .mm-caregiver-reports[dir="rtl"] .mm-report-export-menu {
+          right: auto !important;
+          left: 0;
+        }
+        .mm-caregiver-reports.mm-reports-dark {
+          background: #101827;
+          color: #e5e7eb;
+        }
+        .mm-caregiver-reports.mm-reports-dark .card {
+          background: #1c2940;
+          color: #e5e7eb;
+          border-color: #334155 !important;
+        }
+        .mm-caregiver-reports.mm-reports-dark .text-muted {
+          color: #cbd5e1 !important;
+        }
+        .mm-caregiver-reports.mm-reports-dark .mm-report-panel {
+          background: #243957 !important;
+        }
+        .mm-caregiver-reports.mm-reports-dark .mm-report-tabs {
+          background: #304a70 !important;
+        }
+        .mm-caregiver-reports.mm-reports-dark .mm-report-panel-content { background: #243957; }
+        .mm-caregiver-reports.mm-reports-dark .mm-report-export-menu,
+        .mm-caregiver-reports.mm-reports-dark .mm-report-export-menu button { background: #243957 !important; color: #e5e7eb; }
+        .mm-caregiver-reports.mm-reports-dark .mm-report-tabs button { color: #e5e7eb !important; }
+        .mm-caregiver-reports.mm-reports-dark h2,
+        .mm-caregiver-reports.mm-reports-dark h4,
+        .mm-caregiver-reports.mm-reports-dark h5,
+        .mm-caregiver-reports.mm-reports-dark label { color: #b8d3ff !important; }
+        .mm-caregiver-reports.mm-reports-dark select { background: #101827; color: #e5e7eb; border-color: #52627c; }
+        @media (max-width: 600px) {
+          .mm-caregiver-reports .mm-caregiver-reports-body {
+            padding: 24px 12px !important;
+          }
+          .mm-caregiver-reports .mm-report-panel-content {
+            padding: 16px;
+          }
+          .mm-caregiver-reports .mm-report-dose-row {
+            flex-wrap: wrap;
+          }
+          .mm-caregiver-reports .mm-report-tabs button {
+            padding: 12px 6px !important;
+          }
+        }
+      `}</style>
       <CaregiverHeader />
 
-      <Row className="py-5 px-3">
+      <Row className="py-5 px-3 mm-caregiver-reports-body">
         <Col
           lg="10"
           xl="9"
@@ -1250,7 +1340,7 @@ const response = await axios.get(
                 marginBottom: "6px",
               }}
             >
-              Patient Reports
+              {isArabic ? "تقارير المرضى" : "Patient Reports"}
             </h2>
 
             <p
@@ -1259,8 +1349,9 @@ const response = await axios.get(
                 marginBottom: 0,
               }}
             >
-              Review adherence reports for
-              your linked patients.
+              {isArabic
+                ? "راجع تقارير الالتزام بالأدوية للمرضى المرتبطين بك."
+                : "Review adherence reports for your linked patients."}
             </p>
           </div>
 
@@ -1273,13 +1364,13 @@ const response = await axios.get(
           {loadingPatients ? (
             <Card>
               <CardBody className="text-center py-5">
-                Loading linked patients...
+                {isArabic ? "جارٍ تحميل المرضى المرتبطين..." : "Loading linked patients..."}
               </CardBody>
             </Card>
           ) : patients.length === 0 ? (
             <Card>
               <CardBody className="text-center py-5">
-                No linked patients yet.
+                {isArabic ? "لا يوجد مرضى مرتبطون بعد." : "No linked patients yet."}
               </CardBody>
             </Card>
           ) : (
@@ -1302,7 +1393,7 @@ const response = await axios.get(
                         "7px",
                     }}
                   >
-                    Select Patient
+                    {isArabic ? "اختيار المريض" : "Select Patient"}
                   </label>
 
                   <Input
@@ -1339,7 +1430,7 @@ const response = await axios.get(
               <div
                 style={{
                   backgroundColor:
-                    "#dce9f8",
+                    isDark ? "#243957" : "#dce9f8",
                   borderRadius:
                     "22px",
                   overflow:
@@ -1349,11 +1440,12 @@ const response = await axios.get(
                 }}
               >
                 <div
+                  className="mm-report-tabs"
                   style={{
                     display:
                       "flex",
                     backgroundColor:
-                      "#c5d8f0",
+                      isDark ? "#304a70" : "#c5d8f0",
                   }}
                 >
                   {tabs.map(
@@ -1380,8 +1472,8 @@ const response = await axios.get(
                               "18px",
                             backgroundColor:
                               active
-                                ? "#dce9f8"
-                                : "#c5d8f0",
+                                ? (isDark ? "#243957" : "#dce9f8")
+                                : (isDark ? "#304a70" : "#c5d8f0"),
                             color:
                               "#1e3a8a",
                             fontWeight:
@@ -1391,7 +1483,7 @@ const response = await axios.get(
                           }}
                         >
                           {
-                            tab.label
+                            isArabic ? (tab.key === "daily" ? "يومي" : tab.key === "weekly" ? "أسبوعي" : "شهري") : tab.label
                           }
                         </button>
                       );
@@ -1399,13 +1491,8 @@ const response = await axios.get(
                   )}
                 </div>
 
-                <div
-                  style={{
-                    padding:
-                      "30px",
-                  }}
-                >
-                  <div className="d-flex justify-content-between mb-4">
+                <div className="mm-report-panel-content">
+                  <div className="mm-report-heading mb-4">
                     <div>
                       <h4
                         style={{
@@ -1413,11 +1500,15 @@ const response = await axios.get(
                             "#1e3a8a",
                         }}
                       >
-                        {getReportTitle()}
+                        {isArabic
+                          ? (selectedReport === "daily" ? "التقرير اليومي" : selectedReport === "weekly" ? "التقرير الأسبوعي" : "التقرير الشهري")
+                          : getReportTitle()}
                       </h4>
 
                       <p className="text-muted mb-1">
-                        {getReportSubtitle()}
+                        {isArabic
+                          ? (selectedReport === "daily" ? "الالتزام بالأدوية اليوم." : selectedReport === "weekly" ? "الالتزام بالأدوية خلال آخر 7 أيام." : "الالتزام بالأدوية خلال هذا الشهر.")
+                          : getReportSubtitle()}
                       </p>
 
                       <small className="text-muted">
@@ -1443,11 +1534,12 @@ const response = await axios.get(
                           !reportData
                         }
                       >
-                        Export ▾
+                        {isArabic ? "تصدير ▾" : "Export ▾"}
                       </button>
 
                       {showExportMenu && (
                         <div
+                          className="mm-report-export-menu"
                           style={{
                             position:
                               "absolute",
@@ -1486,7 +1578,7 @@ const response = await axios.get(
                                 "left",
                             }}
                           >
-                            Export PDF
+                            {isArabic ? "تصدير PDF" : "Export PDF"}
                           </button>
 
                           <button
@@ -1509,7 +1601,7 @@ const response = await axios.get(
                                 "left",
                             }}
                           >
-                            Export CSV
+                            {isArabic ? "تصدير CSV" : "Export CSV"}
                           </button>
                         </div>
                       )}
@@ -1518,7 +1610,7 @@ const response = await axios.get(
 
                   {reportLoading ? (
                     <div className="text-center py-5">
-                      Loading report...
+                      {isArabic ? "جارٍ تحميل التقرير..." : "Loading report..."}
                     </div>
                   ) : reportData ? (
                     <>
@@ -1580,7 +1672,9 @@ const response = await axios.get(
 
                                   <span className="text-muted">
                                     {
-                                      label
+                                      isArabic
+                                        ? (label === "Taken" ? "تم تناولها" : label === "Missed" ? "فائتة" : label === "Skipped" ? "تم تخطيها" : "قادمة")
+                                        : label
                                     }
                                   </span>
                                 </CardBody>
@@ -1621,7 +1715,7 @@ const response = await axios.get(
                                 "#1e3a8a",
                             }}
                           >
-                            Medication Doses
+                            {isArabic ? "الجرعات الدوائية" : "Medication Doses"}
                           </h5>
 
                           {reportData
@@ -1636,7 +1730,7 @@ const response = await axios.get(
                                   key={
                                     dose._id
                                   }
-                                  className="d-flex justify-content-between py-3 border-bottom"
+                                  className="mm-report-dose-row py-3 border-bottom"
                                 >
                                   <div>
                                     <strong>
@@ -1661,16 +1755,16 @@ const response = await axios.get(
                                       dose.status
                                     )}
                                   >
-                                    {
-                                      dose.status
-                                    }
+                                    {isArabic
+                                      ? (dose.status === "Taken" ? "تم تناولها" : dose.status === "Missed" ? "فائتة" : dose.status === "Skipped" ? "تم تخطيها" : dose.status === "Upcoming" ? "قادمة" : dose.status)
+                                      : dose.status}
                                   </span>
                                 </div>
                               )
                             )
                           ) : (
                             <p className="text-muted mb-0">
-                              No medication doses found.
+                              {isArabic ? "لم يتم العثور على جرعات دوائية." : "No medication doses found."}
                             </p>
                           )}
                         </CardBody>
@@ -1683,6 +1777,7 @@ const response = await axios.get(
           )}
         </Col>
       </Row>
+      <Footer />
     </Container>
   );
 };
