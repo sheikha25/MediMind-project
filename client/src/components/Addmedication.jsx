@@ -84,99 +84,99 @@ const getMedicationDisplayName = (medication) => {
 
 const Addmedication = () => {
 
-const [language, setLanguage] = useState(
-  () => localStorage.getItem("medimindLanguage") || "en"
-);
-
-const isArabic = language === "ar";
-
-const t = (english, arabic) =>
-  isArabic ? arabic : english;
-
-useEffect(() => {
-  const handleLanguageChange = () => {
-    setLanguage(
-      localStorage.getItem("medimindLanguage") || "en"
-    );
-  };
-
-  window.addEventListener(
-    "medimind-language-change",
-    handleLanguageChange
+  const [language, setLanguage] = useState(
+    () => localStorage.getItem("medimindLanguage") || "en"
   );
 
-  return () => {
-    window.removeEventListener(
+  const isArabic = language === "ar";
+
+  const t = (english, arabic) =>
+    isArabic ? arabic : english;
+
+  useEffect(() => {
+    const handleLanguageChange = () => {
+      setLanguage(
+        localStorage.getItem("medimindLanguage") || "en"
+      );
+    };
+
+    window.addEventListener(
       "medimind-language-change",
       handleLanguageChange
     );
-  };
-}, []);
+
+    return () => {
+      window.removeEventListener(
+        "medimind-language-change",
+        handleLanguageChange
+      );
+    };
+  }, []);
 
 
-const translateDosageUnit = (unit) => {
-  if (!isArabic) return unit;
+  const translateDosageUnit = (unit) => {
+    if (!isArabic) return unit;
 
-  const units = {
-    tablet: "قرص",
-    tablets: "أقراص",
-    capsule: "كبسولة",
-    capsules: "كبسولات",
-    mg: "ملغ",
-    mcg: "ميكروغرام",
-    IU: "وحدة دولية",
-    ml: "مل",
-    g: "غرام",
-    units: "وحدات",
-    application: "مرة استخدام",
-    applications: "مرات استخدام",
-    puff: "بخة",
-    puffs: "بخات",
-    drop: "قطرة",
-    drops: "قطرات",
-    patch: "لصقة",
-    patches: "لصقات",
-    suppository: "تحميلة",
-    suppositories: "تحاميل",
-  };
+    const units = {
+      tablet: "قرص",
+      tablets: "أقراص",
+      capsule: "كبسولة",
+      capsules: "كبسولات",
+      mg: "ملغ",
+      mcg: "ميكروغرام",
+      IU: "وحدة دولية",
+      ml: "مل",
+      g: "غرام",
+      units: "وحدات",
+      application: "مرة استخدام",
+      applications: "مرات استخدام",
+      puff: "بخة",
+      puffs: "بخات",
+      drop: "قطرة",
+      drops: "قطرات",
+      patch: "لصقة",
+      patches: "لصقات",
+      suppository: "تحميلة",
+      suppositories: "تحاميل",
+    };
 
-  return units[unit] || unit;
-};
-
-
-const translateWeekday = (day) => {
-  if (!isArabic) return day;
-
-  const days = {
-    Sunday: "الأحد",
-    Monday: "الاثنين",
-    Tuesday: "الثلاثاء",
-    Wednesday: "الأربعاء",
-    Thursday: "الخميس",
-    Friday: "الجمعة",
-    Saturday: "السبت",
+    return units[unit] || unit;
   };
 
-  return days[day] || day;
-};
 
+  const translateWeekday = (day) => {
+    if (!isArabic) return day;
 
-const translateDoseLabel = (label) => {
-  const translations = {
-    "Morning Dose": "جرعة الصباح",
-    "Afternoon Dose": "جرعة الظهر",
-    "Evening Dose": "جرعة المساء",
-    "Night Dose": "جرعة الليل",
+    const days = {
+      Sunday: "الأحد",
+      Monday: "الاثنين",
+      Tuesday: "الثلاثاء",
+      Wednesday: "الأربعاء",
+      Thursday: "الخميس",
+      Friday: "الجمعة",
+      Saturday: "السبت",
+    };
+
+    return days[day] || day;
   };
 
-  if (!isArabic) return label;
 
-  if (/^Dose \d+$/.test(label)) {
-    return label.replace("Dose ", "الجرعة ");
-  }
+  const translateDoseLabel = (label) => {
+    const translations = {
+      "Morning Dose": "جرعة الصباح",
+      "Afternoon Dose": "جرعة الظهر",
+      "Evening Dose": "جرعة المساء",
+      "Night Dose": "جرعة الليل",
+    };
 
-  return translations[label] || label;
-};
+    if (!isArabic) return label;
+
+    if (/^Dose \d+$/.test(label)) {
+      return label.replace("Dose ", "الجرعة ");
+    }
+
+    return translations[label] || label;
+  };
 
 
   const now = new Date();
@@ -194,13 +194,13 @@ const translateDoseLabel = (label) => {
   const dailyRoutine = user?.dailyRoutine || null;
 
 
-const routineTimeOptions = [
-  { id: "wake", label: t("Wake Up", "الاستيقاظ"), time: dailyRoutine?.wake },
-  { id: "breakfast", label: t("Breakfast", "الإفطار"), time: dailyRoutine?.breakfast },
-  { id: "lunch", label: t("Lunch", "الغداء"), time: dailyRoutine?.lunch },
-  { id: "dinner", label: t("Dinner", "العشاء"), time: dailyRoutine?.dinner },
-  { id: "sleep", label: t("Sleep", "النوم"), time: dailyRoutine?.sleep },
-];
+  const routineTimeOptions = [
+    { id: "wake", label: t("Wake Up", "الاستيقاظ"), time: dailyRoutine?.wake },
+    { id: "breakfast", label: t("Breakfast", "الإفطار"), time: dailyRoutine?.breakfast },
+    { id: "lunch", label: t("Lunch", "الغداء"), time: dailyRoutine?.lunch },
+    { id: "dinner", label: t("Dinner", "العشاء"), time: dailyRoutine?.dinner },
+    { id: "sleep", label: t("Sleep", "النوم"), time: dailyRoutine?.sleep },
+  ];
 
 
   const [medicationSearch, setMedicationSearch] = useState("");
@@ -215,11 +215,11 @@ const routineTimeOptions = [
   const [medicationForm, setMedicationForm] = useState("");
 
   const [selectedMedication, setSelectedMedication] = useState(null);
-const [isManualEntry, setIsManualEntry] = useState(false);
+  const [isManualEntry, setIsManualEntry] = useState(false);
   // Stores a possible duplicate medication warning
-const [duplicateWarning, setDuplicateWarning] = useState(null);
+  const [duplicateWarning, setDuplicateWarning] = useState(null);
 
-const [duplicateConfirmed, setDuplicateConfirmed] = useState(false);
+  const [duplicateConfirmed, setDuplicateConfirmed] = useState(false);
   const [topicalDosage, setTopicalDosage] = useState("");
 
   const [frequency, setFrequency] =
@@ -248,7 +248,7 @@ const [duplicateConfirmed, setDuplicateConfirmed] = useState(false);
   const [reminderTimes, setReminderTimes] = useState([]);
 
   const [showRoutineTimeSelector, setShowRoutineTimeSelector] = useState(false);
-const [selectedRoutineActivities, setSelectedRoutineActivities] = useState([]);
+  const [selectedRoutineActivities, setSelectedRoutineActivities] = useState([]);
 
   const [startDate, setStartDate] =
     useState(
@@ -650,7 +650,7 @@ const [selectedRoutineActivities, setSelectedRoutineActivities] = useState([]);
     setMedicationSearch("");
 
     setSelectedMedication(null);
-setIsManualEntry(false);
+    setIsManualEntry(false);
     setShowMedicationSuggestions(false);
     setDosageAmount("");
     setDosageUnit("mg");
@@ -798,18 +798,18 @@ setIsManualEntry(false);
 
   const totalUnitsNeeded = getTotalUnitsNeeded();
 
- const saveMedication = async (confirmDuplicate = false) => {
+  const saveMedication = async (confirmDuplicate = false) => {
     if (!isManualEntry && !selectedMedication) {
-  setMessage(
-  t(
-    "Please select a medication from the Oman database, or choose 'Other Medication — enter manually'.",
-    "يرجى اختيار دواء من قاعدة بيانات الأدوية العُمانية، أو اختيار «دواء آخر — إدخال يدوي»."
-  )
-);
-  setMessageType("danger");
-  return;
-}
-  const finalFrequency =
+      setMessage(
+        t(
+          "Please select a medication from the Oman database, or choose 'Other Medication — enter manually'.",
+          "يرجى اختيار دواء من قاعدة بيانات الأدوية العُمانية، أو اختيار «دواء آخر — إدخال يدوي»."
+        )
+      );
+      setMessageType("danger");
+      return;
+    }
+    const finalFrequency =
       getFinalFrequency();
 
     if (frequency === "Other") {
@@ -820,12 +820,12 @@ setIsManualEntry(false);
         interval < 1 ||
         !["Hours", "Days", "Weeks"].includes(customUnit)
       ) {
-       setMessage(
-  t(
-    "Please enter a valid custom frequency.",
-    "يرجى إدخال تكرار مخصص صحيح."
-  )
-);
+        setMessage(
+          t(
+            "Please enter a valid custom frequency.",
+            "يرجى إدخال تكرار مخصص صحيح."
+          )
+        );
         setMessageType("danger");
         return;
       }
@@ -834,12 +834,12 @@ setIsManualEntry(false);
         customUnit === "Hours" &&
         (interval > 24 || 24 % interval !== 0)
       ) {
-       setMessage(
-  t(
-    "For hourly reminders, choose an interval that divides evenly into 24 hours.",
-    "للتذكيرات المتكررة بالساعات، اختر فترة زمنية تقسم 24 ساعة دون باقٍ."
-  )
-);
+        setMessage(
+          t(
+            "For hourly reminders, choose an interval that divides evenly into 24 hours.",
+            "للتذكيرات المتكررة بالساعات، اختر فترة زمنية تقسم 24 ساعة دون باقٍ."
+          )
+        );
         setMessageType("danger");
         return;
       }
@@ -874,11 +874,11 @@ setIsManualEntry(false);
 
       if (recognizedForm && medicationForm !== recognizedForm) {
         setMessage(
-  t(
-    `Invalid medication form. The selected medication is listed as ${recognizedForm} in the medication database.`,
-    `الشكل الدوائي غير صحيح. الدواء المحدد مُسجل في قاعدة البيانات بالشكل التالي: ${recognizedForm}.`
-  )
-);
+          t(
+            `Invalid medication form. The selected medication is listed as ${recognizedForm} in the medication database.`,
+            `الشكل الدوائي غير صحيح. الدواء المحدد مُسجل في قاعدة البيانات بالشكل التالي: ${recognizedForm}.`
+          )
+        );
         setMessageType("danger");
         return;
       }
@@ -891,11 +891,11 @@ setIsManualEntry(false);
       !medicationDosageUnits[medicationForm]
     ) {
       setMessage(
-  t(
-    "Please select a valid medication form.",
-    "يرجى اختيار شكل دوائي صحيح."
-  )
-);
+        t(
+          "Please select a valid medication form.",
+          "يرجى اختيار شكل دوائي صحيح."
+        )
+      );
       setMessageType("danger");
       return;
     }
@@ -904,22 +904,22 @@ setIsManualEntry(false);
       !medicationDosageUnits[medicationForm].includes(dosageUnit)
     ) {
       setMessage(
-  t(
-    "Please select a dosage unit appropriate for the medication form.",
-    "يرجى اختيار وحدة جرعة مناسبة للشكل الدوائي."
-  )
-);
+        t(
+          "Please select a dosage unit appropriate for the medication form.",
+          "يرجى اختيار وحدة جرعة مناسبة للشكل الدوائي."
+        )
+      );
       setMessageType("danger");
       return;
     }
 
     if (!user?.email) {
       setMessage(
-  t(
-    "Please log in before adding a medication.",
-    "يرجى تسجيل الدخول قبل إضافة دواء."
-  )
-);
+        t(
+          "Please log in before adding a medication.",
+          "يرجى تسجيل الدخول قبل إضافة دواء."
+        )
+      );
 
       setMessageType("danger");
       return;
@@ -932,11 +932,11 @@ setIsManualEntry(false);
       !timing
     ) {
       setMessage(
-  t(
-    "Please complete all required medication fields.",
-    "يرجى تعبئة جميع حقول الدواء المطلوبة."
-  )
-);
+        t(
+          "Please complete all required medication fields.",
+          "يرجى تعبئة جميع حقول الدواء المطلوبة."
+        )
+      );
 
       setMessageType("danger");
       return;
@@ -985,11 +985,11 @@ setIsManualEntry(false);
         minutes > 59
       ) {
         setMessage(
-  t(
-    "Please enter a valid timing offset.",
-    "يرجى إدخال مدة زمنية صحيحة."
-  )
-);
+          t(
+            "Please enter a valid timing offset.",
+            "يرجى إدخال مدة زمنية صحيحة."
+          )
+        );
 
         setMessageType("danger");
         return;
@@ -1002,11 +1002,11 @@ setIsManualEntry(false);
         totalTimingOffsetMinutes === 0
       ) {
         setMessage(
-  t(
-    "Please enter how long before or after the meal this medication should be taken.",
-    "يرجى تحديد المدة التي يجب تناول الدواء قبل الوجبة أو بعدها."
-  )
-);
+          t(
+            "Please enter how long before or after the meal this medication should be taken.",
+            "يرجى تحديد المدة التي يجب تناول الدواء قبل الوجبة أو بعدها."
+          )
+        );
 
         setMessageType("danger");
         return;
@@ -1020,11 +1020,11 @@ setIsManualEntry(false);
       Number(dosageAmount) <= 0
     ) {
       setMessage(
-  t(
-    "Please enter a valid dosage amount.",
-    "يرجى إدخال كمية جرعة صحيحة."
-  )
-);
+        t(
+          "Please enter a valid dosage amount.",
+          "يرجى إدخال كمية جرعة صحيحة."
+        )
+      );
 
       setMessageType("danger");
       return;
@@ -1037,56 +1037,56 @@ setIsManualEntry(false);
       (!Array.isArray(weeklyDay) || weeklyDay.length === 0)
     ) {
       setMessage(
-  t(
-    "Please select at least one day for weekly medication.",
-    "يرجى اختيار يوم واحد على الأقل للدواء الأسبوعي."
-  )
-);
+        t(
+          "Please select at least one day for weekly medication.",
+          "يرجى اختيار يوم واحد على الأقل للدواء الأسبوعي."
+        )
+      );
       setMessageType("danger");
       return;
     }
 
     if (!startDate) {
-     setMessage(
-  t(
-    "Please select the medication start date.",
-    "يرجى اختيار تاريخ بدء الدواء."
-  )
-);
+      setMessage(
+        t(
+          "Please select the medication start date.",
+          "يرجى اختيار تاريخ بدء الدواء."
+        )
+      );
       setMessageType("danger");
       return;
     }
 
     if (startDate < today) {
       setMessage(
-  t(
-    "Medication start date cannot be in the past.",
-    "لا يمكن أن يكون تاريخ بدء الدواء في الماضي."
-  )
-);
+        t(
+          "Medication start date cannot be in the past.",
+          "لا يمكن أن يكون تاريخ بدء الدواء في الماضي."
+        )
+      );
 
       setMessageType("danger");
       return;
     }
 
     if (!endDate) {
-     setMessage(
-  t(
-    "Please select the medication end date.",
-    "يرجى اختيار تاريخ انتهاء الدواء."
-  )
-);
+      setMessage(
+        t(
+          "Please select the medication end date.",
+          "يرجى اختيار تاريخ انتهاء الدواء."
+        )
+      );
       setMessageType("danger");
       return;
     }
 
     if (endDate < startDate) {
-     setMessage(
-  t(
-    "Medication end date cannot be earlier than start date.",
-    "لا يمكن أن يكون تاريخ انتهاء الدواء قبل تاريخ البدء."
-  )
-);
+      setMessage(
+        t(
+          "Medication end date cannot be earlier than start date.",
+          "لا يمكن أن يكون تاريخ انتهاء الدواء قبل تاريخ البدء."
+        )
+      );
       setMessageType("danger");
       return;
     }
@@ -1096,11 +1096,11 @@ setIsManualEntry(false);
       reminderTimes.length === 0
     ) {
       setMessage(
-  t(
-    "Please select at least one reminder time.",
-    "يرجى اختيار وقت تذكير واحد على الأقل."
-  )
-);
+        t(
+          "Please select at least one reminder time.",
+          "يرجى اختيار وقت تذكير واحد على الأقل."
+        )
+      );
 
       setMessageType("danger");
       return;
@@ -1114,11 +1114,11 @@ setIsManualEntry(false);
       )
     ) {
       setMessage(
-  t(
-    "Please select all required reminder times.",
-    "يرجى تحديد جميع أوقات التذكير المطلوبة."
-  )
-);
+        t(
+          "Please select all required reminder times.",
+          "يرجى تحديد جميع أوقات التذكير المطلوبة."
+        )
+      );
 
       setMessageType("danger");
       return;
@@ -1133,11 +1133,11 @@ setIsManualEntry(false);
       duplicateTimes
     ) {
       setMessage(
-  t(
-    "Please select a different time for each dose.",
-    "يرجى اختيار وقت مختلف لكل جرعة."
-  )
-);
+        t(
+          "Please select a different time for each dose.",
+          "يرجى اختيار وقت مختلف لكل جرعة."
+        )
+      );
 
       setMessageType("danger");
       return;
@@ -1154,27 +1154,27 @@ setIsManualEntry(false);
         user.email
       );
 
-     formData.append(
-  "medicationName",
-  medicationSearch.trim()
-);
+      formData.append(
+        "medicationName",
+        medicationSearch.trim()
+      );
 
-// Reference the selected medication in the Oman database.
-// Manual entries have no catalog ID.
-formData.append(
-  "medicationCatalogId",
-  selectedMedication?.id || ""
-);
+      // Reference the selected medication in the Oman database.
+      // Manual entries have no catalog ID.
+      formData.append(
+        "medicationCatalogId",
+        selectedMedication?.id || ""
+      );
 
-formData.append(
-  "confirmSimilarMedication",
-  String(confirmDuplicate)
-);
+      formData.append(
+        "confirmSimilarMedication",
+        String(confirmDuplicate)
+      );
 
-formData.append(
-  "dosage",
-  dosage
-);
+      formData.append(
+        "dosage",
+        dosage
+      );
 
       formData.append("medicationForm", medicationForm);
 
@@ -1247,50 +1247,50 @@ formData.append(
         response.data?.message ===
         "Medication saved successfully"
       ) {
-       setMessage(
-  t(
-    "Medication saved successfully.",
-    "تم حفظ الدواء بنجاح."
-  )
-);
+        setMessage(
+          t(
+            "Medication saved successfully.",
+            "تم حفظ الدواء بنجاح."
+          )
+        );
 
         setMessageType("success");
 
         clearForm();
       } else {
         setMessage(
-  response.data?.message ||
-  t(
-    "The medication could not be saved.",
-    "تعذر حفظ الدواء."
-  )
-);
+          response.data?.message ||
+          t(
+            "The medication could not be saved.",
+            "تعذر حفظ الدواء."
+          )
+        );
 
         setMessageType("danger");
       }
     } catch (error) {
       const warningData = error.response?.data;
 
-if (
-  error.response?.status === 409 &&
-  warningData?.requiresConfirmation === true
-) {
-  setDuplicateConfirmed(false);
-setDuplicateWarning(warningData);
-  return;
-}
+      if (
+        error.response?.status === 409 &&
+        warningData?.requiresConfirmation === true
+      ) {
+        setDuplicateConfirmed(false);
+        setDuplicateWarning(warningData);
+        return;
+      }
       console.error(
         "Medication save error:",
         error
       );
 
-     setMessage(
-  error.response?.data?.message ||
-  t(
-    "An error occurred while saving the medication.",
-    "حدث خطأ أثناء حفظ الدواء."
-  )
-);
+      setMessage(
+        error.response?.data?.message ||
+        t(
+          "An error occurred while saving the medication.",
+          "حدث خطأ أثناء حفظ الدواء."
+        )
+      );
 
       setMessageType("danger");
     } finally {
@@ -1299,215 +1299,215 @@ setDuplicateWarning(warningData);
   };
 
   return (
-  <Container
-  fluid
-  className="dashboard-page add-medication-page"
-  dir={isArabic ? "rtl" : "ltr"}
->
-    {duplicateWarning && (
-  <div
-    style={{
-      position: "fixed",
-      inset: 0,
-      backgroundColor: "rgba(0, 0, 0, 0.55)",
-      display: "flex",
-      justifyContent: "center",
-      alignItems: "center",
-      zIndex: 9999,
-      padding: "20px",
-    }}
-  >
-    <div className="duplicate-medication-dialog"
-dir={isArabic ? "rtl" : "ltr"}
-      role="alertdialog"
-      aria-modal="true"
-      aria-labelledby="duplicate-warning-title"
-      style={{
-        borderRadius: "16px",
-        padding: "24px",
-        width: "100%",
-        maxWidth: "440px",
-        boxShadow: "0 10px 35px rgba(0,0,0,0.2)",
-      }}
+    <Container
+      fluid
+      className="dashboard-page add-medication-page"
+      dir={isArabic ? "rtl" : "ltr"}
     >
-     
-<h3 id="duplicate-warning-title">
-  {duplicateWarning.warningType === "MULTIPLE_WARNINGS"
-    ? t(
-        "Multiple Medication Safety Warnings",
-        "تحذيرات متعددة تتعلق بسلامة الدواء"
-      )
-    : duplicateWarning.warningType === "SIMILAR_NAME"
-      ? t(
-          "Similar Medication Name",
-          "تشابه في اسم الدواء"
-        )
-      : t(
-          "Possible Duplicate Medication",
-          "احتمال تكرار الدواء"
-        )}
-</h3>
-
-
-
-      
-<div className="duplicate-medication-comparison">
-  <p>
-    <strong>{t("Adding:", "الدواء الجديد:")}</strong>{" "}
-    
-
-{selectedMedication
-  ? getMedicationDisplayName(selectedMedication)
-  : medicationSearch}
-
-
-  </p>
-</div>
-
-
-      {duplicateWarning.matches?.map((match, index) => (
+      {duplicateWarning && (
         <div
-          key={index}
           style={{
-             backgroundColor: "#FFF3DC",
-  color: "#253047",
-  padding: "12px",
-  borderRadius: "8px",
+            position: "fixed",
+            inset: 0,
+            backgroundColor: "rgba(0, 0, 0, 0.55)",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            zIndex: 9999,
+            padding: "20px",
           }}
         >
-        
-<p style={{ marginBottom: "6px", color: "#253047" }}>
-  <strong>{t("Existing:", "الدواء المسجل:")}</strong>{" "}
-  <span style={{ color: "#253047" }}>
-    {match.medicationName}
-  </span>
-</p>
+          <div className="duplicate-medication-dialog"
+            dir={isArabic ? "rtl" : "ltr"}
+            role="alertdialog"
+            aria-modal="true"
+            aria-labelledby="duplicate-warning-title"
+            style={{
+              borderRadius: "16px",
+              padding: "24px",
+              width: "100%",
+              maxWidth: "440px",
+              boxShadow: "0 10px 35px rgba(0,0,0,0.2)",
+            }}
+          >
+
+            <h3 id="duplicate-warning-title">
+              {duplicateWarning.warningType === "MULTIPLE_WARNINGS"
+                ? t(
+                  "Multiple Medication Safety Warnings",
+                  "تحذيرات متعددة تتعلق بسلامة الدواء"
+                )
+                : duplicateWarning.warningType === "SIMILAR_NAME"
+                  ? t(
+                    "Similar Medication Name",
+                    "تشابه في اسم الدواء"
+                  )
+                  : t(
+                    "Possible Duplicate Medication",
+                    "احتمال تكرار الدواء"
+                  )}
+            </h3>
 
 
-          {match.sharedIngredients?.length > 0 ? (
-  <p style={{ marginBottom: 0 , color: "#253047"}}>
-    {t("Shared ingredients:", "المواد الفعالة المشتركة:")}{" "}
 
-<span style={{ color: "#253047" }}>
-  {match.sharedIngredients.join(", ")}
-</span>
 
-  </p>
-) : (
-  <p style={{ marginBottom: 0 }}>
-    {t(
-  "Possible similar medication name. Please verify that you selected the correct medication.",
-  "قد يكون اسم هذا الدواء مشابهًا لاسم دواء آخر. يرجى التأكد من اختيار الدواء الصحيح."
-)}
-  </p>
-)}
+            <div className="duplicate-medication-comparison">
+              <p>
+                <strong>{t("Adding:", "الدواء الجديد:")}</strong>{" "}
+
+
+                {selectedMedication
+                  ? getMedicationDisplayName(selectedMedication)
+                  : medicationSearch}
+
+
+              </p>
+            </div>
+
+
+            {duplicateWarning.matches?.map((match, index) => (
+              <div
+                key={index}
+                style={{
+                  backgroundColor: "#FFF3DC",
+                  color: "#253047",
+                  padding: "12px",
+                  borderRadius: "8px",
+                }}
+              >
+
+                <p style={{ marginBottom: "6px", color: "#253047" }}>
+                  <strong>{t("Existing:", "الدواء المسجل:")}</strong>{" "}
+                  <span style={{ color: "#253047" }}>
+                    {match.medicationName}
+                  </span>
+                </p>
+
+
+                {match.sharedIngredients?.length > 0 ? (
+                  <p style={{ marginBottom: 0, color: "#253047" }}>
+                    {t("Shared ingredients:", "المواد الفعالة المشتركة:")}{" "}
+
+                    <span style={{ color: "#253047" }}>
+                      {match.sharedIngredients.join(", ")}
+                    </span>
+
+                  </p>
+                ) : (
+                  <p style={{ marginBottom: 0 }}>
+                    {t(
+                      "Possible similar medication name. Please verify that you selected the correct medication.",
+                      "قد يكون اسم هذا الدواء مشابهًا لاسم دواء آخر. يرجى التأكد من اختيار الدواء الصحيح."
+                    )}
+                  </p>
+                )}
+              </div>
+            ))}
+
+
+
+
+            <p style={{ color: "#FFFFFF", lineHeight: "1.7" }}>
+              {duplicateWarning.warningType === "MULTIPLE_WARNINGS"
+                ? t(
+                  "This medication may share an active ingredient with an existing medication and has a similar name. Please review both warnings before continuing.",
+                  "قد يحتوي هذا الدواء على مادة فعالة مشتركة مع دواء مسجل مسبقًا، كما أن اسمه مشابه له. يُرجى مراجعة التحذيرين قبل المتابعة."
+                )
+                : duplicateWarning.warningType === "DUPLICATE_INGREDIENT"
+                  ? t(
+                    "This medication may contain an active ingredient already present in your medication list. Please review before continuing.",
+                    "قد يحتوي هذا الدواء على مادة فعالة موجودة بالفعل في قائمة أدويتك. يُرجى مراجعة التحذير قبل المتابعة."
+                  )
+                  : duplicateWarning.warningType === "SIMILAR_NAME"
+                    ? t(
+                      "This medication has a name similar to an existing medication. Please verify that you selected the correct medication.",
+                      "اسم هذا الدواء مشابه لاسم دواء مسجل مسبقًا. يُرجى التأكد من اختيار الدواء الصحيح."
+                    )
+                    : duplicateWarning.message}
+            </p>
+
+            <label style={{ display: "flex", gap: "10px", marginTop: "12px" }}>
+              <input
+                type="checkbox"
+                checked={duplicateConfirmed}
+                onChange={(e) => setDuplicateConfirmed(e.target.checked)}
+              />
+              {t(
+                "I confirm that I have checked this medication with my doctor or pharmacist.",
+                "أؤكد أنني راجعت هذا الدواء مع الطبيب أو الصيدلي."
+              )}
+            </label>
+            <div
+              style={{
+                display: "flex",
+                gap: "12px",
+                justifyContent: "flex-end",
+                marginTop: "20px",
+              }}
+            >
+              <button
+                type="button"
+                onClick={() => {
+                  setDuplicateWarning(null);
+                  setDuplicateConfirmed(false);
+                }}
+                style={{
+                  padding: "10px 16px",
+                  borderRadius: "8px",
+                  border: "1px solid #cccccc",
+                  backgroundColor: "#ffffff",
+                  color: "#222222",
+                  cursor: "pointer",
+                }}
+              >
+                {t("Cancel", "إلغاء")}
+              </button>
+
+              <button
+                type="button"
+                disabled={isSaving || !duplicateConfirmed}
+                onClick={() => {
+                  setDuplicateWarning(null);
+                  setDuplicateConfirmed(false);
+                  saveMedication(true);
+                }}
+                style={{
+                  padding: "10px 16px",
+                  borderRadius: "8px",
+                  border: "none",
+                  backgroundColor:
+                    duplicateConfirmed ? "#1e3a8a" : "#a9b9c9",
+                  color: "#ffffff",
+                  cursor:
+                    isSaving || !duplicateConfirmed
+                      ? "not-allowed"
+                      : "pointer",
+                }}
+              >
+                {t("Confirm and Add", "تأكيد وإضافة")}
+              </button>
+            </div>
+          </div>
         </div>
-      ))}
+      )}
 
-    
-
-
-<p style={{ color: "#FFFFFF", lineHeight: "1.7" }}>
-  {duplicateWarning.warningType === "MULTIPLE_WARNINGS"
-    ? t(
-        "This medication may share an active ingredient with an existing medication and has a similar name. Please review both warnings before continuing.",
-        "قد يحتوي هذا الدواء على مادة فعالة مشتركة مع دواء مسجل مسبقًا، كما أن اسمه مشابه له. يُرجى مراجعة التحذيرين قبل المتابعة."
-      )
-    : duplicateWarning.warningType === "DUPLICATE_INGREDIENT"
-      ? t(
-          "This medication may contain an active ingredient already present in your medication list. Please review before continuing.",
-          "قد يحتوي هذا الدواء على مادة فعالة موجودة بالفعل في قائمة أدويتك. يُرجى مراجعة التحذير قبل المتابعة."
-        )
-      : duplicateWarning.warningType === "SIMILAR_NAME"
-        ? t(
-            "This medication has a name similar to an existing medication. Please verify that you selected the correct medication.",
-            "اسم هذا الدواء مشابه لاسم دواء مسجل مسبقًا. يُرجى التأكد من اختيار الدواء الصحيح."
-          )
-        : duplicateWarning.message}
-</p>
-
-<label style={{ display: "flex", gap: "10px", marginTop: "12px" }}>
-  <input
-    type="checkbox"
-    checked={duplicateConfirmed}
-    onChange={(e) => setDuplicateConfirmed(e.target.checked)}
-  />
-  {t(
-  "I confirm that I have checked this medication with my doctor or pharmacist.",
-  "أؤكد أنني راجعت هذا الدواء مع الطبيب أو الصيدلي."
-)}
-</label>
-      <div
-        style={{
-          display: "flex",
-          gap: "12px",
-          justifyContent: "flex-end",
-          marginTop: "20px",
-        }}
-      >
-        <button
-          type="button"
-          onClick={() => {
-  setDuplicateWarning(null);
-  setDuplicateConfirmed(false);
-}}
-          style={{
-            padding: "10px 16px",
-            borderRadius: "8px",
-            border: "1px solid #cccccc",
-            backgroundColor: "#ffffff",
-            color: "#222222",
-            cursor: "pointer",
-          }}
-        >
-          {t("Cancel", "إلغاء")}
-        </button>
-
-        <button
-  type="button"
-  disabled={isSaving || !duplicateConfirmed}
-  onClick={() => {
-    setDuplicateWarning(null);
-    setDuplicateConfirmed(false);
-    saveMedication(true);
-  }}
-  style={{
-    padding: "10px 16px",
-    borderRadius: "8px",
-    border: "none",
-    backgroundColor:
-      duplicateConfirmed ? "#1e3a8a" : "#a9b9c9",
-    color: "#ffffff",
-    cursor:
-      isSaving || !duplicateConfirmed
-        ? "not-allowed"
-        : "pointer",
-  }}
->
- {t("Confirm and Add", "تأكيد وإضافة")}
-</button>
-      </div>
-    </div>
-  </div>
-)}
-    
       <Header />
 
       <Row className="py-5 px-3 justify-content-center">
         <Col lg="8" xl="7">
-         
-<div className="mb-4">
-  <h2 className="add-medication-title">
-    {t("Add New Medication", "إضافة دواء جديد")}
-  </h2>
 
-  <p className="add-medication-description">
-    {t(
-      "Enter the medication details manually or upload a prescription for AI-assisted entry.",
-      "أدخل تفاصيل الدواء يدويًا أو ارفع الوصفة الطبية للمساعدة في إدخال البيانات باستخدام الذكاء الاصطناعي."
-    )}
-  </p>
-</div>
+          <div className="mb-4">
+            <h2 className="add-medication-title">
+              {t("Add New Medication", "إضافة دواء جديد")}
+            </h2>
+
+            <p className="add-medication-description">
+              {t(
+                "Enter the medication details manually or upload a prescription for AI-assisted entry.",
+                "أدخل تفاصيل الدواء يدويًا أو ارفع الوصفة الطبية للمساعدة في إدخال البيانات باستخدام الذكاء الاصطناعي."
+              )}
+            </p>
+          </div>
 
 
           <Card
@@ -1529,17 +1529,17 @@ dir={isArabic ? "rtl" : "ltr"}
 
               <FormGroup>
                 <Label for="medicationName">
-  {t("Medication Name", "اسم الدواء")}{" "}
-  <span style={{ color: "#dc3545" }}>*</span>
-</Label>
+                  {t("Medication Name", "اسم الدواء")}{" "}
+                  <span style={{ color: "#dc3545" }}>*</span>
+                </Label>
 
                 <Input
                   id="medicationName"
                   type="text"
                   placeholder={t(
-  "Type medication name...",
-  "اكتب اسم الدواء بالإنجليزية..."
-)}
+                    "Type medication name...",
+                    "اكتب اسم الدواء بالإنجليزية..."
+                  )}
                   autoComplete="off"
                   value={
                     selectedMedication
@@ -1551,8 +1551,8 @@ dir={isArabic ? "rtl" : "ltr"}
 
 
                     setMedicationSearch(value);
-setSelectedMedication(null);
-setIsManualEntry(false);
+                    setSelectedMedication(null);
+                    setIsManualEntry(false);
 
                     setShowMedicationSuggestions(
                       value.trim().length >= 2
@@ -1626,9 +1626,9 @@ setIsManualEntry(false);
                             setMedicationSearch(medication.name);
 
                             setSelectedMedication(medication);
-setIsManualEntry(false);
+                            setIsManualEntry(false);
 
-setShowMedicationSuggestions(false);
+                            setShowMedicationSuggestions(false);
                             setMessage("");
 
                             // Automatically select the medication form.
@@ -1714,7 +1714,7 @@ setShowMedicationSuggestions(false);
                                   marginBottom: "3px",
                                 }}
                               >
-                               {t("Active Ingredient:", "المادة الفعالة:")}{" "}
+                                {t("Active Ingredient:", "المادة الفعالة:")}{" "}
                                 {[
                                   medication.activeIngredient1,
                                   medication.activeIngredient2,
@@ -1727,33 +1727,33 @@ setShowMedicationSuggestions(false);
                           <small style={{ color: "#6c757d" }}>
 
                             {medication.strength &&
-  medication.strength !== "Unknown"
-  ? `${t("Strength:", "التركيز:")} ${medication.strength}`
-  : t("Strength not listed", "التركيز غير مذكور")}
+                              medication.strength !== "Unknown"
+                              ? `${t("Strength:", "التركيز:")} ${medication.strength}`
+                              : t("Strength not listed", "التركيز غير مذكور")}
 
-                           {medication.form &&
-  medication.form !== "Unknown" &&
-  ` | ${t("Form:", "الشكل الدوائي:")} ${medication.form}`}
+                            {medication.form &&
+                              medication.form !== "Unknown" &&
+                              ` | ${t("Form:", "الشكل الدوائي:")} ${medication.form}`}
                           </small>
                         </div>
                       ))}
 
                       {matches.length === 0 && (
                         <div style={{ padding: "10px 12px", color: "#6c757d" }}>
-                         {t(
-  "No matching medication found.",
-  "لم يتم العثور على دواء مطابق."
-)}
+                          {t(
+                            "No matching medication found.",
+                            "لم يتم العثور على دواء مطابق."
+                          )}
                         </div>
                       )}
 
                       <div
-                       onClick={() => {
-  setIsManualEntry(true);
-  setSelectedMedication(null);
-  setShowMedicationSuggestions(false);
-  setMessage("");
-}}
+                        onClick={() => {
+                          setIsManualEntry(true);
+                          setSelectedMedication(null);
+                          setShowMedicationSuggestions(false);
+                          setMessage("");
+                        }}
                         style={{
                           padding: "10px 12px",
                           cursor: "pointer",
@@ -1761,10 +1761,10 @@ setShowMedicationSuggestions(false);
                           fontWeight: "600",
                         }}
                       >
-                       {t(
-  "Other Medication — enter manually",
-  "دواء آخر — إدخال يدوي"
-)}
+                        {t(
+                          "Other Medication — enter manually",
+                          "دواء آخر — إدخال يدوي"
+                        )}
                       </div>
                     </div>
                   );
@@ -1774,9 +1774,9 @@ setShowMedicationSuggestions(false);
 
               <FormGroup>
                 <Label for="medicationForm">
-  {t("Medication Form", "الشكل الدوائي")}{" "}
-  <span className="text-danger">*</span>
-</Label>
+                  {t("Medication Form", "الشكل الدوائي")}{" "}
+                  <span className="text-danger">*</span>
+                </Label>
 
                 <Input
                   id="medicationForm"
@@ -1792,27 +1792,27 @@ setShowMedicationSuggestions(false);
                     setMessage("");
                   }}
                 >
-                  
-<option value="">
-  {t("Select medication form", "اختر الشكل الدوائي")}
-</option>
-<option value="Tablet">{t("Tablet", "أقراص")}</option>
-<option value="Capsule">{t("Capsule", "كبسولات")}</option>
-<option value="Injection">{t("Injection", "حقن")}</option>
-<option value="Cream/Ointment">
-  {t("Cream / Ointment", "كريم / مرهم")}
-</option>
-<option value="Inhaler">{t("Inhaler", "بخاخ")}</option>
-<option value="Eye Drops">{t("Eye Drops", "قطرة عين")}</option>
-<option value="Ear Drops">{t("Ear Drops", "قطرة أذن")}</option>
-<option value="Liquid/Syrup">
-  {t("Liquid / Syrup", "سائل / شراب")}
-</option>
-<option value="Patch">{t("Patch", "لصقة طبية")}</option>
-<option value="Suppository">
-  {t("Suppository", "تحاميل")}
-</option>
-<option value="Other">{t("Other", "أخرى")}</option>
+
+                  <option value="">
+                    {t("Select medication form", "اختر الشكل الدوائي")}
+                  </option>
+                  <option value="Tablet">{t("Tablet", "أقراص")}</option>
+                  <option value="Capsule">{t("Capsule", "كبسولات")}</option>
+                  <option value="Injection">{t("Injection", "حقن")}</option>
+                  <option value="Cream/Ointment">
+                    {t("Cream / Ointment", "كريم / مرهم")}
+                  </option>
+                  <option value="Inhaler">{t("Inhaler", "بخاخ")}</option>
+                  <option value="Eye Drops">{t("Eye Drops", "قطرة عين")}</option>
+                  <option value="Ear Drops">{t("Ear Drops", "قطرة أذن")}</option>
+                  <option value="Liquid/Syrup">
+                    {t("Liquid / Syrup", "سائل / شراب")}
+                  </option>
+                  <option value="Patch">{t("Patch", "لصقة طبية")}</option>
+                  <option value="Suppository">
+                    {t("Suppository", "تحاميل")}
+                  </option>
+                  <option value="Other">{t("Other", "أخرى")}</option>
 
                 </Input>
               </FormGroup>
@@ -1820,16 +1820,16 @@ setShowMedicationSuggestions(false);
               {medicationForm === "Cream/Ointment" && (
                 <FormGroup>
                   <Label for="topicalDosage">
-  {t("Application Instructions", "تعليمات الاستخدام")}
-</Label>
+                    {t("Application Instructions", "تعليمات الاستخدام")}
+                  </Label>
 
                   <Input
                     id="topicalDosage"
                     type="text"
-                   placeholder={t(
-  "e.g. Apply a thin layer to the affected area",
-  "مثال: ضع طبقة رقيقة على المنطقة المصابة"
-)}
+                    placeholder={t(
+                      "e.g. Apply a thin layer to the affected area",
+                      "مثال: ضع طبقة رقيقة على المنطقة المصابة"
+                    )}
                     value={topicalDosage}
                     onChange={(event) => {
                       setTopicalDosage(event.target.value);
@@ -1841,7 +1841,7 @@ setShowMedicationSuggestions(false);
 
               <FormGroup>
                 <Label>
-                 {t("Dosage", "الجرعة")}{" "}
+                  {t("Dosage", "الجرعة")}{" "}
                   <span
                     style={{
                       color: "#dc3545",
@@ -1896,9 +1896,9 @@ setShowMedicationSuggestions(false);
                     >
                       {(medicationDosageUnits[medicationForm] || medicationDosageUnits.Other).map(
                         (unit) => (
-                         <option key={unit} value={unit}>
-  {translateDosageUnit(unit)}
-</option>
+                          <option key={unit} value={unit}>
+                            {translateDosageUnit(unit)}
+                          </option>
                         )
                       )}
                     </Input>
@@ -1908,7 +1908,7 @@ setShowMedicationSuggestions(false);
 
               <FormGroup>
                 <Label for="frequency">
-                 {t("Frequency", "التكرار")}{" "}
+                  {t("Frequency", "التكرار")}{" "}
                   <span
                     style={{
                       color: "#dc3545",
@@ -1947,46 +1947,46 @@ setShowMedicationSuggestions(false);
                     setMessage("");
                   }}
                 >
-                  
-<option value="">
-  {t("Select frequency", "اختر التكرار")}
-</option>
 
-<option value="Once daily">
-  {t("Once daily", "مرة واحدة يوميًا")}
-</option>
+                  <option value="">
+                    {t("Select frequency", "اختر التكرار")}
+                  </option>
 
-<option value="Twice daily">
-  {t("Twice daily", "مرتين يوميًا")}
-</option>
+                  <option value="Once daily">
+                    {t("Once daily", "مرة واحدة يوميًا")}
+                  </option>
 
-<option value="Three times daily">
-  {t("Three times daily", "ثلاث مرات يوميًا")}
-</option>
+                  <option value="Twice daily">
+                    {t("Twice daily", "مرتين يوميًا")}
+                  </option>
 
-<option value="Every 6 hours">
-  {t("Every 6 hours", "كل 6 ساعات")}
-</option>
+                  <option value="Three times daily">
+                    {t("Three times daily", "ثلاث مرات يوميًا")}
+                  </option>
 
-<option value="Every 8 hours">
-  {t("Every 8 hours", "كل 8 ساعات")}
-</option>
+                  <option value="Every 6 hours">
+                    {t("Every 6 hours", "كل 6 ساعات")}
+                  </option>
 
-<option value="Every 12 hours">
-  {t("Every 12 hours", "كل 12 ساعة")}
-</option>
+                  <option value="Every 8 hours">
+                    {t("Every 8 hours", "كل 8 ساعات")}
+                  </option>
 
-<option value="Weekly">
-  {t("Weekly", "أسبوعيًا")}
-</option>
+                  <option value="Every 12 hours">
+                    {t("Every 12 hours", "كل 12 ساعة")}
+                  </option>
 
-<option value="As needed">
-  {t("As needed", "عند الحاجة")}
-</option>
+                  <option value="Weekly">
+                    {t("Weekly", "أسبوعيًا")}
+                  </option>
 
-<option value="Other">
-  {t("Other", "أخرى")}
-</option>
+                  <option value="As needed">
+                    {t("As needed", "عند الحاجة")}
+                  </option>
+
+                  <option value="Other">
+                    {t("Other", "أخرى")}
+                  </option>
 
                 </Input>
               </FormGroup>
@@ -1994,8 +1994,8 @@ setShowMedicationSuggestions(false);
 
                 <FormGroup>
                   <Label>
-                   {t("Days of the Week", "أيام الأسبوع")}{" "}
-<span className="text-danger">*</span>
+                    {t("Days of the Week", "أيام الأسبوع")}{" "}
+                    <span className="text-danger">*</span>
                   </Label>
 
                   <div className="d-flex flex-wrap gap-3">
@@ -2039,8 +2039,8 @@ setShowMedicationSuggestions(false);
                 <>
                   <FormGroup>
                     <Label for="customInterval">
-                     {t("Repeat Every", "التكرار كل")}{" "}
-<span className="text-danger">*</span>
+                      {t("Repeat Every", "التكرار كل")}{" "}
+                      <span className="text-danger">*</span>
                     </Label>
 
                     <Input
@@ -2059,8 +2059,8 @@ setShowMedicationSuggestions(false);
 
                   <FormGroup>
                     <Label for="customUnit">
-                     {t("Time Unit", "وحدة الوقت")}{" "}
-<span className="text-danger">*</span>
+                      {t("Time Unit", "وحدة الوقت")}{" "}
+                      <span className="text-danger">*</span>
                     </Label>
 
                     <Input
@@ -2073,8 +2073,8 @@ setShowMedicationSuggestions(false);
                       }}
                     >
                       <option value="Hours">{t("Hours", "ساعات")}</option>
-<option value="Days">{t("Days", "أيام")}</option>
-<option value="Weeks">{t("Weeks", "أسابيع")}</option>
+                      <option value="Days">{t("Days", "أيام")}</option>
+                      <option value="Weeks">{t("Weeks", "أسابيع")}</option>
                     </Input>
                   </FormGroup>
                 </>
@@ -2100,11 +2100,11 @@ setShowMedicationSuggestions(false);
                     const selectedTiming =
                       event.target.value;
 
-                   setTiming(selectedTiming);
-setSelectedRoutineActivities([]);
-setReminderTimes((currentTimes) =>
-  currentTimes.map(() => "")
-);
+                    setTiming(selectedTiming);
+                    setSelectedRoutineActivities([]);
+                    setReminderTimes((currentTimes) =>
+                      currentTimes.map(() => "")
+                    );
 
                     const needsOffset =
                       /^(Before|After) (Meal|Breakfast|Lunch|Dinner)$/.test(
@@ -2119,65 +2119,65 @@ setReminderTimes((currentTimes) =>
                     setMessage("");
                   }}
                 >
-                 
-<option value="Before Meal">
-  {t("Before Meals (Multiple Doses)", "قبل الوجبات (جرعات متعددة)")}
-</option>
-<option value="With Meal">
-  {t("With Meals (Multiple Doses)", "مع الوجبات (جرعات متعددة)")}
-</option>
-<option value="After Meal">
-  {t("After Meals (Multiple Doses)", "بعد الوجبات (جرعات متعددة)")}
-</option>
 
-<option value="Before Breakfast">
-  {t("Before Breakfast", "قبل الإفطار")}
-</option>
-<option value="With Breakfast">
-  {t("With Breakfast", "مع الإفطار")}
-</option>
-<option value="After Breakfast">
-  {t("After Breakfast", "بعد الإفطار")}
-</option>
+                  <option value="Before Meal">
+                    {t("Before Meals (Multiple Doses)", "قبل الوجبات (جرعات متعددة)")}
+                  </option>
+                  <option value="With Meal">
+                    {t("With Meals (Multiple Doses)", "مع الوجبات (جرعات متعددة)")}
+                  </option>
+                  <option value="After Meal">
+                    {t("After Meals (Multiple Doses)", "بعد الوجبات (جرعات متعددة)")}
+                  </option>
 
-<option value="Before Lunch">
-  {t("Before Lunch", "قبل الغداء")}
-</option>
-<option value="With Lunch">
-  {t("With Lunch", "مع الغداء")}
-</option>
-<option value="After Lunch">
-  {t("After Lunch", "بعد الغداء")}
-</option>
+                  <option value="Before Breakfast">
+                    {t("Before Breakfast", "قبل الإفطار")}
+                  </option>
+                  <option value="With Breakfast">
+                    {t("With Breakfast", "مع الإفطار")}
+                  </option>
+                  <option value="After Breakfast">
+                    {t("After Breakfast", "بعد الإفطار")}
+                  </option>
 
-<option value="Before Dinner">
-  {t("Before Dinner", "قبل العشاء")}
-</option>
-<option value="With Dinner">
-  {t("With Dinner", "مع العشاء")}
-</option>
-<option value="After Dinner">
-  {t("After Dinner", "بعد العشاء")}
-</option>
+                  <option value="Before Lunch">
+                    {t("Before Lunch", "قبل الغداء")}
+                  </option>
+                  <option value="With Lunch">
+                    {t("With Lunch", "مع الغداء")}
+                  </option>
+                  <option value="After Lunch">
+                    {t("After Lunch", "بعد الغداء")}
+                  </option>
 
-<option value="Morning">
-  {t("Morning", "الصباح")}
-</option>
-<option value="At Wake Time">
-  {t("At Wake Time", "عند الاستيقاظ")}
-</option>
-<option value="Afternoon">
-  {t("Afternoon", "بعد الظهر")}
-</option>
-<option value="Evening">
-  {t("Evening", "المساء")}
-</option>
-<option value="Before Sleep">
-  {t("Before Sleep", "قبل النوم")}
-</option>
-<option value="Any Time">
-  {t("Any Time", "في أي وقت")}
-</option>
+                  <option value="Before Dinner">
+                    {t("Before Dinner", "قبل العشاء")}
+                  </option>
+                  <option value="With Dinner">
+                    {t("With Dinner", "مع العشاء")}
+                  </option>
+                  <option value="After Dinner">
+                    {t("After Dinner", "بعد العشاء")}
+                  </option>
+
+                  <option value="Morning">
+                    {t("Morning", "الصباح")}
+                  </option>
+                  <option value="At Wake Time">
+                    {t("At Wake Time", "عند الاستيقاظ")}
+                  </option>
+                  <option value="Afternoon">
+                    {t("Afternoon", "بعد الظهر")}
+                  </option>
+                  <option value="Evening">
+                    {t("Evening", "المساء")}
+                  </option>
+                  <option value="Before Sleep">
+                    {t("Before Sleep", "قبل النوم")}
+                  </option>
+                  <option value="Any Time">
+                    {t("Any Time", "في أي وقت")}
+                  </option>
 
                 </Input>
               </FormGroup>
@@ -2194,9 +2194,9 @@ setReminderTimes((currentTimes) =>
                     {!timing.startsWith("With ") && (
                       <FormGroup>
                         <Label>
-  {timing.startsWith("After ")
-    ? t("How long after the meal?", "بعد كم من الوقت من الوجبة؟")
-    : t("How long before the meal?", "قبل كم من الوقت من الوجبة؟")}{" "}
+                          {timing.startsWith("After ")
+                            ? t("How long after the meal?", "بعد كم من الوقت من الوجبة؟")
+                            : t("How long before the meal?", "قبل كم من الوقت من الوجبة؟")}{" "}
                           <span
                             style={{
                               color:
@@ -2242,7 +2242,7 @@ setReminderTimes((currentTimes) =>
                               min="0"
                               max="59"
                               step="1"
-                             placeholder={t("Minutes", "الدقائق")}
+                              placeholder={t("Minutes", "الدقائق")}
                               value={
                                 timingOffsetMinutes
                               }
@@ -2264,11 +2264,11 @@ setReminderTimes((currentTimes) =>
                         </Row>
 
                         <small className="text-muted">
-  {t(
-    "Enter the timing given in the medication instructions or by your healthcare provider.",
-    "أدخل الوقت المحدد في تعليمات الدواء أو من قِبل مقدم الرعاية الصحية."
-  )}
-</small>
+                          {t(
+                            "Enter the timing given in the medication instructions or by your healthcare provider.",
+                            "أدخل الوقت المحدد في تعليمات الدواء أو من قِبل مقدم الرعاية الصحية."
+                          )}
+                        </small>
                       </FormGroup>
                     )}
                   </>
@@ -2300,7 +2300,7 @@ setReminderTimes((currentTimes) =>
 
               <FormGroup>
                 <Label for="endDate">
-                 {t("Medication End Date", "تاريخ انتهاء الدواء")}{" "}
+                  {t("Medication End Date", "تاريخ انتهاء الدواء")}{" "}
                 </Label>
 
                 <Input
@@ -2320,9 +2320,9 @@ setReminderTimes((currentTimes) =>
                 "As needed" && (
                   <FormGroup>
                     <Label>
-  {reminderTimes.length > 1
-    ? t("Reminder Times", "أوقات التذكير")
-    : t("Reminder Time", "وقت التذكير")}{" "}
+                      {reminderTimes.length > 1
+                        ? t("Reminder Times", "أوقات التذكير")
+                        : t("Reminder Time", "وقت التذكير")}{" "}
                       <span
                         style={{
                           color:
@@ -2341,183 +2341,183 @@ setReminderTimes((currentTimes) =>
                           "10px",
                       }}
                     >
-                     {t(
-  "Choose the time for each scheduled dose.",
-  "اختر وقت كل جرعة مجدولة."
-)}
+                      {t(
+                        "Choose the time for each scheduled dose.",
+                        "اختر وقت كل جرعة مجدولة."
+                      )}
                     </p>
 
                     {timing !== "Any Time" && (
-  <div className="mb-3">
-    <Button
+                      <div className="mb-3">
+                        <Button
                           type="button"
                           color="primary"
                           outline
                           size="sm"
                           onClick={() => {
-  if (!dailyRoutine) {
-    setMessage(
-  t(
-    "Please set up your Daily Routine in Settings first.",
-    "يرجى إعداد روتينك اليومي في الإعدادات أولًا."
-  )
-);
-    setMessageType("warning");
-    return;
-  }
+                            if (!dailyRoutine) {
+                              setMessage(
+                                t(
+                                  "Please set up your Daily Routine in Settings first.",
+                                  "يرجى إعداد روتينك اليومي في الإعدادات أولًا."
+                                )
+                              );
+                              setMessageType("warning");
+                              return;
+                            }
 
-  const suggestedTimes = getSuggestedReminderTimes();
+                            const suggestedTimes = getSuggestedReminderTimes();
 
-  if (
-    suggestedTimes.length === 0 ||
-    suggestedTimes.length !== reminderTimes.length
-  ) {
-    setMessage(
-  t(
-    "No suitable Daily Routine times are available for this frequency and timing. You can enter reminder times manually.",
-    "لا توجد أوقات مناسبة في روتينك اليومي لهذا التكرار ووقت التناول. يمكنك إدخال أوقات التذكير يدويًا."
-  )
-    );
-    setMessageType("warning");
-    return;
-  }
+                            if (
+                              suggestedTimes.length === 0 ||
+                              suggestedTimes.length !== reminderTimes.length
+                            ) {
+                              setMessage(
+                                t(
+                                  "No suitable Daily Routine times are available for this frequency and timing. You can enter reminder times manually.",
+                                  "لا توجد أوقات مناسبة في روتينك اليومي لهذا التكرار ووقت التناول. يمكنك إدخال أوقات التذكير يدويًا."
+                                )
+                              );
+                              setMessageType("warning");
+                              return;
+                            }
 
-  setReminderTimes(suggestedTimes);
-  setMessage("");
-}}
+                            setReminderTimes(suggestedTimes);
+                            setMessage("");
+                          }}
                         >
                           {t(
-  "Use Daily Routine Times",
-  "استخدام أوقات الروتين اليومي"
-)}
+                            "Use Daily Routine Times",
+                            "استخدام أوقات الروتين اليومي"
+                          )}
                         </Button>
 
                         <small className="d-block text-muted mt-2">
                           {t(
-  "Suggestions are based on your saved Daily Routine. You can adjust the reminder times before saving.",
-  "تعتمد الاقتراحات على روتينك اليومي المحفوظ. يمكنك تعديل أوقات التذكير قبل الحفظ."
-)}
+                            "Suggestions are based on your saved Daily Routine. You can adjust the reminder times before saving.",
+                            "تعتمد الاقتراحات على روتينك اليومي المحفوظ. يمكنك تعديل أوقات التذكير قبل الحفظ."
+                          )}
                         </small>
                       </div>
 
                     )}
 
-{timing === "Any Time" &&
-  ["Once daily", "Twice daily", "Three times daily", "Weekly"].includes(frequency) &&
-  reminderTimes.length > 0 && (
-  <div className="mb-3">
-    <Label className="fw-semibold">
-      {t(
-  "Choose from Your Daily Routine (Optional)",
-  "اختر من روتينك اليومي (اختياري)"
-)}
-    </Label>
+                    {timing === "Any Time" &&
+                      ["Once daily", "Twice daily", "Three times daily", "Weekly"].includes(frequency) &&
+                      reminderTimes.length > 0 && (
+                        <div className="mb-3">
+                          <Label className="fw-semibold">
+                            {t(
+                              "Choose from Your Daily Routine (Optional)",
+                              "اختر من روتينك اليومي (اختياري)"
+                            )}
+                          </Label>
 
-    <div className="d-flex flex-wrap gap-2">
-      {routineTimeOptions.map((option) => {
-        const isSelected = selectedRoutineActivities.includes(option.id);
+                          <div className="d-flex flex-wrap gap-2">
+                            {routineTimeOptions.map((option) => {
+                              const isSelected = selectedRoutineActivities.includes(option.id);
 
-        return (
-          <Button
-            key={option.id}
-            type="button"
-            size="sm"
-            color={isSelected ? "primary" : "secondary"}
-            outline={!isSelected}
-            disabled={!option.time}
-            onClick={() => {
-              const nextSelected = isSelected
-                ? selectedRoutineActivities.filter(
-                    (id) => id !== option.id
-                  )
-                : selectedRoutineActivities.length < reminderTimes.length
-                ? [...selectedRoutineActivities, option.id]
-                : selectedRoutineActivities;
+                              return (
+                                <Button
+                                  key={option.id}
+                                  type="button"
+                                  size="sm"
+                                  color={isSelected ? "primary" : "secondary"}
+                                  outline={!isSelected}
+                                  disabled={!option.time}
+                                  onClick={() => {
+                                    const nextSelected = isSelected
+                                      ? selectedRoutineActivities.filter(
+                                        (id) => id !== option.id
+                                      )
+                                      : selectedRoutineActivities.length < reminderTimes.length
+                                        ? [...selectedRoutineActivities, option.id]
+                                        : selectedRoutineActivities;
 
-              setSelectedRoutineActivities(nextSelected);
+                                    setSelectedRoutineActivities(nextSelected);
 
-             const times = routineTimeOptions
-  .filter((item) => nextSelected.includes(item.id))
-  .map((item) => item.time)
-  .sort();
+                                    const times = routineTimeOptions
+                                      .filter((item) => nextSelected.includes(item.id))
+                                      .map((item) => item.time)
+                                      .sort();
 
-setReminderTimes(
-  Array.from(
-    { length: reminderTimes.length },
-    (_, index) => times[index] || ""
-  )
-);
-            }}
-          >
-            {option.label} ({option.time || t("Not set", "غير محدد")})
-          </Button>
-        );
-      })}
-    </div>
-    <small className="text-muted d-block mt-2">
-      {t("Select up to", "اختر حتى")} {reminderTimes.length}{" "}
-{t(
-  "routine time(s), or enter your reminder times manually.",
-  "من أوقات الروتين اليومي، أو أدخل أوقات التذكير يدويًا."
-)}
-    </small>
-  </div>
-)}
+                                    setReminderTimes(
+                                      Array.from(
+                                        { length: reminderTimes.length },
+                                        (_, index) => times[index] || ""
+                                      )
+                                    );
+                                  }}
+                                >
+                                  {option.label} ({option.time || t("Not set", "غير محدد")})
+                                </Button>
+                              );
+                            })}
+                          </div>
+                          <small className="text-muted d-block mt-2">
+                            {t("Select up to", "اختر حتى")} {reminderTimes.length}{" "}
+                            {t(
+                              "routine time(s), or enter your reminder times manually.",
+                              "من أوقات الروتين اليومي، أو أدخل أوقات التذكير يدويًا."
+                            )}
+                          </small>
+                        </div>
+                      )}
                     <Row>
-                      {reminderTimes.map((time,index) => (
-                          <Col
-                            md="6"
-                            key={index}
-                            className="mb-3"
-                          >
-                            <Label>
-  {(() => {
-    const label = getDoseLabel(time, index);
+                      {reminderTimes.map((time, index) => (
+                        <Col
+                          md="6"
+                          key={index}
+                          className="mb-3"
+                        >
+                          <Label>
+                            {(() => {
+                              const label = getDoseLabel(time, index);
 
-   if (!time) return translateDoseLabel(label);
+                              if (!time) return translateDoseLabel(label);
 
-    const matchingTimes = reminderTimes.filter(
-      (reminderTime, reminderIndex) =>
-        reminderTime &&
-        getDoseLabel(reminderTime, reminderIndex) === label
-    );
+                              const matchingTimes = reminderTimes.filter(
+                                (reminderTime, reminderIndex) =>
+                                  reminderTime &&
+                                  getDoseLabel(reminderTime, reminderIndex) === label
+                              );
 
-    if (matchingTimes.length <= 1) {
-  return translateDoseLabel(label);
-}
+                              if (matchingTimes.length <= 1) {
+                                return translateDoseLabel(label);
+                              }
 
-    const position = reminderTimes
-      .slice(0, index + 1)
-      .filter(
-        (reminderTime, reminderIndex) =>
-          reminderTime &&
-          getDoseLabel(reminderTime, reminderIndex) === label
-      ).length;
+                              const position = reminderTimes
+                                .slice(0, index + 1)
+                                .filter(
+                                  (reminderTime, reminderIndex) =>
+                                    reminderTime &&
+                                    getDoseLabel(reminderTime, reminderIndex) === label
+                                ).length;
 
-   return `${translateDoseLabel(label)} ${position}`;
-  })()}
-</Label>
+                              return `${translateDoseLabel(label)} ${position}`;
+                            })()}
+                          </Label>
 
-                            <Input
-                              type="time"
-                              value={time}
-                              onChange={(
+                          <Input
+                            type="time"
+                            value={time}
+                            onChange={(
+                              event
+                            ) => {
+                              handleReminderTimeChange(
+                                index,
                                 event
-                              ) => {
-                                handleReminderTimeChange(
-                                  index,
-                                  event
-                                    .target
-                                    .value
-                                );
+                                  .target
+                                  .value
+                              );
 
-                                setMessage(
-                                  ""
-                                );
-                              }}
-                            />
-                          </Col>
-                        )
+                              setMessage(
+                                ""
+                              );
+                            }}
+                          />
+                        </Col>
+                      )
                       )}
                     </Row>
                   </FormGroup>
@@ -2533,47 +2533,47 @@ setReminderTimes(
                 )}
 
               {totalUnitsNeeded !== null && (
-                
-<Alert color="info" className="mb-3">
-  <strong>
-    {t(
-      "Estimated Total Quantity Required:",
-      "إجمالي الكمية المطلوبة المتوقعة:"
-    )}
-  </strong>{" "}
-  {totalUnitsNeeded}{" "}
-  {isArabic
-    ? ({
-        tablet: "قرص",
-        tablets: "أقراص",
-        capsule: "كبسولة",
-        capsules: "كبسولات",
-        ml: "مل",
-        mg: "ملغ",
-        mcg: "ميكروغرام",
-        g: "غرام",
-        drop: "قطرة",
-        drops: "قطرات",
-        puff: "بخة",
-        puffs: "بخات",
-        patch: "لصقة",
-        patches: "لصقات",
-        unit: "وحدة",
-        units: "وحدات",
-        application: "استخدام",
-        applications: "استخدامات",
-        suppository: "تحميلة",
-        suppositories: "تحاميل",
-      }[String(dosageUnit || "").toLowerCase()] || dosageUnit)
-    : dosageUnit}
 
-  <div className="small mt-1">
-    {t(
-      "Calculated from the selected dose, frequency, and treatment dates (including both dates)",
-      "تم حسابها بناءً على الجرعة المحددة، وتكرار تناول الدواء، وتواريخ العلاج (بما في ذلك تاريخ البداية والنهاية)"
-    )}
-  </div>
-</Alert>
+                <Alert color="info" className="mb-3">
+                  <strong>
+                    {t(
+                      "Estimated Total Quantity Required:",
+                      "إجمالي الكمية المطلوبة المتوقعة:"
+                    )}
+                  </strong>{" "}
+                  {totalUnitsNeeded}{" "}
+                  {isArabic
+                    ? ({
+                      tablet: "قرص",
+                      tablets: "أقراص",
+                      capsule: "كبسولة",
+                      capsules: "كبسولات",
+                      ml: "مل",
+                      mg: "ملغ",
+                      mcg: "ميكروغرام",
+                      g: "غرام",
+                      drop: "قطرة",
+                      drops: "قطرات",
+                      puff: "بخة",
+                      puffs: "بخات",
+                      patch: "لصقة",
+                      patches: "لصقات",
+                      unit: "وحدة",
+                      units: "وحدات",
+                      application: "استخدام",
+                      applications: "استخدامات",
+                      suppository: "تحميلة",
+                      suppositories: "تحاميل",
+                    }[String(dosageUnit || "").toLowerCase()] || dosageUnit)
+                    : dosageUnit}
+
+                  <div className="small mt-1">
+                    {t(
+                      "Calculated from the selected dose, frequency, and treatment dates (including both dates)",
+                      "تم حسابها بناءً على الجرعة المحددة، وتكرار تناول الدواء، وتواريخ العلاج (بما في ذلك تاريخ البداية والنهاية)"
+                    )}
+                  </div>
+                </Alert>
 
               )}
 
@@ -2586,10 +2586,10 @@ setReminderTimes(
                   id="instructions"
                   type="textarea"
                   rows="4"
-                 placeholder={t(
-  "Enter any additional instructions...",
-  "أدخل أي تعليمات إضافية حول استخدام الدواء..."
-)}
+                  placeholder={t(
+                    "Enter any additional instructions...",
+                    "أدخل أي تعليمات إضافية حول استخدام الدواء..."
+                  )}
                   value={instructions}
                   onChange={(event) => {
                     setInstructions(
@@ -2620,9 +2620,9 @@ setReminderTimes(
                     }}
                   >
                     {t(
-  "Upload Prescription - AI Assisted ",
-  "رفع الوصفة الطبية بمساعدة الذكاء الاصطناعي"
-)}
+                      "Upload Prescription - AI Assisted ",
+                      "رفع الوصفة الطبية بمساعدة الذكاء الاصطناعي"
+                    )}
                   </Label>
 
                   <button
@@ -2657,20 +2657,20 @@ setReminderTimes(
                     color: "#6b7280",
                   }}
                 >
-                  {t("Optional","اختياري")}
+                  {t("Optional", "اختياري")}
                 </small>
               </div>
 
               {showUploadHelp && (
                 <Alert color="info">
-                 {t(
-      "Upload a PDF or a clear photo of the prescription. MediMind will use AI to extract medication details. Always review the extracted information before saving.",
-      "ارفع ملف PDF أو صورة واضحة للوصفة الطبية. سيستخدم MediMind الذكاء الاصطناعي لاستخراج تفاصيل الأدوية. تأكد دائمًا من مراجعة المعلومات المستخرجة قبل الحفظ."
-    )}
+                  {t(
+                    "Upload a PDF or a clear photo of the prescription. MediMind will use AI to extract medication details. Always review the extracted information before saving.",
+                    "ارفع ملف PDF أو صورة واضحة للوصفة الطبية. سيستخدم MediMind الذكاء الاصطناعي لاستخراج تفاصيل الأدوية. تأكد دائمًا من مراجعة المعلومات المستخرجة قبل الحفظ."
+                  )}
                 </Alert>
               )}
 
-              <label  className="prescription-upload-box"
+              <label className="prescription-upload-box"
                 htmlFor="prescriptionFile"
                 style={{
                   width: "100%",
@@ -2695,9 +2695,9 @@ setReminderTimes(
                   }}
                 >
                   {t(
-  "Choose a prescription file",
-  "اختر ملف الوصفة الطبية"
-)}
+                    "Choose a prescription file",
+                    "اختر ملف الوصفة الطبية"
+                  )}
                 </div>
 
                 <div className="prescription-upload-hint"
@@ -2706,9 +2706,9 @@ setReminderTimes(
                   }}
                 >
                   {t(
-  "PDF, JPG, JPEG or PNG — maximum 5 MB",
-  "PDF أو JPG أو JPEG أو PNG — الحد الأقصى 5 ميجابايت"
-)}
+                    "PDF, JPG, JPEG or PNG — maximum 5 MB",
+                    "PDF أو JPG أو JPEG أو PNG — الحد الأقصى 5 ميجابايت"
+                  )}
                 </div>
               </label>
 
@@ -2773,7 +2773,7 @@ setReminderTimes(
                         color: "#198754",
                       }}
                     >
-                     {t("Ready to upload", "جاهز للرفع")}
+                      {t("Ready to upload", "جاهز للرفع")}
                     </small>
                   </div>
                 </div>
@@ -2783,7 +2783,7 @@ setReminderTimes(
                 color="primary"
                 className="w-100"
                 type="button"
-                onClick={() => {saveMedication(false);}}
+                onClick={() => { saveMedication(false); }}
                 disabled={isSaving}
                 style={{
                   minHeight: "48px",
@@ -2791,9 +2791,9 @@ setReminderTimes(
                   fontSize: "16px",
                 }}
               >
-               {isSaving
-  ? t("Saving Medication...", "جارٍ حفظ الدواء...")
-  : t("Save Medication", "حفظ الدواء")}
+                {isSaving
+                  ? t("Saving Medication...", "جارٍ حفظ الدواء...")
+                  : t("Save Medication", "حفظ الدواء")}
               </Button>
             </CardBody>
           </Card>
