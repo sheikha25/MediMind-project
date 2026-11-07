@@ -22,9 +22,25 @@ import {
   addUser,
   clearUserMessage,
 } from "../features/UserSlice";
-import Footer from "./footer";
+import Footer from "./Footer";
 
 const CaregiverRegister = () => {
+  const [language, setLanguage] = useState(() => localStorage.getItem("medimindLanguage") || "en");
+  const isArabic = language === "ar";
+  const t = (en, ar) => isArabic ? ar : en;
+
+  useEffect(() => {
+    const syncLanguage = () => setLanguage(localStorage.getItem("medimindLanguage") || "en");
+    window.addEventListener("medimind-language-change", syncLanguage);
+    window.addEventListener("medimindLanguageChanged", syncLanguage);
+    window.addEventListener("storage", syncLanguage);
+    return () => {
+      window.removeEventListener("medimind-language-change", syncLanguage);
+      window.removeEventListener("medimindLanguageChanged", syncLanguage);
+      window.removeEventListener("storage", syncLanguage);
+    };
+  }, []);
+
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
@@ -99,7 +115,8 @@ const CaregiverRegister = () => {
   const passwordIconButtonStyle = {
     position: "absolute",
     top: "50%",
-    right: "14px",
+    right: isArabic ? "auto" : "14px",
+    left: isArabic ? "14px" : "auto",
     transform: "translateY(-50%)",
     border: "none",
     background: "transparent",
@@ -112,7 +129,14 @@ const CaregiverRegister = () => {
   };
 
   return (
-    <Container fluid>
+    <Container fluid className="mm-caregiver-register" dir={isArabic ? "rtl" : "ltr"}>
+      <style>{`
+        .mm-caregiver-register .login-col { min-width: 0; }
+        .mm-caregiver-register .form-control { max-width: 100%; }
+        .mm-caregiver-register[dir="rtl"] .form-control { text-align: right; }
+        .mm-caregiver-register[dir="rtl"] .mm-password-input { padding-left: 45px !important; padding-right: 12px !important; }
+        .mm-caregiver-register .mm-password-input { padding-right: 45px; }
+      `}</style>
       <Row className="login-row">
         <Col className="login-col">
           <Card>
@@ -129,7 +153,7 @@ const CaregiverRegister = () => {
                   navigate("/Splashscreen")
                 }
               >
-                Go Back
+                {t("Go Back", "رجوع")}
               </Button>
 
               <img
@@ -139,11 +163,11 @@ const CaregiverRegister = () => {
               />
 
               <h2 className="text-center">
-                Caregiver Registration
+                {t("Caregiver Registration", "تسجيل مقدم الرعاية")}
               </h2>
 
               <p className="text-center">
-                Create your caregiver account.
+                {t("Create your caregiver account.", "أنشئ حساب مقدم الرعاية الخاص بك.")}
               </p>
 
               <form
@@ -151,11 +175,11 @@ const CaregiverRegister = () => {
                 autoComplete="off"
               >
                 <FormGroup>
-                  <Label>Full Name</Label>
+                  <Label>{t("Full Name", "الاسم الكامل")}</Label>
 
                   <input
                     type="text"
-                    placeholder="Enter Full Name"
+                    placeholder={t("Enter Full Name", "أدخل الاسم الكامل")}
                     className="form-control"
                     autoComplete="off"
                     {...register("name")}
@@ -167,11 +191,11 @@ const CaregiverRegister = () => {
                 </FormGroup>
 
                 <FormGroup>
-                  <Label>Email</Label>
+                  <Label>{t("Email", "البريد الإلكتروني")}</Label>
 
                   <input
                     type="email"
-                    placeholder="Enter Email"
+                    placeholder={t("Enter Email", "أدخل البريد الإلكتروني")}
                     className="form-control"
                     autoComplete="new-email"
                     {...register("email")}
@@ -183,11 +207,11 @@ const CaregiverRegister = () => {
                 </FormGroup>
 
                 <FormGroup>
-                  <Label>Phone Number</Label>
+                  <Label>{t("Phone Number", "رقم الهاتف")}</Label>
 
                   <input
                     type="text"
-                    placeholder="Enter Phone Number"
+                    placeholder={t("Enter Phone Number", "أدخل رقم الهاتف")}
                     className="form-control"
                     autoComplete="off"
                     {...register("phoneNumber")}
@@ -199,7 +223,7 @@ const CaregiverRegister = () => {
                 </FormGroup>
 
                 <FormGroup>
-                  <Label>Password</Label>
+                  <Label>{t("Password", "كلمة المرور")}</Label>
 
                   <div
                     style={{
@@ -212,11 +236,12 @@ const CaregiverRegister = () => {
                           ? "text"
                           : "password"
                       }
-                      placeholder="Enter Password"
+                      placeholder={t("Enter Password", "أدخل كلمة المرور")}
                       className="form-control"
                       autoComplete="new-password"
                       style={{
-                        paddingRight: "45px",
+                        paddingRight: isArabic ? "12px" : "45px",
+                        paddingLeft: isArabic ? "45px" : "12px",
                       }}
                       {...register("password")}
                     />
@@ -256,9 +281,7 @@ const CaregiverRegister = () => {
                 </FormGroup>
 
                 <FormGroup>
-                  <Label>
-                    Confirm Password
-                  </Label>
+                  <Label>{t("Confirm Password", "تأكيد كلمة المرور")}</Label>
 
                   <div
                     style={{
@@ -271,11 +294,12 @@ const CaregiverRegister = () => {
                           ? "text"
                           : "password"
                       }
-                      placeholder="Confirm Password"
+                      placeholder={t("Confirm Password", "أكد كلمة المرور")}
                       className="form-control"
                       autoComplete="new-password"
                       style={{
-                        paddingRight: "45px",
+                        paddingRight: isArabic ? "12px" : "45px",
+                        paddingLeft: isArabic ? "45px" : "12px",
                       }}
                       {...register(
                         "confirmPassword"
@@ -325,7 +349,7 @@ const CaregiverRegister = () => {
                     type="submit"
                     className="w-100"
                   >
-                    Create Account
+                    {t("Create Account", "إنشاء حساب")}
                   </Button>
                 </FormGroup>
 
@@ -348,9 +372,9 @@ const CaregiverRegister = () => {
                 )}
 
                 <FormGroup className="text-center">
-                  Already have an account?{" "}
+                  {t("Already have an account?", "لديك حساب بالفعل؟")}{" "}
                   <Link to="/">
-                    Login
+                    {t("Login", "تسجيل الدخول")}
                   </Link>
                 </FormGroup>
               </form>
