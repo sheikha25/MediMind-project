@@ -33,12 +33,48 @@ import {
 } from "react-icons/fa";
 
 import Header from "./Header";
+import Footer from "./Footer";
 
 const PatientCaregiver = () => {
   const user = useSelector(
     (state) => state.user.user
   );
 console.log("Patient Redux user:", user);
+  const [uiLanguage, setUiLanguage] = useState(
+    () => localStorage.getItem("medimindLanguage") || "en"
+  );
+  const isArabic = uiLanguage === "ar";
+  const t = (english, arabic) => isArabic ? arabic : english;
+
+  useEffect(() => {
+    const syncLanguage = () =>
+      setUiLanguage(localStorage.getItem("medimindLanguage") || "en");
+    window.addEventListener("medimind-language-change", syncLanguage);
+    window.addEventListener("storage", syncLanguage);
+    return () => {
+      window.removeEventListener("medimind-language-change", syncLanguage);
+      window.removeEventListener("storage", syncLanguage);
+    };
+  }, []);
+
+  const translateValue = (value) => {
+    if (!isArabic || value == null) return value;
+    const labels = {
+      Sunday:"الأحد", Monday:"الاثنين", Tuesday:"الثلاثاء",
+      Wednesday:"الأربعاء", Thursday:"الخميس", Friday:"الجمعة",
+      Saturday:"السبت", Morning:"الصباح", Afternoon:"بعد الظهر",
+      Evening:"المساء", Night:"الليل", Male:"ذكر", Female:"أنثى",
+      Arabic:"العربية", English:"الإنجليزية", Hindi:"الهندية",
+      Urdu:"الأردية", Swahili:"السواحيلية", Bengali:"البنغالية",
+      Malayalam:"المالايالامية", Tamil:"التاميلية",
+      "Filipino (Tagalog)":"الفلبينية (تاغالوغ)",
+      Caregiver:"مقدم رعاية", Verified:"موثّق"
+    };
+    return labels[value] || value;
+  };
+  const translateList = (values) =>
+    values?.length ? values.map(translateValue).join(", ") : t("Not provided", "غير متوفر");
+
   const [activeSection, setActiveSection] =
     useState("my");
 
@@ -150,11 +186,11 @@ const [
 
   const formatLinkedDate = (date) => {
     if (!date) {
-      return "Not available";
+      return t("Not available", "غير متوفر");
     }
 
     return new Date(date).toLocaleDateString(
-      "en-US",
+      isArabic ? "ar-OM" : "en-US",
       {
         day: "numeric",
         month: "short",
@@ -190,7 +226,7 @@ const [
 
       setMessage(
         error.response?.data?.message ||
-          "Unable to load your caregiver."
+          t('Unable to load your caregiver.', 'تعذر تحميل بيانات مقدم الرعاية.')
       );
 
       setMessageType("danger");
@@ -230,8 +266,8 @@ const [
 
     setMedicationPermissionMessage(
       newPermission
-        ? "Medication management permission granted."
-        : "Medication management permission revoked."
+        ? t('Medication management permission granted.', 'تم منح إذن إدارة الأدوية.')
+        : t('Medication management permission revoked.', 'تم إلغاء إذن إدارة الأدوية.')
     );
   } catch (error) {
     console.error(
@@ -241,7 +277,7 @@ const [
 
     setMedicationPermissionMessage(
       error.response?.data?.message ||
-        "Unable to update medication permission."
+        t('Unable to update medication permission.', 'تعذر تحديث إذن إدارة الأدوية.')
     );
   } finally {
     setUpdatingMedicationPermission(false);
@@ -253,27 +289,16 @@ const handleDisconnectCaregiver = async () => {
   if (!user?.email || !myCaregiver?.email) return;
 
   const confirmed = window.confirm(
-    `Disconnect from ${myCaregiver.name}? They will lose access to your medication information.`
+    t(`Disconnect from ${myCaregiver.name}? They will lose access to your medication information.`,
+      `هل تريد فصل ${myCaregiver.name}؟ سيفقد الوصول إلى معلومات أدويتك.`)
   );
 
   if (!confirmed) return;
 
   try {
-    const token =
-  localStorage.getItem("token") ||
-  sessionStorage.getItem("token");
-
-    if (!token) {
-      alert("Please log in again.");
-      return;
-    }
-
     await axios.delete(
       "http://localhost:3002/caregiver-links/disconnect",
       {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
         data: {
           patientEmail: user.email,
           caregiverEmail: myCaregiver.email,
@@ -283,14 +308,14 @@ const handleDisconnectCaregiver = async () => {
 
     setMyCaregiver(null);
     setMedicationPermissionMessage("");
-    setMessage("Caregiver disconnected successfully.");
+    setMessage(t('Caregiver disconnected successfully.', 'تم فصل مقدم الرعاية بنجاح.'));
     setMessageType("success");
   } catch (error) {
     console.error("Disconnect caregiver error:", error);
 
     alert(
       error.response?.data?.message ||
-        "Unable to disconnect caregiver."
+        t('Unable to disconnect caregiver.', 'تعذر فصل مقدم الرعاية.')
     );
   }
 };
@@ -413,7 +438,7 @@ const handleDisconnectCaregiver = async () => {
 
       setMessage(
         error.response?.data?.message ||
-          "Unable to search caregivers."
+          t('Unable to search caregivers.', 'تعذر البحث عن مقدمي الرعاية.')
       );
 
       setMessageType("danger");
@@ -518,7 +543,7 @@ const handleDisconnectCaregiver = async () => {
   ) => {
     if (!user?.email) {
       setMessage(
-        "Please log in again."
+        t('Please log in again.', 'يرجى تسجيل الدخول مجددًا.')
       );
 
       setMessageType("danger");
@@ -546,7 +571,7 @@ const handleDisconnectCaregiver = async () => {
 
       setMessage(
         response.data?.message ||
-          "Caregiver request sent."
+          t('Caregiver request sent.', 'تم إرسال طلب الارتباط بمقدم الرعاية.')
       );
 
       setMessageType(
@@ -568,7 +593,7 @@ const handleDisconnectCaregiver = async () => {
 
       setMessage(
         error.response?.data?.message ||
-          "Unable to send caregiver request."
+          t('Unable to send caregiver request.', 'تعذر إرسال طلب الارتباط.')
       );
 
       setMessageType("danger");
@@ -578,6 +603,8 @@ const handleDisconnectCaregiver = async () => {
   };
 
   const cardStyle = {
+    backgroundColor: "var(--pc-card-bg)",
+    color: "var(--pc-text)",
     border:
       "1px solid #e8ebef",
 
@@ -687,12 +714,12 @@ const handleDisconnectCaregiver = async () => {
   return (
     <Container
       fluid
-      className="p-0"
+      className={`p-0 patient-caregiver-page ${isArabic ? "patient-caregiver-ar" : ""}`}
+      dir={isArabic ? "rtl" : "ltr"}
       style={{
         minHeight: "100vh",
 
-        backgroundColor:
-          "#f8f9fb",
+        backgroundColor: "var(--pc-page-bg)",
       }}
     >
       <Header />
@@ -715,9 +742,7 @@ const handleDisconnectCaregiver = async () => {
               marginBottom:
                 "8px",
             }}
-          >
-            Caregiver
-          </h2>
+          >{t('Caregiver', 'مقدم الرعاية')}</h2>
 
           <p
             className="text-muted"
@@ -728,12 +753,7 @@ const handleDisconnectCaregiver = async () => {
               margin:
                 "0 auto",
             }}
-          >
-            Manage your caregiver or
-            find someone who can
-            support your medication
-            care.
-          </p>
+          >{t('Manage your caregiver or find someone who can support your medication care.', 'إدارة مقدم الرعاية المرتبط بحسابك أو البحث عن شخص يساعدك في رعاية أدويتك.')}</p>
         </div>
 
         <div
@@ -803,9 +823,7 @@ const handleDisconnectCaregiver = async () => {
                 transition:
                   "all 0.2s ease",
               }}
-            >
-              My Caregiver
-            </button>
+            >{t('My Caregiver', 'مقدم الرعاية الخاص بي')}</button>
 
             <button
               type="button"
@@ -850,9 +868,7 @@ const handleDisconnectCaregiver = async () => {
                 transition:
                   "all 0.2s ease",
               }}
-            >
-              Search for Caregiver
-            </button>
+            >{t('Search for Caregiver', 'البحث عن مقدم رعاية')}</button>
           </div>
         </div>
 
@@ -873,25 +889,16 @@ const handleDisconnectCaregiver = async () => {
                   fontWeight:
                     "650",
                 }}
-              >
-                My Caregiver
-              </h4>
+              >{t('My Caregiver', 'مقدم الرعاية الخاص بي')}</h4>
 
-              <p className="text-muted">
-                View the caregiver
-                currently connected to
-                your account.
-              </p>
+              <p className="text-muted">{t('View the caregiver currently connected to your account.', 'عرض مقدم الرعاية المرتبط حاليًا بحسابك.')}</p>
             </div>
 
             {loadingMyCaregiver ? (
               <div className="text-center py-5">
                 <Spinner />
 
-                <p className="text-muted mt-3">
-                  Loading your
-                  caregiver...
-                </p>
+                <p className="text-muted mt-3">{t('Loading your caregiver...', 'جارٍ تحميل بيانات مقدم الرعاية...')}</p>
               </div>
             ) : !myCaregiver ? (
               <Card
@@ -937,10 +944,7 @@ const handleDisconnectCaregiver = async () => {
                     ♡
                   </div>
 
-                  <h4>
-                    No caregiver
-                    connected
-                  </h4>
+                  <h4>{t('No caregiver connected', 'لا يوجد مقدم رعاية مرتبط')}</h4>
 
                   <p
                     className="text-muted"
@@ -951,13 +955,7 @@ const handleDisconnectCaregiver = async () => {
                       margin:
                         "10px auto 22px",
                     }}
-                  >
-                    Find a registered
-                    caregiver and send
-                    them a request to
-                    connect with your
-                    account.
-                  </p>
+                  >{t('Find a registered caregiver and send them a request to connect with your account.', 'ابحث عن مقدم رعاية مسجل وأرسل إليه طلب ارتباط بحسابك.')}</p>
 
                   <Button
                     color="primary"
@@ -973,9 +971,7 @@ const handleDisconnectCaregiver = async () => {
                         "search"
                       )
                     }
-                  >
-                    Find a Caregiver
-                  </Button>
+                  >{t('Find a Caregiver', 'البحث عن مقدم رعاية')}</Button>
                 </CardBody>
               </Card>
             ) : (
@@ -1032,7 +1028,7 @@ const handleDisconnectCaregiver = async () => {
 
                           <p className="text-muted mb-2">
                             {myCaregiver.degree ||
-                              "Qualification not provided"}
+                              t("Qualification not provided", "المؤهل غير متوفر")}
                           </p>
 
                           <div
@@ -1042,15 +1038,11 @@ const handleDisconnectCaregiver = async () => {
     flexWrap: "wrap",
   }}
 >
-  <Badge color="success">
-    Connected
-  </Badge>
+  <Badge color="success">{t('Connected', 'مرتبط')}</Badge>
 
   {myCaregiver.professionalVerificationStatus ===
     "Verified" && (
-    <Badge color="primary">
-      ✓ Verified
-    </Badge>
+    <Badge color="primary">{t('✓ Verified', '✓ موثّق')}</Badge>
   )}
 </div>
                         </div>
@@ -1063,17 +1055,15 @@ const handleDisconnectCaregiver = async () => {
                           sm="6"
                           lg="4"
                         >
-                          <small className="text-muted">
-                            Experience
-                          </small>
+                          <small className="text-muted">{t('Experience', 'الخبرة')}</small>
 
                           <p className="fw-semibold mb-0">
                             {myCaregiver.experience !==
                               undefined &&
                             myCaregiver.experience !==
                               null
-                              ? `${myCaregiver.experience} years`
-                              : "Not provided"}
+                              ? `${myCaregiver.experience} ${t("years", "سنوات")}`
+                              : t("Not provided", "غير متوفر")}
                           </p>
                         </Col>
 
@@ -1081,13 +1071,11 @@ const handleDisconnectCaregiver = async () => {
                           sm="6"
                           lg="4"
                         >
-                          <small className="text-muted">
-                            Location
-                          </small>
+                          <small className="text-muted">{t('Location', 'الموقع')}</small>
 
                           <p className="fw-semibold mb-0">
                             {myCaregiver.location ||
-                              "Not provided"}
+                              t("Not provided", "غير متوفر")}
                           </p>
                         </Col>
 
@@ -1095,13 +1083,11 @@ const handleDisconnectCaregiver = async () => {
                           sm="6"
                           lg="4"
                         >
-                          <small className="text-muted">
-                            Relationship
-                          </small>
+                          <small className="text-muted">{t('Relationship', 'صلة العلاقة')}</small>
 
                           <p className="fw-semibold mb-0">
                             {myCaregiver.relationship ||
-                              "Not provided"}
+                              t("Not provided", "غير متوفر")}
                           </p>
                         </Col>
 
@@ -1109,17 +1095,10 @@ const handleDisconnectCaregiver = async () => {
                           sm="6"
                           lg="4"
                         >
-                          <small className="text-muted">
-                            Languages
-                          </small>
+                          <small className="text-muted">{t('Languages', 'اللغات')}</small>
 
                           <p className="fw-semibold mb-0">
-                            {myCaregiver.languages
-                              ?.length
-                              ? myCaregiver.languages.join(
-                                  ", "
-                                )
-                              : "Not provided"}
+                            {translateList(myCaregiver.languages)}
                           </p>
                         </Col>
 
@@ -1127,17 +1106,10 @@ const handleDisconnectCaregiver = async () => {
                           sm="6"
                           lg="4"
                         >
-                          <small className="text-muted">
-                            Available Days
-                          </small>
+                          <small className="text-muted">{t('Available Days', 'أيام التوفر')}</small>
 
                           <p className="fw-semibold mb-0">
-                            {myCaregiver.availability
-                              ?.length
-                              ? myCaregiver.availability.join(
-                                  ", "
-                                )
-                              : "Not provided"}
+                            {translateList(myCaregiver.availability)}
                           </p>
                         </Col>
 
@@ -1145,17 +1117,10 @@ const handleDisconnectCaregiver = async () => {
                           sm="6"
                           lg="4"
                         >
-                          <small className="text-muted">
-                            Preferred Times
-                          </small>
+                          <small className="text-muted">{t('Preferred Times', 'الأوقات المفضلة')}</small>
 
                           <p className="fw-semibold mb-0">
-                            {myCaregiver.availableTimes
-                              ?.length
-                              ? myCaregiver.availableTimes.join(
-                                  ", "
-                                )
-                              : "Not provided"}
+                            {translateList(myCaregiver.availableTimes)}
                           </p>
                         </Col>
                       </Row>
@@ -1166,9 +1131,7 @@ const handleDisconnectCaregiver = async () => {
 
                   <Row>
                     <Col md="6">
-                      <small className="text-muted">
-                        Connected Since
-                      </small>
+                      <small className="text-muted">{t('Connected Since', 'مرتبط منذ')}</small>
 
                       <p className="fw-semibold">
                         {formatLinkedDate(
@@ -1178,22 +1141,18 @@ const handleDisconnectCaregiver = async () => {
                     </Col>
 
                     <Col md="6">
-                      <small className="text-muted">
-                        Phone Number
-                      </small>
+                      <small className="text-muted">{t('Phone Number', 'رقم الهاتف')}</small>
 
                       <p className="fw-semibold">
                         {myCaregiver.phoneNumber ||
-                          "Not provided"}
+                          t("Not provided", "غير متوفر")}
                       </p>
                     </Col>
                   </Row>
 
                   {myCaregiver.bio && (
                     <>
-                      <small className="text-muted">
-                        About
-                      </small>
+                      <small className="text-muted">{t('About', 'نبذة')}</small>
 
                       <p className="mt-1">
                         {
@@ -1203,9 +1162,7 @@ const handleDisconnectCaregiver = async () => {
                     </>
                   )}
 
-                  <small className="text-muted">
-                    Certificates
-                  </small>
+                  <small className="text-muted">{t('Certificates', 'الشهادات')}</small>
 
                   {myCaregiver.certificates
                     ?.length ? (
@@ -1234,10 +1191,7 @@ const handleDisconnectCaregiver = async () => {
                       )}
                     </div>
                   ) : (
-                    <p className="text-muted mt-1 mb-0">
-                      No certificates
-                      uploaded.
-                    </p>
+                    <p className="text-muted mt-1 mb-0">{t('No certificates uploaded.', 'لم تُرفع أي شهادات.')}</p>
                   )}
                   <hr className="my-4" />
 
@@ -1264,9 +1218,7 @@ const handleDisconnectCaregiver = async () => {
           fontWeight: "700",
           marginBottom: "5px",
         }}
-      >
-        Medication Management
-      </h6>
+      >{t('Medication Management', 'إدارة الأدوية')}</h6>
 
       <p
         className="text-muted mb-0"
@@ -1275,8 +1227,8 @@ const handleDisconnectCaregiver = async () => {
           maxWidth: "600px",
         }}
       >
-        Allow {myCaregiver.name} to add, edit,
-        and delete medications on your behalf.
+        {t(`Allow ${myCaregiver.name} to add, edit, and delete medications on your behalf.`,
+          `السماح لـ ${myCaregiver.name} بإضافة الأدوية وتعديلها وحذفها نيابةً عنك.`)}
       </p>
     </div>
 
@@ -1295,15 +1247,13 @@ const handleDisconnectCaregiver = async () => {
               ? "#dc3545"
               : "#9ca3af",
         }}
-      >
-        Not Allowed
-      </span>
+      >{t('Not Allowed', 'غير مسموح')}</span>
 
       <button
         type="button"
         disabled={updatingMedicationPermission}
         onClick={handleMedicationPermission}
-        aria-label="Medication management permission"
+        aria-label={t("Medication management permission", "إذن إدارة الأدوية")}
         style={{
           width: "58px",
           height: "30px",
@@ -1351,9 +1301,7 @@ const handleDisconnectCaregiver = async () => {
               ? "#198754"
               : "#9ca3af",
         }}
-      >
-        Allowed
-      </span>
+      >{t('Allowed', 'مسموح')}</span>
     </div>
   </div>
 
@@ -1382,9 +1330,7 @@ const handleDisconnectCaregiver = async () => {
       padding: "10px 20px",
       fontWeight: "600",
     }}
-  >
-    Disconnect Caregiver
-  </Button>
+  >{t('Disconnect Caregiver', 'فصل مقدم الرعاية')}</Button>
 </div>
 
                 </CardBody>
@@ -1405,16 +1351,9 @@ const handleDisconnectCaregiver = async () => {
                   marginBottom:
                     "6px",
                 }}
-              >
-                Find a Caregiver
-              </h4>
+              >{t('Find a Caregiver', 'البحث عن مقدم رعاية')}</h4>
 
-              <p className="text-muted mb-2">
-                Choose what matters to
-                you and find a
-                caregiver who matches
-                your preferences.
-              </p>
+              <p className="text-muted mb-2">{t('Choose what matters to you and find a caregiver who matches your preferences.', 'حدد تفضيلاتك للعثور على مقدم رعاية يناسب احتياجاتك.')}</p>
 
               {hasPatientLocation ? (
                 <div
@@ -1439,11 +1378,10 @@ const handleDisconnectCaregiver = async () => {
                 >
                   <FaMapMarkerAlt />
 
-                  <span>
-                    Searching near{" "}
+                  <span className="pc-location-line">
+                    {t("Searching near", "البحث بالقرب من")}{" "}
                     <strong>
-                      {user?.location ||
-                        "your current location"}
+                      {user?.location || t("your current location", "موقعك الحالي")}
                     </strong>
                   </span>
                 </div>
@@ -1451,12 +1389,7 @@ const handleDisconnectCaregiver = async () => {
                 <Alert
                   color="warning"
                   className="mt-3 mb-0"
-                >
-                  Add your current
-                  location in Profile
-                  Settings to see
-                  caregiver distance.
-                </Alert>
+                >{t('Add your current location in Profile Settings to see caregiver distance.', 'أضف موقعك الحالي في إعدادات الملف الشخصي لعرض المسافة إلى مقدمي الرعاية.')}</Alert>
               )}
             </div>
 
@@ -1523,7 +1456,7 @@ const handleDisconnectCaregiver = async () => {
 
                     <Input
                       value={search}
-                      placeholder="Search by name or qualification..."
+                      placeholder={t("Search by name or qualification...", "ابحث بالاسم أو المؤهل...")}
                       onChange={(
                         event
                       ) =>
@@ -1577,7 +1510,7 @@ const handleDisconnectCaregiver = async () => {
                         onClick={() =>
                           setSearch("")
                         }
-                        aria-label="Clear search"
+                        aria-label={t("Clear search", "مسح البحث")}
                         style={{
                           position:
                             "absolute",
@@ -1642,9 +1575,7 @@ const handleDisconnectCaregiver = async () => {
                       />
                     ) : (
                       <>
-                        <FaSearch className="me-2" />
-                        Search
-                      </>
+                        <FaSearch style={{ marginInlineEnd: "8px" }} />{t('Search', 'بحث')}</>
                     )}
                   </Button>
                 </div>
@@ -1672,9 +1603,8 @@ const handleDisconnectCaregiver = async () => {
                       fontWeight:
                         "600",
                     }}
-                  >
-                    Filter by preference
-                  </small>
+                    className="pc-filter-heading"
+                  >{t('Filter by preference', 'تصفية حسب التفضيلات')}</small>
 
                   {(search ||
                     gender ||
@@ -1708,9 +1638,7 @@ const handleDisconnectCaregiver = async () => {
                         cursor:
                           "pointer",
                       }}
-                    >
-                      Clear all
-                    </button>
+                    >{t('Clear all', 'مسح الكل')}</button>
                   )}
                 </div>
 
@@ -1751,22 +1679,17 @@ const handleDisconnectCaregiver = async () => {
                             .value
                         )
                       }
+                      className="pc-filter-select"
                       style={filterInputStyle(
                         gender,
                         "165px"
                       )}
                     >
-                      <option value="">
-                        Any Gender
-                      </option>
+                      <option value="">{t('Any Gender', 'أي جنس')}</option>
 
-                      <option value="Female">
-                        Female
-                      </option>
+                      <option value="Female">{t('Female', 'أنثى')}</option>
 
-                      <option value="Male">
-                        Male
-                      </option>
+                      <option value="Male">{t('Male', 'ذكر')}</option>
                     </Input>
                   </div>
 
@@ -1793,51 +1716,31 @@ const handleDisconnectCaregiver = async () => {
                             .value
                         )
                       }
+                      className="pc-filter-select"
                       style={filterInputStyle(
                         language,
                         "185px"
                       )}
                     >
-                      <option value="">
-                        Any Language
-                      </option>
+                      <option value="">{t('Any Language', 'أي لغة')}</option>
 
-                      <option value="Arabic">
-                        Arabic
-                      </option>
+                      <option value="Arabic">{t('Arabic', 'العربية')}</option>
 
-                      <option value="English">
-                        English
-                      </option>
+                      <option value="English">{t('English', 'الإنجليزية')}</option>
 
-                      <option value="Hindi">
-                        Hindi
-                      </option>
+                      <option value="Hindi">{t('Hindi', 'الهندية')}</option>
 
-                      <option value="Urdu">
-                        Urdu
-                      </option>
+                      <option value="Urdu">{t('Urdu', 'الأردية')}</option>
 
-                      <option value="Swahili">
-                        Swahili
-                      </option>
+                      <option value="Swahili">{t('Swahili', 'السواحيلية')}</option>
 
-                      <option value="Bengali">
-                        Bengali
-                      </option>
+                      <option value="Bengali">{t('Bengali', 'البنغالية')}</option>
 
-                      <option value="Malayalam">
-                        Malayalam
-                      </option>
+                      <option value="Malayalam">{t('Malayalam', 'المالايالامية')}</option>
 
-                      <option value="Tamil">
-                        Tamil
-                      </option>
+                      <option value="Tamil">{t('Tamil', 'التاميلية')}</option>
 
-                      <option value="Filipino (Tagalog)">
-                        Filipino
-                        (Tagalog)
-                      </option>
+                      <option value="Filipino (Tagalog)">{t('Filipino (Tagalog)', 'الفلبينية (تاغالوغ)')}</option>
                     </Input>
                   </div>
 
@@ -1866,40 +1769,30 @@ const handleDisconnectCaregiver = async () => {
                             .value
                         )
                       }
+                      className="pc-filter-select"
                       style={filterInputStyle(
                         minExperience,
                         "190px"
                       )}
                     >
-                      <option value="">
-                        Any Experience
-                      </option>
+                      <option value="">{t('Any Experience', 'أي خبرة')}</option>
 
-                      <option value="1">
-                        1+ year
-                      </option>
+                      <option value="1">{t('1+ year', 'سنة فأكثر')}</option>
 
-                      <option value="2">
-                        2+ years
-                      </option>
+                      <option value="2">{t('2+ years', 'سنتان فأكثر')}</option>
 
-                      <option value="3">
-                        3+ years
-                      </option>
+                      <option value="3">{t('3+ years', '٣ سنوات فأكثر')}</option>
 
-                      <option value="5">
-                        5+ years
-                      </option>
+                      <option value="5">{t('5+ years', '٥ سنوات فأكثر')}</option>
 
-                      <option value="10">
-                        10+ years
-                      </option>
+                      <option value="10">{t('10+ years', '١٠ سنوات فأكثر')}</option>
                     </Input>
                   </div>
                 </div>
 
                 <div className="mb-4">
                   <div
+                    className="pc-filter-heading"
                     style={{
                       display:
                         "flex",
@@ -1922,10 +1815,7 @@ const handleDisconnectCaregiver = async () => {
                         "14px",
                     }}
                   >
-                    <FaCalendarAlt />
-
-                    Available Days
-                  </div>
+                    <FaCalendarAlt />{t('Available Days', 'أيام التوفر')}</div>
 
                   <div
                     style={{
@@ -1956,6 +1846,8 @@ const handleDisconnectCaregiver = async () => {
                                 day
                               )
                             }
+                            className="pc-filter-chip"
+                            aria-pressed={selected}
                             style={chipStyle(
                               selected
                             )}
@@ -1968,7 +1860,7 @@ const handleDisconnectCaregiver = async () => {
                               />
                             )}
 
-                            {day}
+                            {translateValue(day)}
                           </button>
                         );
                       }
@@ -1978,6 +1870,7 @@ const handleDisconnectCaregiver = async () => {
 
                 <div>
                   <div
+                    className="pc-filter-heading"
                     style={{
                       display:
                         "flex",
@@ -2000,10 +1893,7 @@ const handleDisconnectCaregiver = async () => {
                         "14px",
                     }}
                   >
-                    <FaClock />
-
-                    Preferred Time
-                  </div>
+                    <FaClock />{t('Preferred Time', 'الوقت المفضل')}</div>
 
                   <div
                     style={{
@@ -2034,6 +1924,8 @@ const handleDisconnectCaregiver = async () => {
                                 time
                               )
                             }
+                            className="pc-filter-chip"
+                            aria-pressed={selected}
                             style={chipStyle(
                               selected
                             )}
@@ -2046,7 +1938,7 @@ const handleDisconnectCaregiver = async () => {
                               />
                             )}
 
-                            {time}
+                            {translateValue(time)}
                           </button>
                         );
                       }
@@ -2109,10 +2001,7 @@ const handleDisconnectCaregiver = async () => {
                       marginBottom:
                         "8px",
                     }}
-                  >
-                    Find the right
-                    caregiver
-                  </h5>
+                  >{t('Find the right caregiver', 'اعثر على مقدم الرعاية المناسب')}</h5>
 
                   <p
                     className="text-muted"
@@ -2123,13 +2012,7 @@ const handleDisconnectCaregiver = async () => {
                       margin:
                         "0 auto",
                     }}
-                  >
-                    Select your
-                    preferences above
-                    and search for
-                    caregivers who match
-                    what you need.
-                  </p>
+                  >{t('Select your preferences above and search for caregivers who match what you need.', 'اختر تفضيلاتك أعلاه وابحث عن مقدمي الرعاية المناسبين.')}</p>
                 </div>
               )}
 
@@ -2138,10 +2021,7 @@ const handleDisconnectCaregiver = async () => {
                 <div className="text-center py-5">
                   <Spinner />
 
-                  <p className="text-muted mt-3">
-                    Finding matching
-                    caregivers...
-                  </p>
+                  <p className="text-muted mt-3">{t('Finding matching caregivers...', 'جارٍ البحث عن مقدمي رعاية مناسبين...')}</p>
                 </div>
               )}
 
@@ -2195,16 +2075,9 @@ const handleDisconnectCaregiver = async () => {
                       <FaSearch />
                     </div>
 
-                    <h5>
-                      No matching
-                      caregivers
-                    </h5>
+                    <h5>{t('No matching caregivers', 'لا يوجد مقدمو رعاية مطابقون')}</h5>
 
-                    <p className="text-muted mb-0">
-                      Try removing one or
-                      two filters to see
-                      more caregivers.
-                    </p>
+                    <p className="text-muted mb-0">{t('Try removing one or two filters to see more caregivers.', 'جرّب إزالة فلتر أو اثنين لعرض المزيد.')}</p>
                   </CardBody>
                 </Card>
               )}
@@ -2222,19 +2095,16 @@ const handleDisconnectCaregiver = async () => {
                     }}
                   >
                     <div>
-                      <h5 className="mb-1">
-                        Caregivers
-                      </h5>
+                      <h5 className="mb-1">{t('Caregivers', 'مقدمو الرعاية')}</h5>
 
                       <small className="text-muted">
                         {
                           caregivers.length
                         }{" "}
-                        {caregivers.length ===
-                        1
-                          ? "caregiver"
-                          : "caregivers"}{" "}
-                        found
+                        {t(
+                          `${caregivers.length === 1 ? "caregiver" : "caregivers"} found`,
+                          "تم العثور على مقدمي رعاية"
+                        )}
                       </small>
                     </div>
 
@@ -2248,10 +2118,7 @@ const handleDisconnectCaregiver = async () => {
                             "500",
                         }}
                       >
-                        <FaMapMarkerAlt className="me-1" />
-                        Nearest results
-                        first
-                      </small>
+                        <FaMapMarkerAlt className="me-1" />{t('Nearest results first', 'الأقرب أولًا')}</small>
                     )}
                   </div>
 
@@ -2368,7 +2235,7 @@ const handleDisconnectCaregiver = async () => {
                                             {
                                               caregiver.distanceKm
                                             }{" "}
-                                            km
+                                            {t("km", "كم")}
                                           </span>
                                         )}
                                     </div>
@@ -2386,16 +2253,11 @@ const handleDisconnectCaregiver = async () => {
                                       }}
                                     >
                                       {linked && (
-                                        <Badge color="success">
-                                          Your
-                                          Caregiver
-                                        </Badge>
+                                        <Badge color="success">{t('Your Caregiver', 'مقدم الرعاية الخاص بك')}</Badge>
                                       )}
 {caregiver.professionalVerificationStatus ===
   "Verified" && (
-  <Badge color="primary">
-    ✓ Verified
-  </Badge>
+  <Badge color="primary">{t('✓ Verified', '✓ موثّق')}</Badge>
 )}
                                       {caregiver.gender && (
                                         <Badge
@@ -2413,71 +2275,44 @@ const handleDisconnectCaregiver = async () => {
 
                                 <Row>
                                   <Col sm="6">
-                                    <small className="text-muted">
-                                      Experience
-                                    </small>
+                                    <small className="text-muted">{t('Experience', 'الخبرة')}</small>
 
                                     <p>
                                       {caregiver.experience !==
                                         undefined &&
                                       caregiver.experience !==
                                         null
-                                        ? `${caregiver.experience} years`
-                                        : "Not provided"}
+                                        ? `${caregiver.experience} ${t("years", "سنوات")}`
+                                        : t("Not provided", "غير متوفر")}
                                     </p>
                                   </Col>
 
                                   <Col sm="6">
-                                    <small className="text-muted">
-                                      Location
-                                    </small>
+                                    <small className="text-muted">{t('Location', 'الموقع')}</small>
 
                                     <p>
                                       {caregiver.location ||
-                                        "Not provided"}
+                                        t("Not provided", "غير متوفر")}
                                     </p>
                                   </Col>
                                 </Row>
 
-                                <small className="text-muted">
-                                  Languages
-                                </small>
+                                <small className="text-muted">{t('Languages', 'اللغات')}</small>
 
                                 <p>
-                                  {caregiver.languages
-                                    ?.length
-                                    ? caregiver.languages.join(
-                                        ", "
-                                      )
-                                    : "Not provided"}
+                                  {translateList(caregiver.languages)}
                                 </p>
 
-                                <small className="text-muted">
-                                  Available
-                                  Days
-                                </small>
+                                <small className="text-muted">{t('Available Days', 'أيام التوفر')}</small>
 
                                 <p>
-                                  {caregiver.availability
-                                    ?.length
-                                    ? caregiver.availability.join(
-                                        ", "
-                                      )
-                                    : "Not provided"}
+                                  {translateList(caregiver.availability)}
                                 </p>
 
-                                <small className="text-muted">
-                                  Preferred
-                                  Times
-                                </small>
+                                <small className="text-muted">{t('Preferred Times', 'الأوقات المفضلة')}</small>
 
                                 <p>
-                                  {caregiver.availableTimes
-                                    ?.length
-                                    ? caregiver.availableTimes.join(
-                                        ", "
-                                      )
-                                    : "Not provided"}
+                                  {translateList(caregiver.availableTimes)}
                                 </p>
 
                                 <Button
@@ -2496,9 +2331,7 @@ const handleDisconnectCaregiver = async () => {
                                       caregiver
                                     )
                                   }
-                                >
-                                  View Profile
-                                </Button>
+                                >{t('View Profile', 'عرض الملف الشخصي')}</Button>
                               </CardBody>
                             </Card>
                           </Col>
@@ -2513,16 +2346,16 @@ const handleDisconnectCaregiver = async () => {
       </div>
 
       <Modal
+        modalClassName={`patient-caregiver-modal ${isArabic ? "patient-caregiver-ar" : ""}`}
         isOpen={showProfile}
         toggle={closeProfile}
         size="lg"
         centered
+        dir={isArabic ? "rtl" : "ltr"}
       >
         <ModalHeader
           toggle={closeProfile}
-        >
-          Caregiver Profile
-        </ModalHeader>
+        >{t('Caregiver Profile', 'الملف الشخصي لمقدم الرعاية')}</ModalHeader>
 
         <ModalBody>
           {selectedCaregiver && (
@@ -2582,7 +2415,7 @@ const handleDisconnectCaregiver = async () => {
                         {
                           selectedCaregiver.distanceKm
                         }{" "}
-                        km away
+                        {t("km away", "كم بعيدًا")}
                       </p>
                     )}
 
@@ -2596,16 +2429,12 @@ const handleDisconnectCaregiver = async () => {
   {isAlreadyLinked(
     selectedCaregiver.email
   ) && (
-    <Badge color="success">
-      Connected
-    </Badge>
+    <Badge color="success">{t('Connected', 'مرتبط')}</Badge>
   )}
 
   {selectedCaregiver.professionalVerificationStatus ===
     "Verified" && (
-    <Badge color="primary">
-      ✓ Verified
-    </Badge>
+    <Badge color="primary">{t('✓ Verified', '✓ موثّق')}</Badge>
   )}
 
   {selectedCaregiver.gender && (
@@ -2613,7 +2442,7 @@ const handleDisconnectCaregiver = async () => {
       color="light"
       className="text-dark border"
     >
-      {selectedCaregiver.gender}
+      {translateValue(selectedCaregiver.gender)}
     </Badge>
   )}
 </div>
@@ -2623,9 +2452,7 @@ const handleDisconnectCaregiver = async () => {
               <Row>
                 <Col md="6">
                   <p>
-                    <strong>
-                      Experience
-                    </strong>
+                    <strong>{t('Experience', 'الخبرة')}</strong>
 
                     <br />
 
@@ -2633,30 +2460,26 @@ const handleDisconnectCaregiver = async () => {
                       undefined &&
                     selectedCaregiver.experience !==
                       null
-                      ? `${selectedCaregiver.experience} years`
-                      : "Not provided"}
+                      ? `${selectedCaregiver.experience} ${t("years", "سنوات")}`
+                      : t("Not provided", "غير متوفر")}
                   </p>
                 </Col>
 
                 <Col md="6">
                   <p>
-                    <strong>
-                      Location
-                    </strong>
+                    <strong>{t('Location', 'الموقع')}</strong>
 
                     <br />
 
                     {selectedCaregiver.location ||
-                      "Not provided"}
+                      t("Not provided", "غير متوفر")}
                   </p>
                 </Col>
               </Row>
 
               {selectedCaregiver.gender && (
                 <p>
-                  <strong>
-                    Gender
-                  </strong>
+                  <strong>{t('Gender', 'الجنس')}</strong>
 
                   <br />
 
@@ -2667,54 +2490,31 @@ const handleDisconnectCaregiver = async () => {
               )}
 
               <p>
-                <strong>
-                  Languages
-                </strong>
+                <strong>{t('Languages', 'اللغات')}</strong>
 
                 <br />
 
-                {selectedCaregiver.languages
-                  ?.length
-                  ? selectedCaregiver.languages.join(
-                      ", "
-                    )
-                  : "Not provided"}
+                {translateList(selectedCaregiver.languages)}
               </p>
 
               <p>
-                <strong>
-                  Available Days
-                </strong>
+                <strong>{t('Available Days', 'أيام التوفر')}</strong>
 
                 <br />
 
-                {selectedCaregiver.availability
-                  ?.length
-                  ? selectedCaregiver.availability.join(
-                      ", "
-                    )
-                  : "Not provided"}
+                {translateList(selectedCaregiver.availability)}
               </p>
 
               <p>
-                <strong>
-                  Preferred Times
-                </strong>
+                <strong>{t('Preferred Times', 'الأوقات المفضلة')}</strong>
 
                 <br />
 
-                {selectedCaregiver.availableTimes
-                  ?.length
-                  ? selectedCaregiver.availableTimes.join(
-                      ", "
-                    )
-                  : "Not provided"}
+                {translateList(selectedCaregiver.availableTimes)}
               </p>
 
               <p>
-                <strong>
-                  About
-                </strong>
+                <strong>{t('About', 'نبذة')}</strong>
 
                 <br />
 
@@ -2723,9 +2523,7 @@ const handleDisconnectCaregiver = async () => {
               </p>
 
               <p>
-                <strong>
-                  Certificates
-                </strong>
+                <strong>{t('Certificates', 'الشهادات')}</strong>
               </p>
 
               {selectedCaregiver.certificates
@@ -2753,10 +2551,7 @@ const handleDisconnectCaregiver = async () => {
                   )
                 )
               ) : (
-                <p className="text-muted">
-                  No certificates
-                  uploaded.
-                </p>
+                <p className="text-muted">{t('No certificates uploaded.', 'لم تُرفع أي شهادات.')}</p>
               )}
             </>
           )}
@@ -2769,9 +2564,7 @@ const handleDisconnectCaregiver = async () => {
             onClick={
               closeProfile
             }
-          >
-            Close
-          </Button>
+          >{t('Close', 'إغلاق')}</Button>
 
           {selectedCaregiver &&
             !isAlreadyLinked(
@@ -2789,12 +2582,88 @@ const handleDisconnectCaregiver = async () => {
                 }
               >
                 {sendingRequest
-                  ? "Sending..."
-                  : "Send Request"}
+                  ? t("Sending...", "جارٍ الإرسال...")
+                  : t("Send Request", "إرسال الطلب")}
               </Button>
             )}
         </ModalFooter>
       </Modal>
+
+
+      <style>{`
+        .patient-caregiver-page {
+          --pc-page-bg: #f8f9fb;
+          --pc-card-bg: #fff;
+          --pc-text: #24364c;
+          color: var(--pc-text);
+          font-size: 16px;
+        }
+        .patient-caregiver-page h2 { font-size: 34px; }
+        .patient-caregiver-page h4 { font-size: 24px; }
+        .patient-caregiver-page h5 { font-size: 21px; }
+        .patient-caregiver-page .text-muted { font-size: 15px; }
+        .patient-caregiver-page .card { background: var(--pc-card-bg) !important; color: var(--pc-text) !important; }
+        .patient-caregiver-page .patient-caregiver-ar,
+        .patient-caregiver-page.patient-caregiver-ar { text-align: right; font-family: Tahoma, Arial, sans-serif; }
+        .patient-caregiver-page.patient-caregiver-ar .text-end { text-align: left !important; }
+        .patient-caregiver-page.patient-caregiver-ar img { margin-inline-end: 18px; margin-right: 0 !important; }
+        .patient-caregiver-page.patient-caregiver-ar .form-control { text-align: right; }
+        body.dark-theme .patient-caregiver-page {
+          --pc-page-bg: #101c2a;
+          --pc-card-bg: #17283a;
+          --pc-text: #f1f5f9;
+        }
+        body.dark-theme .patient-caregiver-page .text-muted { color: #c1cedd !important; }
+        body.dark-theme .patient-caregiver-page .pc-filter-select {
+          background-color: #21374e !important;
+          color: #eaf2ff !important;
+          border-color: #56728f !important;
+        }
+        body.dark-theme .patient-caregiver-page .pc-filter-chip {
+          background-color: #21374e !important;
+          color: #eaf2ff !important;
+          border: 1px solid #56728f !important;
+        }
+        body.dark-theme .patient-caregiver-page .pc-filter-chip[aria-pressed="true"] {
+          background-color: #274d78 !important;
+          border-color: #85b8ff !important;
+          color: #ffffff !important;
+        }
+        body.dark-theme .patient-caregiver-page .pc-filter-heading {
+          color: #d8e7fa !important;
+        }
+        body.dark-theme .patient-caregiver-page .pc-location-line {
+          color: #a8cbff !important;
+        }
+        body.dark-theme .patient-caregiver-page h2,
+        body.dark-theme .patient-caregiver-page h4,
+        body.dark-theme .patient-caregiver-page h5,
+        body.dark-theme .patient-caregiver-page h6 { color: #e8f1ff !important; }
+        body.dark-theme .patient-caregiver-page .card small { color: #c1cedd; }
+        body.dark-theme .patient-caregiver-page .card p[style*="color"] { color: #e8f1ff !important; }
+        body.dark-theme .patient-caregiver-page .card div[style*="background-color: rgb(238, 244, 255)"] { background-color: #21374e !important; }
+        body.dark-theme .patient-caregiver-page .card,
+        body.dark-theme .patient-caregiver-page .modal-content { border-color: #31475f !important; }
+        body.dark-theme .patient-caregiver-page .form-control {
+          background: #21374e !important;
+          color: #f1f5f9 !important;
+          border-color: #48627c !important;
+        }
+        body.dark-theme .patient-caregiver-page .form-control::placeholder { color: #b7c8da !important; }
+        body.dark-theme .patient-caregiver-page select option { background: #21374e; color: #fff; }
+        body.dark-theme .patient-caregiver-page .card div[style*="background-color: rgb(248, 250, 252)"],
+        body.dark-theme .patient-caregiver-page .card div[style*="background-color: #f8fafc"] {
+          background-color: #21374e !important;
+        }
+        body.dark-theme .patient-caregiver-modal .modal-content {
+          background: #17283a !important;
+          color: #f1f5f9 !important;
+          border-color: #31475f !important;
+        }
+        body.dark-theme .patient-caregiver-modal .text-muted { color: #c1cedd !important; }
+        .patient-caregiver-modal.patient-caregiver-ar { direction: rtl; text-align: right; }
+      `}</style>
+      <Footer/>
     </Container>
   );
 };
