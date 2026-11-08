@@ -1,177 +1,222 @@
 import mongoose from "mongoose";
 
-const MedicationSchema = mongoose.Schema({
-  userEmail: {
+const UserSchema = mongoose.Schema({
+  name: {
     type: String,
     required: true,
-    trim: true,
   },
 
-  medicationName: {
+  email: {
     type: String,
     required: true,
-    trim: true,
+    unique: true,
   },
 
-  // Medication reference information
-medicationCatalogId: {
-  type: String,
-  default: "",
-  trim: true,
+  phoneNumber: {
+    type: String,
+    required: true,
+  },
+
+  password: {
+    type: String,
+    required: true,
+  },
+
+  isEmailVerified: {
+  type: Boolean,
+  default: false,
 },
 
-activeIngredient1: {
+emailVerificationToken: {
   type: String,
   default: "",
-  trim: true,
 },
 
-activeIngredient2: {
-  type: String,
-  default: "",
-  trim: true,
+emailVerificationExpires: {
+  type: Date,
 },
 
-  medicationForm: {
-    type: String,
-    required: true,
-    enum: [
-      "Tablet",
-      "Capsule",
-      "Injection",
-      "Cream/Ointment",
-      "Inhaler",
-      "Eye Drops",
-      "Ear Drops",
-      "Liquid/Syrup",
-      "Patch",
-      "Suppository",
-      "Other",
-    ],
-  },
-
-  topicalDosage: {
-    type: String,
-    default: "",
-    trim: true,
-  },
-
-  // Existing field, retained for compatibility
-  // Example: "2 capsules"
-  dosage: {
+  role: {
     type: String,
     required: true,
   },
 
-  // New: quantity administered at each scheduled dose
-  doseQuantity: {
-    type: Number,
-    min: 0,
-    default: null,
-  },
-
-  // New: capsule, tablet, ml, etc.
-  doseUnit: {
+    accountDeletionStatus: {
     type: String,
-    default: "",
+    enum: ["None", "Pending", "Approved", "Rejected"],
+    default: "None",
   },
 
-  // New: e.g. "500 mg per capsule"
-  medicationStrength: {
-    type: String,
-    default: "",
-    trim: true,
-  },
-
-  // New: quantity dispensed or currently available
-  suppliedQuantity: {
-    type: Number,
-    min: 0,
-    default: null,
-  },
-
-  frequency: {
-    type: String,
-    required: true,
-  },
-
-  timing: {
-    type: String,
-    required: true,
-  },
-
-  timingOffsetMinutes: {
-    type: Number,
-    min: 0,
-    default: 0,
-  },
-
-  reminderTimes: {
+  medicalCondition: {
     type: [String],
-    default: [],
+    default: undefined,
+  },
+
+  age: {
+    type: Number,
+    min: 0,
+  },
+
+  gender: {
+    type: String,
+    enum: ["Male", "Female"],
+    trim: true,
+  },
+
+  height: {
+    type: Number,
+    min: 0,
+  },
+
+  weight: {
+    type: Number,
+    min: 0,
+  },
+
+  bloodType: {
+    type: String,
+    trim: true,
+  },
+
+  allergies: {
+    type: [String],
+    default: undefined,
+  },
+
+  emergencyContact: {
+    type: String,
+    trim: true,
   },
 
   
-weeklyDay: {
-  type: [
-    {
-      type: String,
-      enum: [
-        "Sunday",
-        "Monday",
-        "Tuesday",
-        "Wednesday",
-        "Thursday",
-        "Friday",
-        "Saturday",
-      ],
-    },
-  ],
-  default: [],
+
+dailyRoutine: {
+  breakfast: {
+    type: String,
+    default: "",
+  },
+
+  lunch: {
+    type: String,
+    default: "",
+  },
+
+  dinner: {
+    type: String,
+    default: "",
+  },
+
+  wake: {
+    type: String,
+    default: "",
+  },
+
+  sleep: {
+    type: String,
+    default: "",
+  },
 },
 
 
-  startDate: {
-    type: Date,
-    default: Date.now,
-  },
+routineSetupCompleted: {
+  type: Boolean,
+  default: false,
+},
 
-  endDate: {
-    type: Date,
-    default: null,
-    validate: {
-      validator: function (value) {
-        if (!value || !this.startDate) {
-          return true;
-        }
+routineSetupDeferred: {
+  type: Boolean,
+  default: false,
+},
 
-        return value >= this.startDate;
-      },
 
-      message: "End date cannot be earlier than start date.",
-    },
-  },
-
-  isActive: {
+  notificationsEnabled: {
     type: Boolean,
     default: true,
   },
 
-  instructions: {
+  profilepic: {
     type: String,
     default: "",
   },
 
-  prescriptionImage: {
+  patientLinkCode: {
     type: String,
-    default: "",
+    unique: true,
+    sparse: true,
+    uppercase: true,
+    trim: true,
   },
+
+  degree: {
+    type: String,
+  },
+
+  experience: {
+    type: Number,
+  },
+
+  certificates: [
+    {
+      certificateName: {
+        type: String,
+        required: true,
+      },
+
+      certificateFile: {
+        type: String,
+        required: true,
+      },
+    },
+  ],
+
+
+  professionalVerificationStatus: {
+  type: String,
+  enum: ["Not Submitted", "Pending", "Verified", "Rejected"],
+  default: "Not Submitted",
+},
+
+professionalVerifiedAt: {
+  type: Date,
+  default: null,
+},
+
+  languages: {
+    type: [String],
+    default: undefined,
+  },
+
+  availability: {
+    type: [String],
+    default: undefined,
+  },
+
+  availableTimes: {
+    type: [String],
+    default: undefined,
+  },
+
+  location: {
+    type: String,
+  },
+
+  bio: {
+    type: String,
+  },
+
+  latitude: {
+  type: Number,
+},
+
+longitude: {
+  type: Number,
+},
 });
 
-const MedicationModel = mongoose.model(
-  "MedicationsTbl",
-  MedicationSchema,
-  "MedicationsTbl"
+const UserModel = mongoose.model(
+  "UsersTbl",
+  UserSchema,
+  "UsersTbl"
 );
 
-export default MedicationModel;
+export default UserModel;
