@@ -948,7 +948,9 @@ const CaregiverProfileSettings = () => {
         .mm-caregiver-profile .mm-cp-language-chip:hover { border-color:#dc3545; }
         @media(max-width:600px) { .mm-caregiver-profile .card-body { padding:12px!important; } .mm-caregiver-profile button { overflow-wrap:anywhere; } .mm-caregiver-profile .mm-cp-language-grid {grid-template-columns:repeat(auto-fit,minmax(135px,1fr));} }
       `}</style>
-      <h2>{(isArabic ? "إعدادات الملف الشخصي لمقدم الرعاية" : "Caregiver Profile Settings")}</h2>
+      <h2  style={{
+    color: theme === "dark" ? "#b8d3ff" : "#1e3a8a",
+    fontWeight: "700",}}>{(isArabic ? "إعدادات الملف الشخصي لمقدم الرعاية" : "Caregiver Profile Settings")}</h2>
 
       {(!user?.name || !user?.email) && (
         <div className="mm-cp-account-warning" role="alert">
