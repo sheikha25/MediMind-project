@@ -1,15 +1,12 @@
 
 import { useEffect, useState } from "react";
-import { Container, Row, Col } from "reactstrap";
+import { Button } from "reactstrap";
 import { useDispatch, useSelector } from "react-redux";
-import { useNavigate } from "react-router-dom";
 import { updateUser } from "../features/UserSlice";
 import axios from "axios";
 
-import Header from "./Header";
-import SettingsSidebar from "./SettingsSidebar";
 
-const primaryBlue = "#17418C";
+const primaryBlue = "var(--dr-accent)";
 
 const activities = [
   { key: "wake", icon: "⏰" },
@@ -29,7 +26,6 @@ const initialRoutine = {
 
 const DailyRoutineSettings = () => {
   const dispatch = useDispatch();
-  const navigate = useNavigate();
   const user = useSelector((state) => state.user.user);
 
   const [language, setLanguage] = useState(() =>
@@ -50,6 +46,7 @@ const DailyRoutineSettings = () => {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
+  const [showSleepWarning, setShowSleepWarning] = useState(false);
   // Keep language synchronized with MediMind.
   useEffect(() => {
     const updateLanguage = () => {
@@ -143,6 +140,24 @@ const DailyRoutineSettings = () => {
     setSuccess("");
   };
 
+  
+  // Calculate the time between bedtime and next wake-up.
+  const getSleepDurationHours = () => {
+    const toMinutes = (time) => {
+      const [hours, minutes] = time.split(":").map(Number);
+      return hours * 60 + minutes;
+    };
+
+    const bedtime = toMinutes(dailyRoutine.sleep);
+    const wakeTime = toMinutes(dailyRoutine.wake);
+
+    const durationMinutes =
+      (wakeTime - bedtime + 1440) % 1440;
+
+    return durationMinutes / 60;
+  };
+
+
   // Validate all five activities.
   const validateRoutine = () => {
     const timePattern = /^([01]\d|2[0-3]):[0-5]\d$/;
@@ -173,18 +188,20 @@ const DailyRoutineSettings = () => {
       );
     }
 
-    // Standard daytime routine.
+    
+    // Allow bedtime after midnight.
     const { wake, breakfast, lunch, dinner, sleep } =
       dailyRoutine;
 
-    if (
-      !(
-        wake < breakfast &&
-        breakfast < lunch &&
-        lunch < dinner &&
-        dinner < sleep
-      )
-    ) {
+    const daytimeOrderIsValid =
+      wake < breakfast &&
+      breakfast < lunch &&
+      lunch < dinner;
+
+    const bedtimeIsValid =
+      sleep > dinner || sleep < wake;
+
+    if (!daytimeOrderIsValid || !bedtimeIsValid) {
       return t(
         "The correct order is: Wake Up → Breakfast → Lunch → Dinner → Sleep.",
         "الترتيب الصحيح هو: الاستيقاظ ← الإفطار ← الغداء ← العشاء ← النوم."
@@ -194,7 +211,33 @@ const DailyRoutineSettings = () => {
     return "";
   };
 
-  const handleSubmit = async (event) => {
+  
+  // Get recommended daily sleep hours based on patient age.
+  const getSleepRecommendation = () => {
+    const age = Number(user?.age);
+
+    if (
+      user?.age === undefined ||
+      user?.age === null ||
+      user?.age === "" ||
+      !Number.isFinite(age) ||
+      !Number.isInteger(age) ||
+      age < 1
+    ) {
+      return null;
+    }
+
+    if (age <= 2) return { min: 11, max: 14 };
+    if (age <= 5) return { min: 10, max: 13 };
+    if (age <= 12) return { min: 9, max: 12 };
+    if (age <= 17) return { min: 8, max: 10 };
+    if (age <= 60) return { min: 7, max: null };
+    if (age <= 64) return { min: 7, max: 9 };
+
+    return { min: 7, max: 8 };
+  };
+
+  const handleSubmit = async (event, skipSleepWarning = false) => {
     event.preventDefault();
 
     setError("");
@@ -206,6 +249,29 @@ const DailyRoutineSettings = () => {
       setError(validationError);
       return;
     }
+
+    // Check whether the patient's sleep window is too short.
+const sleepRecommendation = getSleepRecommendation();
+const sleepHours = getSleepDurationHours();
+
+
+const isInfant =
+  user?.age === 0 || user?.age === "0";
+
+if (
+  !skipSleepWarning &&
+  !isInfant &&
+  (
+    (sleepRecommendation &&
+      sleepHours < sleepRecommendation.min) ||
+    (!sleepRecommendation && sleepHours < 7)
+  )
+) {
+  setShowSleepWarning(true);
+  return;
+}
+
+
 
 if (!user?.email) {
   setError(
@@ -298,9 +364,10 @@ const response = await axios.put(
   const renderTimeField = (activity) => (
     <div
       key={activity.key}
+      className="dr-time-card"
       style={{
-        background: "#FFFFFF",
-        border: "1px solid #D9E9FB",
+        background: "var(--dr-card)",
+        border: "1px solid var(--dr-border)",
         borderRadius: "18px",
         padding: "22px",
         boxShadow: "0 5px 18px rgba(23,65,140,0.05)",
@@ -323,7 +390,7 @@ const response = await axios.put(
         <span
           style={{
             display: "block",
-            color: "#58759C",
+            color: "var(--dr-muted)",
             fontSize: "14px",
             marginBottom: "8px",
             fontWeight: 500,
@@ -344,9 +411,9 @@ const response = await axios.put(
           style={{
             minHeight: "48px",
             borderRadius: "10px",
-            border: "1px solid #C9DDF5",
-            background: "#F8FBFF",
-            color: primaryBlue,
+            border: "1px solid var(--dr-border)",
+            background: "var(--dr-input)",
+            color: "var(--dr-text)",
             fontSize: "16px",
           }}
         />
@@ -355,7 +422,7 @@ const response = await axios.put(
       {recommendedMealTimes[activity.key] && (
         <p
           style={{
-            color: "#58759C",
+            color: "var(--dr-muted)",
             fontSize: "13px",
             marginTop: "10px",
             marginBottom: 0,
@@ -368,41 +435,56 @@ const response = await axios.put(
   );
 
   return (
-    <Container fluid className="dashboard-page">
-      <Header />
-
-      <Row
-        dir={isArabic ? "rtl" : "ltr"}
-        style={{
-          display: "flex",
-          flexDirection: isArabic ? "row-reverse" : "row",
-          alignItems: "flex-start",
-        }}
-      >
-        <Col
-          md="2"
-          className="settings-sidebar"
-          style={{ flexShrink: 0 }}
-        >
-          <SettingsSidebar />
-        </Col>
-
-        <Col md="9">
+    <div className="daily-routine-settings" dir={isArabic ? "rtl" : "ltr"}>
+      <style>{`
+        .daily-routine-settings {
+          --dr-page: #f4f8ff;
+          --dr-card: #ffffff;
+          --dr-info: #eaf4ff;
+          --dr-input: #f8fbff;
+          --dr-text: #1e293b;
+          --dr-muted: #58759c;
+          --dr-accent: #17418c;
+          --dr-border: #d9e9fb;
+        }
+        body.dark-theme .daily-routine-settings,
+        body.dark-mode .daily-routine-settings,
+        [data-theme="dark"] .daily-routine-settings {
+          --dr-page: #102033;
+          --dr-card: #17283a;
+          --dr-info: #243b55;
+          --dr-input: #21374e;
+          --dr-text: #f1f5f9;
+          --dr-muted: #c1cedd;
+          --dr-accent: #83b8ff;
+          --dr-border: #415a73;
+        }
+        .daily-routine-settings .dr-panel,
+        .daily-routine-settings .dr-time-card,
+        .daily-routine-settings .dr-dialog { color: var(--dr-text); }
+        .daily-routine-settings input[type="time"] { color-scheme: light; }
+        body.dark-theme .daily-routine-settings input[type="time"],
+        body.dark-mode .daily-routine-settings input[type="time"],
+        [data-theme="dark"] .daily-routine-settings input[type="time"] { color-scheme: dark; }
+        .daily-routine-settings input[type="time"]:focus { border-color: var(--dr-accent); }
+        .daily-routine-settings .dr-save { background: #17418c !important; color: white !important; }
+        .daily-routine-settings .dr-dialog p { color: var(--dr-text); }
+      `}</style>
           <div
             lang={language}
             dir={isArabic ? "rtl" : "ltr"}
             style={{
-              minHeight: "100vh",
-              background: "#F4F8FF",
-              padding: "40px 16px",
+              minHeight: "auto",
+              padding: "0",
               textAlign: isArabic ? "right" : "left",
             }}
           >
             <div
+              className="dr-panel"
               style={{
                 maxWidth: "900px",
                 margin: "0 auto",
-                background: "#FFFFFF",
+                background: "var(--dr-card)",
                 borderRadius: "20px",
                 padding: "30px",
                 boxShadow: "0 8px 30px rgba(0,0,0,0.08)",
@@ -410,7 +492,7 @@ const response = await axios.put(
             >
               <h2
                 style={{
-                  color: primaryBlue,
+                  color: "var(--dr-text)",
                   marginBottom: "20px",
                 }}
               >
@@ -430,10 +512,10 @@ const response = await axios.put(
 
               <div
                 style={{
-                  background: "#EAF4FF",
+                  background: "var(--dr-info)",
                   borderRadius: "12px",
                   padding: "16px",
-                  color: primaryBlue,
+                  color: "var(--dr-text)",
                   marginBottom: "25px",
                   lineHeight: 1.8,
                 }}
@@ -505,7 +587,7 @@ const response = await axios.put(
                 <button
                   type="submit"
                   disabled={loading}
-                  className="btn btn-primary"
+                  className="btn btn-primary dr-save"
                   style={{
                     background: primaryBlue,
                     border: "none",
@@ -521,9 +603,118 @@ const response = await axios.put(
               </form>
             </div>
           </div>
-        </Col>
-      </Row>
-    </Container>
+
+      
+{showSleepWarning && (
+  <div
+    style={{
+      position: "fixed",
+      inset: 0,
+      backgroundColor: "rgba(0, 0, 0, 0.5)",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      zIndex: 9999,
+      padding: "20px",
+    }}
+  >
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="sleep-warning-title"
+      style={{
+        backgroundColor: "#ffffff",
+        borderRadius: "16px",
+        padding: "28px",
+        maxWidth: "450px",
+        width: "100%",
+        boxShadow: "0 10px 35px rgba(0,0,0,0.2)",
+      }}
+    >
+      <h4
+        id="sleep-warning-title"
+        style={{ color: "var(--dr-text)", marginBottom: "15px" }}
+      >
+        🌙 {t("Sleep Duration Warning", "تنبيه بشأن مدة النوم")}
+      </h4>
+
+      <p>
+        {t(
+          `Your schedule allows approximately ${getSleepDurationHours().toFixed(1)} hours between bedtime and wake-up.`,
+          `يوفر جدولك حوالي ${getSleepDurationHours().toFixed(1)} ساعة بين وقت النوم والاستيقاظ.`
+        )}
+      </p>
+
+
+{getSleepRecommendation() ? (
+  <p>
+    {t(
+      `The recommended daily sleep duration for your age is ${getSleepRecommendation().min} ${
+        getSleepRecommendation().max
+          ? `to ${getSleepRecommendation().max}`
+          : "or more"
+      } hours.`,
+      `مدة النوم اليومية الموصى بها لعمرك هي ${
+        getSleepRecommendation().min
+      } ${
+        getSleepRecommendation().max
+          ? `إلى ${getSleepRecommendation().max}`
+          : "أو أكثر"
+      } ساعات.`
+    )}
+  </p>
+) : (
+  <p>
+    {t(
+      "Your age is not provided. Sleep needs vary by age. Please update your age in Profile Settings to receive a personalized sleep recommendation.",
+      "لم يتم تحديد عمرك. تختلف احتياجات النوم حسب العمر. يرجى تحديث عمرك في إعدادات الملف الشخصي للحصول على توصية نوم مناسبة لعمرك."
+    )}
+  </p>
+)}
+
+
+      <p style={{ color: "var(--dr-muted)", fontSize: "14px" }}>
+        {t(
+          "Insufficient sleep may affect concentration, mood, and overall health. For young children, daily sleep recommendations include naps.",
+          "قلة النوم قد تؤثر على التركيز والمزاج والصحة العامة. بالنسبة للأطفال الصغار، تشمل توصيات النوم اليومية القيلولة."
+        )}
+      </p>
+
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "flex-end",
+          gap: "10px",
+          marginTop: "24px",
+          flexWrap: "wrap",
+        }}
+      >
+        <Button
+          color="secondary"
+          outline
+          onClick={() => setShowSleepWarning(false)}
+        >
+          {t("Adjust Schedule", "تعديل الجدول")}
+        </Button>
+
+        <Button
+          color="primary"
+          onClick={async () => {
+            setShowSleepWarning(false);
+            await handleSubmit(
+              { preventDefault: () => {} },
+              true
+            );
+          }}
+        >
+          {t("Save Anyway", "حفظ على أي حال")}
+        </Button>
+      </div>
+    </div>
+  </div>
+)}
+
+    </div>
   );
 };
 
