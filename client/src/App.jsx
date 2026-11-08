@@ -11,6 +11,7 @@ import Analytics from "./components/Analytics";
 import Forgotpass from "./components/Forgotpass";
 import ResetPassword from "./components/ResetPassword";
 import Caregiver from "./components/Caregiver";
+import CaregiverProfileSettings from "./components/CaregiverProfileSettings";
 import CaregiverHome from "./components/CaregiverHome";
 import CaregiverReports from "./components/CaregiverReports";
 import CaregiverSettings from "./components/CaregiverSettings";
@@ -31,6 +32,9 @@ import LinkPatient from "./components/LinkPatient";
 import PatientCaregiver from "./components/PatientCaregiver";
 import DailyRoutineSetup from "./components/DailyRoutineSetup";
 import DailyRoutineSettings from "./components/DailyRoutineSettings";
+import Settings from "./components/Settings";
+import CaregiverNotificationSettings from "./components/CaregiverNotificationSettings";
+import { Navigate } from "react-router-dom";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Container } from "reactstrap";
 
@@ -62,22 +66,105 @@ function App() {
           <Route path="/reports" element={<Reports />} />
           <Route path="/analytics" element={<Analytics />}/>
           <Route path="/caregiver" element={<PatientCaregiver />}/>
+          
           <Route path="/caregiver-home" element={<CaregiverHome />}/>
           <Route path="/caregiver-reports" element={<CaregiverReports />}/>
           <Route path="/caregiver-analytics" element={<AnalyticsCaregiver />}/>
-          <Route path="/caregiver-settings" element={<CaregiverSettings />}/>
-          <Route path="/caregiver-language" element={<LanguageSettings />}/>
+          
+          
+{/* Caregiver Settings Layout */}
+<Route
+  path="/caregiver-settings"
+  element={<CaregiverSettings />}
+>
+  <Route
+    index
+    element={<CaregiverProfileSettings />}
+  />
+
+  <Route
+    path="notifications"
+    element={<CaregiverNotificationSettings />}
+  />
+
+  <Route
+    path="language"
+    element={<LanguageSettings />}
+  />
+
+  <Route
+    path="theme"
+    element={<ThemeSettings />}
+  />
+
+  <Route
+    path="security"
+    element={<SecuritySettings />}
+  />
+
+  <Route
+    path="about"
+    element={<AboutSettings />}
+  />
+
+  <Route
+    path="feedback"
+    element={<FeedbackSettings />}
+  />
+</Route>
+
+{/* Redirect the old notification URL */}
+<Route
+  path="/caregiver-notifications"
+  element={
+    <Navigate
+      to="/caregiver-settings/notifications"
+      replace
+    />
+  }
+/>
+
+
+{/* Caregiver Settings Old URL Redirects */}
+<Route
+  path="/caregiver-language"
+  element={<Navigate to="/caregiver-settings/language" replace />}
+/>
+
+<Route
+  path="/caregiver-theme"
+  element={<Navigate to="/caregiver-settings/theme" replace />}
+/>
+
+<Route
+  path="/caregiver-security"
+  element={<Navigate to="/caregiver-settings/security" replace />}
+/>
+
+<Route
+  path="/caregiver-about"
+  element={<Navigate to="/caregiver-settings/about" replace />}
+/>
+
+<Route
+  path="/caregiver-feedback"
+  element={<Navigate to="/caregiver-settings/feedback" replace />}
+
+/>
           <Route path="/admin-home" element={<AdminHome />}/>
-          <Route path="/admin-settings" element={<AdminSettings />}/>
-          <Route path="/settings" element={<ProfileSettings />} />
-          <Route path="/settings/profile" element={<ProfileSettings />} />
-          <Route path="/settings/notification" element={<NotificationSettings />} />
-          <Route path="/settings/daily-routine" element={<DailyRoutineSettings />}/>
-          <Route path="/settings/language" element={<LanguageSettings />} />
-          <Route path="/settings/theme" element={<ThemeSettings />} />
-          <Route path="/settings/security" element={<SecuritySettings />} />
-          <Route path="/settings/about" element={<AboutSettings />} />
-          <Route path="/settings/feedback" element={<FeedbackSettings />} />
+          <Route path="/admin-settings" element={<AdminSettings />}/>  
+  <Route path="/settings" element={<Settings />}>
+  <Route index element={<Navigate to="profile" replace />}/>
+  <Route path="profile" element={<ProfileSettings />} />
+  <Route path="notification" element={<NotificationSettings />} />
+  <Route path="daily-routine" element={<DailyRoutineSettings />} />
+  <Route path="language" element={<LanguageSettings />} />
+  <Route path="theme" element={<ThemeSettings />} />
+  <Route path="security" element={<SecuritySettings />} />
+  <Route path="about" element={<AboutSettings />} />
+  <Route path="feedback" element={<FeedbackSettings />} />
+</Route>
+
           <Route path="/medications/edit/:id" element={<EditMedication />}/>
           <Route path="/caregiver/link-patient" element={<CaregiverLinkPatient />}/>
           <Route path="/caregiver-link-patient" element={<LinkPatient />}/>
