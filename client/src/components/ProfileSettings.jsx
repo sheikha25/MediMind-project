@@ -1,13 +1,6 @@
-import {
-  Container,
-  Row,
-  Col,
-  Card,
-  CardBody,
-  Button,
-} from "reactstrap";
+import { Card, CardBody, Button } from "reactstrap";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import {
   useSelector,
@@ -16,14 +9,29 @@ import {
 
 import axios from "axios";
 
-import Header from "./Header";
-import SettingsSidebar from "./SettingsSidebar";
 
 import {
   updateUser,
 } from "../features/UserSlice";
 
 const ProfileSettings = () => {
+  const [uiLanguage, setUiLanguage] = useState(
+    () => localStorage.getItem("medimindLanguage") || "en"
+  );
+  const isArabic = uiLanguage === "ar";
+  const t = (en, ar) => isArabic ? ar : en;
+
+  useEffect(() => {
+    const syncLanguage = () =>
+      setUiLanguage(localStorage.getItem("medimindLanguage") || "en");
+    window.addEventListener("medimind-language-change", syncLanguage);
+    window.addEventListener("storage", syncLanguage);
+    return () => {
+      window.removeEventListener("medimind-language-change", syncLanguage);
+      window.removeEventListener("storage", syncLanguage);
+    };
+  }, []);
+
   const user = useSelector(
     (state) => state.user.user
   );
@@ -97,6 +105,7 @@ const ProfileSettings = () => {
     locationMessage,
     setLocationMessage,
   ] = useState("");
+  const [locationSuccess, setLocationSuccess] = useState(false);
 
   const [
     isGettingLocation,
@@ -136,12 +145,13 @@ const ProfileSettings = () => {
   const handleUseCurrentLocation =
     () => {
       setLocationMessage("");
+      setLocationSuccess(false);
 
       if (
         !navigator.geolocation
       ) {
         setLocationMessage(
-          "Geolocation is not supported by this browser."
+          t('Geolocation is not supported by this browser.', 'المتصفح لا يدعم تحديد الموقع.')
         );
 
         return;
@@ -234,17 +244,18 @@ const ProfileSettings = () => {
 
             setLocation(
               readableLocation ||
-                response.data
-                  ?.display_name ||
-                `${currentLatitude.toFixed(
-                  5
-                )}, ${currentLongitude.toFixed(
-                  5
-                )}`
+              response.data
+                ?.display_name ||
+              `${currentLatitude.toFixed(
+                5
+              )}, ${currentLongitude.toFixed(
+                5
+              )}`
             );
 
+            setLocationSuccess(true);
             setLocationMessage(
-              "Location detected successfully."
+              t('Location detected successfully.', 'تم تحديد الموقع بنجاح.')
             );
           } catch (error) {
             console.error(
@@ -261,7 +272,7 @@ const ProfileSettings = () => {
             );
 
             setLocationMessage(
-              "Coordinates detected successfully. The location name could not be loaded."
+              t('Coordinates detected successfully. The location name could not be loaded.', 'تم تحديد الإحداثيات بنجاح، لكن تعذر تحميل اسم الموقع.')
             );
           } finally {
             setIsGettingLocation(
@@ -281,25 +292,25 @@ const ProfileSettings = () => {
             error.PERMISSION_DENIED
           ) {
             setLocationMessage(
-              "Location permission was denied."
+              t('Location permission was denied.', 'تم رفض إذن الوصول إلى الموقع.')
             );
           } else if (
             error.code ===
             error.POSITION_UNAVAILABLE
           ) {
             setLocationMessage(
-              "Your current location is unavailable."
+              t('Your current location is unavailable.', 'موقعك الحالي غير متاح.')
             );
           } else if (
             error.code ===
             error.TIMEOUT
           ) {
             setLocationMessage(
-              "Location request timed out."
+              t('Location request timed out.', 'انتهت مهلة طلب الموقع.')
             );
           } else {
             setLocationMessage(
-              "Unable to detect your current location."
+              t('Unable to detect your current location.', 'تعذر تحديد موقعك الحالي.')
             );
           }
 
@@ -326,7 +337,7 @@ const ProfileSettings = () => {
 
       if (!user?.email) {
         setProfileMessage(
-          "Please log in again."
+          t('Please log in again.', 'يرجى تسجيل الدخول مجددًا.')
         );
 
         setProfileMessageType(
@@ -338,7 +349,7 @@ const ProfileSettings = () => {
 
       if (!profilePicture) {
         setProfileMessage(
-          "Please select a profile picture."
+          t('Please select a profile picture.', 'يرجى اختيار صورة شخصية.')
         );
 
         setProfileMessageType(
@@ -384,7 +395,7 @@ const ProfileSettings = () => {
 
         setProfileMessage(
           response.data?.message ||
-            "Profile picture updated successfully."
+          t('Profile picture updated successfully.', 'تم تحديث الصورة الشخصية بنجاح.')
         );
 
         setProfileMessageType(
@@ -403,7 +414,7 @@ const ProfileSettings = () => {
         setProfileMessage(
           error.response?.data
             ?.message ||
-            "Unable to upload profile picture."
+          t('Unable to upload profile picture.', 'تعذر رفع الصورة الشخصية.')
         );
 
         setProfileMessageType(
@@ -422,7 +433,7 @@ const ProfileSettings = () => {
 
       if (!user?.email) {
         setProfileMessage(
-          "Please log in again."
+          t('Please log in again.', 'يرجى تسجيل الدخول مجددًا.')
         );
 
         setProfileMessageType(
@@ -434,7 +445,7 @@ const ProfileSettings = () => {
 
       if (!name.trim()) {
         setProfileMessage(
-          "Please enter your name."
+          t('Please enter your name.', 'يرجى إدخال الاسم.')
         );
 
         setProfileMessageType(
@@ -448,13 +459,31 @@ const ProfileSettings = () => {
         !phoneNumber.trim()
       ) {
         setProfileMessage(
-          "Please enter your phone number."
+          t('Please enter your phone number.', 'يرجى إدخال رقم الهاتف.')
         );
 
         setProfileMessageType(
           "error"
         );
 
+        return;
+      }
+
+      
+      // Validate patient age.
+      if (
+        age !== "" &&
+        (
+          !Number.isInteger(Number(age)) ||
+          Number(age) < 0 ||
+          Number(age) > 120
+        )
+      ) {
+        setProfileMessage(
+          t('Please enter a valid age between 0 and 120 (whole numbers only).', 'يرجى إدخال عمر صحيح بين 0 و120 (أرقام صحيحة فقط).')
+        );
+
+        setProfileMessageType("error");
         return;
       }
 
@@ -476,10 +505,11 @@ const ProfileSettings = () => {
             Number(value)
           ) ||
             Number(value) <
-              0)
+            0)
         ) {
           setProfileMessage(
-            `Please enter a valid ${label.toLowerCase()}.`
+            t(`Please enter a valid ${label.toLowerCase()}.`,
+              `يرجى إدخال قيمة صحيحة لـ ${({Age:"العمر", Height:"الطول", Weight:"الوزن"})[label] || label}.`)
           );
 
           setProfileMessageType(
@@ -549,7 +579,7 @@ const ProfileSettings = () => {
 
         setProfileMessage(
           response.data?.message ||
-            "Patient profile updated successfully."
+          t('Patient profile updated successfully.', 'تم تحديث الملف الشخصي بنجاح.')
         );
 
         setProfileMessageType(
@@ -564,7 +594,7 @@ const ProfileSettings = () => {
         setProfileMessage(
           error.response?.data
             ?.message ||
-            "Unable to update patient profile."
+          t('Unable to update patient profile.', 'تعذر تحديث الملف الشخصي.')
         );
 
         setProfileMessageType(
@@ -585,7 +615,7 @@ const ProfileSettings = () => {
         !user?.patientLinkCode
       ) {
         setProfileMessage(
-          "No invitation code is available."
+          t('No invitation code is available.', 'لا يوجد رمز دعوة متاح.')
         );
 
         setProfileMessageType(
@@ -601,7 +631,7 @@ const ProfileSettings = () => {
         );
 
         setProfileMessage(
-          "Invitation code copied successfully."
+          t('Invitation code copied successfully.', 'تم نسخ رمز الدعوة بنجاح.')
         );
 
         setProfileMessageType(
@@ -614,7 +644,7 @@ const ProfileSettings = () => {
         );
 
         setProfileMessage(
-          "Unable to copy the invitation code."
+          t('Unable to copy the invitation code.', 'تعذر نسخ رمز الدعوة.')
         );
 
         setProfileMessageType(
@@ -624,37 +654,37 @@ const ProfileSettings = () => {
     };
 
   return (
-    <Container
-      fluid
-      className="dashboard-page"
+    <div
+      className="profile-settings-page"
+      dir={isArabic ? "rtl" : "ltr"}
     >
-      <Header />
 
-      <Row
-        style={{
-          minHeight: "85vh",
-        }}
-      >
-        <Col
-          md="2"
-          className="settings-sidebar"
-        >
-          <SettingsSidebar />
-        </Col>
-
-        <Col
-          md="9"
-          className="p-5"
-        >
-          <h2>
-            Profile Settings
-          </h2>
+      <style>{`
+        .profile-settings-page { font-size: 16px; width: 100%; min-width: 0; box-sizing: border-box; }
+        .profile-settings-page label { display: block; font-weight: 600; margin-bottom: 6px; }
+        .profile-settings-page .form-control { font-size: 15px; min-height: 42px; }
+        .profile-settings-page h2 { font-size: 30px; font-weight: 700; margin-bottom: 22px; }
+        .profile-settings-page .text-muted { font-size: 14px; }
+        .profile-settings-page[dir="rtl"] { text-align: right; }
+        .profile-settings-page[dir="rtl"] input:not([type="email"]):not([type="number"]) { text-align: right; }
+        .profile-settings-page[dir="rtl"] input[type="email"],
+        .profile-settings-page[dir="rtl"] input[type="number"] { direction: ltr; text-align: left; }
+        body.dark-theme .profile-settings-page { --ps-code-bg: #21374e; }
+        body.dark-theme .profile-settings-page .form-control {
+          background-color: #21374e !important;
+          color: #f1f5f9 !important;
+          border-color: #48627c !important;
+        }
+        body.dark-theme .profile-settings-page .form-control::placeholder { color: #b8c8d8; }
+        body.dark-theme .profile-settings-page .form-control:disabled { opacity: .8; }
+        body.dark-theme .profile-settings-page .text-muted { color: #c1cedd !important; }
+        body.dark-theme .profile-settings-page .card { background-color: #17283a; color: #f1f5f9; border-color: #31475f; }
+      `}</style>
+          <h2>{t('Profile Settings', 'إعدادات الملف الشخصي')}</h2>
 
           <Card>
             <CardBody>
-              <label>
-                Username
-              </label>
+              <label>{t('Username', 'اسم المستخدم')}</label>
 
               <input
                 type="text"
@@ -672,15 +702,15 @@ const ProfileSettings = () => {
                 }}
               />
 
-              <label>
-                Age
-              </label>
+              <label>{t('Age', 'العمر')}</label>
 
               <input
                 type="number"
                 className="form-control mb-3"
                 placeholder="24"
                 min="0"
+                max="120"
+                step="1"
                 value={age}
                 onChange={(
                   event
@@ -694,12 +724,10 @@ const ProfileSettings = () => {
                 }}
               />
 
-              <label>
-                Height{" "}
-                <small>
-                  (cm)
-                </small>
-              </label>
+            <label>
+  {t("Height", "الطول")}{" "}
+  <small>({t("cm", "سم")})</small>
+</label>
 
               <input
                 type="number"
@@ -720,11 +748,9 @@ const ProfileSettings = () => {
               />
 
               <label>
-                Weight{" "}
-                <small>
-                  (kg)
-                </small>
-              </label>
+  {t("Weight", "الوزن")}{" "}
+  <small>({t("kg", "كجم")})</small>
+</label>
 
               <input
                 type="number"
@@ -744,9 +770,7 @@ const ProfileSettings = () => {
                 }}
               />
 
-              <label>
-                Blood Type
-              </label>
+              <label>{t('Blood Type', 'فصيلة الدم')}</label>
 
               <select
                 className="form-control mb-3"
@@ -764,10 +788,7 @@ const ProfileSettings = () => {
                   clearMessage();
                 }}
               >
-                <option value="">
-                  Select Blood
-                  Type
-                </option>
+                <option value="">{t('Select Blood Type', 'اختر فصيلة الدم')}</option>
 
                 <option value="A+">
                   A+
@@ -801,19 +822,15 @@ const ProfileSettings = () => {
                   O-
                 </option>
 
-                <option value="Unknown">
-                  Unknown
-                </option>
+                <option value="Unknown">{t('Unknown', 'غير معروف')}</option>
               </select>
 
-              <label>
-                Allergies
-              </label>
+              <label>{t('Allergies', 'الحساسية')}</label>
 
               <input
                 type="text"
                 className="form-control mb-2"
-                placeholder="Example: Penicillin, Peanuts"
+                placeholder={t('Example: Penicillin, Peanuts', 'مثال: البنسلين، الفول السوداني')}
                 value={
                   allergiesInput
                 }
@@ -829,19 +846,14 @@ const ProfileSettings = () => {
                 }}
               />
 
-              <small className="text-muted d-block mb-3">
-                Separate multiple
-                allergies with commas.
-              </small>
+              <small className="text-muted d-block mb-3">{t('Separate multiple allergies with commas.', 'افصل بين أنواع الحساسية باستخدام الفواصل.')}</small>
 
-              <label>
-                Emergency Contact
-              </label>
+              <label>{t('Emergency Contact', 'جهة الاتصال للطوارئ')}</label>
 
               <input
                 type="text"
                 className="form-control mb-3"
-                placeholder="Example: 91234567"
+                placeholder={t('Example: 91234567', 'مثال: 91234567')}
                 value={
                   emergencyContact
                 }
@@ -857,9 +869,7 @@ const ProfileSettings = () => {
                 }}
               />
 
-              <label>
-                Email
-              </label>
+              <label>{t('Email', 'البريد الإلكتروني')}</label>
 
               <input
                 type="email"
@@ -871,9 +881,7 @@ const ProfileSettings = () => {
                 readOnly
               />
 
-              <label>
-                Phone Number
-              </label>
+              <label>{t('Phone Number', 'رقم الهاتف')}</label>
 
               <input
                 type="text"
@@ -893,15 +901,13 @@ const ProfileSettings = () => {
                 }}
               />
 
-              <label>
-                Location
-              </label>
+              <label>{t('Location', 'الموقع')}</label>
 
               <div className="mb-3">
                 <input
                   type="text"
                   className="form-control mb-2"
-                  placeholder="Example: Muscat, Oman"
+                  placeholder={t('Example: Muscat, Oman', 'مثال: مسقط، عُمان')}
                   value={
                     location
                   }
@@ -931,7 +937,6 @@ const ProfileSettings = () => {
 
                 <Button
                   color="primary"
-                  outline
                   type="button"
                   onClick={
                     handleUseCurrentLocation
@@ -945,8 +950,8 @@ const ProfileSettings = () => {
                   }}
                 >
                   {isGettingLocation
-                    ? "Detecting Location..."
-                    : "📍 Use Current Location"}
+                    ? t('Detecting Location...', 'جارٍ تحديد الموقع...')
+                    : t('📍 Use Current Location', '📍 استخدام الموقع الحالي')}
                 </Button>
 
                 {locationMessage && (
@@ -973,35 +978,16 @@ const ProfileSettings = () => {
                     fontSize:
                       "11px",
                   }}
-                >
-                  Location data ©
-                  OpenStreetMap
-                  contributors
-                </small>
+                >{t('Location data © OpenStreetMap contributors', 'بيانات الموقع © مساهمو OpenStreetMap')}</small>
               </div>
 
               <hr className="my-4" />
 
-              <h5 className="mb-2">
-                Connect with a
-                Caregiver
-              </h5>
+              <h5 className="mb-2">{t('Connect with a Caregiver', 'الارتباط بمقدم رعاية')}</h5>
 
-              <p className="text-muted mb-3">
-                Share this invitation
-                code with a family
-                member, friend, or
-                trusted caregiver who
-                already knows you.
-                They can use it to send
-                you a connection
-                request.
-              </p>
+              <p className="text-muted mb-3">{t('Share this invitation code with a family member, friend, or trusted caregiver who already knows you. They can use it to send you a connection request.', 'شارك رمز الدعوة هذا مع أحد أفراد العائلة أو صديق أو مقدم رعاية موثوق يعرفك. يمكنه استخدامه لإرسال طلب ارتباط إليك.')}</p>
 
-              <label className="mb-2">
-                Your Caregiver
-                Invitation Code
-              </label>
+              <label className="mb-2">{t('Your Caregiver Invitation Code', 'رمز دعوة مقدم الرعاية الخاص بك')}</label>
 
               <div
                 className="d-flex align-items-center mb-2"
@@ -1033,15 +1019,18 @@ const ProfileSettings = () => {
 
                     fontSize:
                       "16px",
+
+                      color: "#1e293b",
+direction: "ltr",
+textAlign: "center",
                   }}
                 >
                   {user?.patientLinkCode ||
-                    "No invitation code available"}
+                    t('No invitation code available', 'لا يوجد رمز دعوة متاح')}
                 </span>
 
                 <Button
                   color="primary"
-                  outline
                   size="sm"
                   type="button"
                   disabled={
@@ -1050,54 +1039,47 @@ const ProfileSettings = () => {
                   onClick={
                     handleCopyCode
                   }
-                >
-                  Copy Code
-                </Button>
+                >{t('Copy Code', 'نسخ الرمز')}</Button>
               </div>
 
-              <small className="text-muted d-block mb-1">
-                Sharing this code does
-                not give the caregiver
-                immediate access to
-                your account.
-              </small>
+              <small className="text-muted d-block mb-1">{t('Sharing this code does not give the caregiver immediate access to your account.', 'مشاركة هذا الرمز لا تمنح مقدم الرعاية وصولًا فوريًا إلى حسابك.')}</small>
 
-              <small className="text-muted d-block mb-4">
-                You will receive a
-                request and can review
-                the caregiver's profile
-                before accepting or
-                rejecting it.
-              </small>
+              <small className="text-muted d-block mb-4">{t("You will receive a request and can review the caregiver's profile before accepting or rejecting it.", 'سيصلك طلب ويمكنك مراجعة الملف الشخصي لمقدم الرعاية قبل قبوله أو رفضه.')}</small>
 
               <hr className="my-4" />
 
-              <label>
-                Profile Picture
-              </label>
+              <label>{t('Profile Picture', 'الصورة الشخصية')}</label>
 
-              <input
-                type="file"
-                className="form-control mb-3"
-                accept=".jpg,.jpeg,.png"
-                onChange={(
-                  event
-                ) => {
-                  const selectedFile =
-                    event.target
-                      .files?.[0];
+             <div className="mb-3">
+  <label
+    htmlFor="profile-picture-upload"
+    className="btn btn-outline-primary"
+    style={{ cursor: "pointer" }}
+  >
+    {t("Choose Picture", "اختيار صورة")}
+  </label>
 
-                  if (
-                    selectedFile
-                  ) {
-                    setProfilePicture(
-                      selectedFile
-                    );
+  <input
+    id="profile-picture-upload"
+    type="file"
+    accept=".jpg,.jpeg,.png"
+    style={{ display: "none" }}
+    onChange={(event) => {
+      const selectedFile = event.target.files?.[0];
 
-                    clearMessage();
-                  }
-                }}
-              />
+      if (selectedFile) {
+        setProfilePicture(selectedFile);
+        clearMessage();
+      }
+    }}
+  />
+
+  <span className="mx-3">
+    {profilePicture
+      ? profilePicture.name
+      : t("No file selected", "لم يتم اختيار ملف")}
+  </span>
+</div>
 
               <Button
                 color="secondary"
@@ -1111,21 +1093,26 @@ const ProfileSettings = () => {
                 }
               >
                 {isSavingProfile
-                  ? "Uploading..."
-                  : "Upload Profile Picture"}
+                  ? t('Uploading...', 'جارٍ الرفع...')
+                  : t('Upload Profile Picture', 'رفع الصورة الشخصية')}
               </Button>
 
-              <label>
-                Role
-              </label>
+              <label>{t('Role', 'الدور')}</label>
 
               <input
                 type="text"
                 className="form-control mb-3"
                 value={
-                  user?.role ||
-                  "patient"
-                }
+  isArabic
+    ? (
+        {
+          patient: "مريض",
+          caregiver: "مقدم رعاية",
+          admin: "مسؤول",
+        }[user?.role] || user?.role || "مريض"
+      )
+    : (user?.role || "patient")
+}
                 disabled
                 readOnly
               />
@@ -1142,18 +1129,17 @@ const ProfileSettings = () => {
                 }
               >
                 {isSavingDetails
-                  ? "Saving..."
-                  : "Save Changes"}
+                  ? t('Saving...', 'جارٍ الحفظ...')
+                  : t('Save Changes', 'حفظ التغييرات')}
               </Button>
 
               {profileMessage && (
                 <div
-                  className={`alert mt-3 ${
-                    profileMessageType ===
-                    "success"
+                  className={`alert mt-3 ${profileMessageType ===
+                      "success"
                       ? "alert-success"
                       : "alert-danger"
-                  }`}
+                    }`}
                 >
                   {
                     profileMessage
@@ -1162,10 +1148,11 @@ const ProfileSettings = () => {
               )}
             </CardBody>
           </Card>
-        </Col>
-      </Row>
-    </Container>
+          
+    </div>
+    
   );
+  
 };
 
 export default ProfileSettings;
