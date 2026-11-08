@@ -1,8 +1,6 @@
 
 import { useState } from "react";
-import { Container, Row, Col, Card, CardBody } from "reactstrap";
-import Header from "./Header";
-import SettingsSidebar from "./SettingsSidebar";
+import { Card, CardBody } from "reactstrap";
 
 const LanguageSettings = () => {
   const [language, setLanguage] = useState(
@@ -13,52 +11,100 @@ const LanguageSettings = () => {
     const selectedLanguage = e.target.value;
 
     setLanguage(selectedLanguage);
-    localStorage.setItem("medimindLanguage", selectedLanguage);
 
-    window.dispatchEvent(new Event("medimind-language-change"));
+    localStorage.setItem(
+      "medimindLanguage",
+      selectedLanguage
+    );
+
+    window.dispatchEvent(
+      new Event("medimind-language-change")
+    );
   };
 
+  const isArabic = language === "ar";
+
   return (
-    <Container
-  fluid
-  className="dashboard-page"
-  dir={language === "ar" ? "rtl" : "ltr"}
->
-      <Header />
+    <div
+      className="language-settings-page"
+      dir={isArabic ? "rtl" : "ltr"}
+    >
+      <style>{`
+        .language-settings-page {
+          width: 100%;
+          min-width: 0;
+          box-sizing: border-box;
+          text-align: start;
+        }
 
-      <Row style={{ minHeight: "85vh" }}>
-       <Col
-  md="2"
-  className="settings-sidebar"
-  style={{ backgroundColor: "#17418C" }}
->
-  <SettingsSidebar />
-</Col>
+        .language-settings-page h2 {
+          font-size: 30px;
+          font-weight: 700;
+          margin-bottom: 24px;
+        }
 
-        <Col
-  md="9"
-  className="p-5"
-  style={{
-    textAlign: language === "ar" ? "right" : "left",
-  }}
->
-          <h2>{language === "ar" ? "اللغة" : "Language"}</h2>
+        .language-settings-page .language-card {
+          width: 100%;
+          max-width: 100%;
+          border-radius: 14px;
+          box-sizing: border-box;
+        }
 
-          <Card>
-            <CardBody>
-              <select
-                className="form-control"
-                value={language}
-                onChange={handleLanguageChange}
-              >
-                <option value="en">English</option>
-                <option value="ar">العربية</option>
-              </select>
-            </CardBody>
-          </Card>
-        </Col>
-      </Row>
-    </Container>
+        .language-settings-page .language-select {
+          min-height: 44px;
+          font-size: 16px;
+          border-radius: 9px;
+        }
+
+        body.dark-theme .language-settings-page,
+        body.dark-mode .language-settings-page,
+        [data-theme="dark"] .language-settings-page {
+          color: #f1f5f9;
+        }
+
+        body.dark-theme .language-settings-page .language-card,
+        body.dark-mode .language-settings-page .language-card,
+        [data-theme="dark"] .language-settings-page .language-card {
+          background: #17283a;
+          color: #f1f5f9;
+          border-color: #415a73;
+        }
+
+        body.dark-theme .language-settings-page .language-select,
+        body.dark-mode .language-settings-page .language-select,
+        [data-theme="dark"] .language-settings-page .language-select {
+          background: #21374e;
+          color: #f1f5f9;
+          border-color: #415a73;
+        }
+
+        @media (max-width: 768px) {
+          .language-settings-page h2 {
+            font-size: 25px;
+          }
+        }
+      `}</style>
+
+      <h2>
+        {isArabic ? "اللغة" : "Language"}
+      </h2>
+
+      <Card className="language-card">
+        <CardBody>
+          <select
+            className="form-control language-select"
+            value={language}
+            onChange={handleLanguageChange}
+            aria-label={
+              isArabic ? "اختر اللغة" : "Select Language"
+            }
+          >
+            <option value="en">English</option>
+            <option value="ar">العربية</option>
+          </select>
+        </CardBody>
+      </Card>
+    </div>
   );
 };
 
