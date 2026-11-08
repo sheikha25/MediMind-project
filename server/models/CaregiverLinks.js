@@ -1,14 +1,19 @@
+
 import mongoose from "mongoose";
 
-const CaregiverLinkSchema = mongoose.Schema({
+const CaregiverLinkSchema = new mongoose.Schema({
   caregiverEmail: {
     type: String,
     required: true,
+    trim: true,
+    lowercase: true,
   },
 
   patientEmail: {
     type: String,
     required: true,
+    trim: true,
+    lowercase: true,
   },
 
   relationship: {
@@ -17,13 +22,14 @@ const CaregiverLinkSchema = mongoose.Schema({
 
   status: {
     type: String,
+    enum: ["Pending", "Accepted", "Rejected"],
     default: "Pending",
   },
 
   medicationManagementPermission: {
-  type: Boolean,
-  default: false,
-},
+    type: Boolean,
+    default: false,
+  },
 
   patientLinkCode: {
     type: String,
@@ -40,6 +46,29 @@ const CaregiverLinkSchema = mongoose.Schema({
     type: Date,
     default: Date.now,
   },
+});
+
+// Prevent duplicate link records for the same pair.
+CaregiverLinkSchema.index(
+  { caregiverEmail: 1, patientEmail: 1 },
+  { unique: true }
+);
+
+// One patient can have only one Accepted caregiver.
+CaregiverLinkSchema.index(
+  { patientEmail: 1 },
+  {
+    unique: true,
+    partialFilterExpression: {
+      status: "Accepted",
+    },
+  }
+);
+
+// Speeds up checking the caregiver's active patients.
+CaregiverLinkSchema.index({
+  caregiverEmail: 1,
+  status: 1,
 });
 
 const CaregiverLinkModel = mongoose.model(
