@@ -6,7 +6,7 @@ import { useForm } from "react-hook-form";
 import { useDispatch, useSelector } from "react-redux";
 import { addUser } from "../features/UserSlice";
 import { Link } from "react-router-dom";
-import Footer from "./footer";
+import Footer from "./Footer";
 const Register = () => {
   const dispatch = useDispatch();
   const message = useSelector((state) => state.user.message);
