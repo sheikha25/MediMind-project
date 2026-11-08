@@ -1,1725 +1,2964 @@
+import { useEffect, useState, } from "react";
+import omanMedications from "../data/omanmedications.json";
+import { Container, Row, Col, Card, CardBody, Button, Modal, ModalHeader, ModalBody, ModalFooter, Alert, Progress, Input} from "reactstrap";
 
-import { useEffect, useRef, useState } from "react";
+import { useSelector, } from "react-redux";
+
+import { useNavigate, useLocation, } from "react-router-dom";
+import Footer from "./Footer";
 import axios from "axios";
-import { Link, useLocation, useNavigate } from "react-router-dom";
-import { useSelector, useDispatch } from "react-redux";
-import { FaBell, FaCheck, FaTimes, FaUser, FaClock } from "react-icons/fa";
-import medimindlogo from "../assets/medimindlogo.jpg";
-import notificationSound from "../assets/soft_chime.wav";
-import { logout } from "../features/UserSlice";
 
-const API = "http://localhost:3002";
-const FALLBACK_AVATAR =
-  "https://cdn-icons-png.flaticon.com/512/3135/3135715.png";
+import CaregiverHeader from "./CaregiverHeader";
+import { FiEdit2, FiTrash2 } from "react-icons/fi";
+import lightBackground from "../assets/medimind-bg-light.png";
+import darkBackground from "../assets/medimind-bg-dark.png";
 
-const CaregiverHeader = () => {
-  const user = useSelector((state) => state.user.user);
-  const dispatch = useDispatch();
-  const navigate = useNavigate();
-  const location = useLocation();
+const caregiverMessages = [
+  {
+    text: "Your care makes a meaningful difference every day.",
+    ar: "رعايتك تصنع فرقًا حقيقيًا في حياة الآخرين كل يوم.",
+  },
+  {
+    text: "Small acts of care can change someone's entire day.",
+    ar: "قد يكون اهتمامك البسيط سببًا في جعل يوم أحدهم أجمل.",
+  },
+  {
+    text: "Every dose given on time is another step toward healing.",
+    ar: "كل جرعة تُؤخذ في موعدها هي خطوة أخرى نحو التعافي.",
+  },
+  {
 
+    text: "Behind every reminder is someone who depends on you.",
+    ar: "خلف كل تذكير شخص يعتمد على اهتمامك ورعايتك.",
+  },
+  {
+    text: "A few moments of your time can bring someone peace of mind.",
+    ar: "بضع لحظات من وقتك قد تمنح أحدهم راحة البال.",
+  },
+  {
+    text: "Kindness is a form of medicine that costs nothing.",
+    ar: "اللطف دواء لا يكلّف شيئًا، لكنه يترك أثرًا عميقًا.",
+  },
+  {
+    text: "Compassion is at the heart of every great caregiver.",
+    ar: "الرحمة هي جوهر كل رعاية عظيمة.",
+  },
+  {
+    text: "Healing begins with someone who cares.",
+    ar: "يبدأ التعافي حين يجد الإنسان من يهتم لأمره.",
+  },
+  {
+    text: "Your patience and compassion make every day better for your patients.",
+    ar: "صبرك ورحمتك يجعلان أيام مرضاك أفضل.",
+  },
+  {
+    text: '"Is the reward for goodness anything but goodness?" — Qur\'an 55:60',
+    ar: "﴿هَلْ جَزَاءُ الْإِحْسَانِ إِلَّا الْإِحْسَانُ﴾ — سورة الرحمن، الآية ٦٠",
+  },
+];
+
+
+const getTimeGreeting = () => {
+  const hour =
+    new Date().getHours();
+
+  if (hour < 12) {
+    return "Good morning";
+  }
+
+  if (hour < 18) {
+    return "Good afternoon";
+  }
+
+  return "Good evening";
+};
+
+
+
+const normalizeMedicineName = (value) =>
+  String(value || "")
+    .normalize("NFKC")
+    .trim()
+    .replace(/\s+/g, " ")
+    .toLowerCase();
+
+const caregiverMedicationOptions = omanMedications.filter(
+  (medication) =>
+    typeof medication.tradeName === "string" &&
+    medication.tradeName.trim() !== ""
+);
+
+const caregiverDosageUnits = {
+  Tablet: ["tablet", "tablets", "mg", "mcg", "IU"],
+  Capsule: ["capsule", "capsules", "mg", "mcg", "IU"],
+  Injection: ["units", "ml", "mg", "mcg"],
+  "Cream/Ointment": ["g", "mg", "application", "applications"],
+  Inhaler: ["puff", "puffs"],
+  "Eye Drops": ["drop", "drops"],
+  "Ear Drops": ["drop", "drops"],
+  "Liquid/Syrup": ["ml", "mg"],
+  Patch: ["patch", "patches"],
+  Suppository: ["suppository", "suppositories"],
+  Other: [
+    "mg", "g", "mcg", "ml", "units",
+    "tablet", "tablets",
+    "capsule", "capsules",
+    "drop", "drops",
+    "puff", "puffs",
+    "patch", "patches",
+    "application", "applications",
+    "suppository", "suppositories"
+  ],
+};
+
+const detectCaregiverMedicationForm = (medication) => {
+  const form = String(
+    medication?.dosageForm || medication?.form || ""
+  ).toLowerCase();
+
+  if (form.includes("ophthalmic") || form.includes("eye drop")) return "Eye Drops";
+  if (form.includes("otic") || form.includes("ear drop")) return "Ear Drops";
+  if (form.includes("tablet")) return "Tablet";
+  if (form.includes("capsule")) return "Capsule";
+  if (form.includes("injection") || form.includes("injectable")) return "Injection";
+  if (form.includes("cream") || form.includes("ointment")) return "Cream/Ointment";
+  if (form.includes("inhaler")) return "Inhaler";
+  if (form.includes("syrup") || form.includes("oral solution")) return "Liquid/Syrup";
+  if (form.includes("patch")) return "Patch";
+  if (form.includes("suppository")) return "Suppository";
+
+  return "";
+};
+
+const caregiverRequiredTimes = (frequency) => ({
+  "Once daily": 1,
+  "Twice daily": 2,
+  "Three times daily": 3,
+  "Every 6 hours": 4,
+  "Every 8 hours": 3,
+  "Every 12 hours": 2,
+  Weekly: 1,
+  "As needed": 0,
+}[frequency] ?? 0);
+
+const CaregiverHome = () => {
   const [language, setLanguage] = useState(
     () => localStorage.getItem("medimindLanguage") || "en"
   );
 
-  const [theme, setTheme] = useState(
-    () =>
-      localStorage.getItem("medimind-theme") === "dark"
-        ? "dark"
-        : "light"
-  );
-
+  const [theme, setTheme] = useState(() => localStorage.getItem("medimind-theme") === "dark" ? "dark" : "light");
   const isArabic = language === "ar";
-  const isDark = theme === "dark";
-  const t = (en, ar) => (isArabic ? ar : en);
+  useEffect(() => {
+    const syncTheme = () => setTheme(localStorage.getItem("medimind-theme") === "dark" ? "dark" : "light");
+    window.addEventListener("medimind-theme-change", syncTheme);
+    window.addEventListener("medimindThemeChanged", syncTheme);
+    window.addEventListener("storage", syncTheme);
+    return () => {
+      window.removeEventListener("medimind-theme-change", syncTheme);
+      window.removeEventListener("medimindThemeChanged", syncTheme);
+      window.removeEventListener("storage", syncTheme);
+    };
+  }, []);
 
-  const [notificationOpen, setNotificationOpen] = useState(false);
-  const [dashboardOpen, setDashboardOpen] = useState(false);
-  const [missedDoseAlerts, setMissedDoseAlerts] = useState([]);
-  const [patientRequests, setPatientRequests] = useState([]);
-  const [linkedPatients, setLinkedPatients] = useState([]);
-  const [readAlertIds, setReadAlertIds] = useState([]);
-  const [bellRinging, setBellRinging] = useState(false);
-  const [processingRequestId, setProcessingRequestId] = useState("");
-  const [message, setMessage] = useState("");
-
-  const previousAlertIds = useRef(null);
-  const previousRequestIds = useRef(null);
-  const bellTimer = useRef(null);
-  const notificationRef = useRef(null);
-  const dashboardRef = useRef(null);
-  const readAlertIdsRef = useRef([]);
-
-  const storageKey = `medimind-caregiver-read-alerts-${
-    user?.email || "guest"
-  }`;
+  const t = (english, arabic) =>
+    isArabic ? arabic : english;
 
   useEffect(() => {
-    const syncSettings = () => {
+    const updateLanguage = () => {
       setLanguage(localStorage.getItem("medimindLanguage") || "en");
-      setTheme(
-        localStorage.getItem("medimind-theme") === "dark"
-          ? "dark"
-          : "light"
-      );
     };
 
-    const events = [
-      "storage",
-      "medimind-language-change",
-      "medimindLanguageChanged",
-      "medimind-theme-change",
-      "medimindThemeChanged",
+    window.addEventListener("medimind-language-change", updateLanguage);
+    window.addEventListener("medimindLanguageChanged", updateLanguage);
+    window.addEventListener("storage", updateLanguage);
+
+    return () => {
+      window.removeEventListener("medimind-language-change", updateLanguage);
+      window.removeEventListener("medimindLanguageChanged", updateLanguage);
+      window.removeEventListener("storage", updateLanguage);
+    };
+  }, []);
+
+  const user = useSelector(
+    (state) => state.user.user
+  );
+
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const [
+    patients,
+    setPatients,
+  ] = useState([]);
+
+  const [
+    dashboardPatientEmail,
+    setDashboardPatientEmail,
+  ] = useState("");
+
+  const [
+    isLoadingPatients,
+    setIsLoadingPatients,
+  ] = useState(false);
+
+  const [
+    patientsMessage,
+    setPatientsMessage,
+  ] = useState("");
+
+  const [
+    selectedPatient,
+    setSelectedPatient,
+  ] = useState(null);
+
+  const [
+    isPatientModalOpen,
+    setIsPatientModalOpen,
+  ] = useState(false);
+
+  const [
+    patientMedications,
+    setPatientMedications,
+  ] = useState([]);
+
+  const [
+    isMedicationModalOpen,
+    setIsMedicationModalOpen,
+  ] = useState(false);
+
+  const [
+    isLoadingMedications,
+    setIsLoadingMedications,
+  ] = useState(false);
+
+  const [
+    medicationMessage,
+    setMedicationMessage,
+  ] = useState("");
+
+  const [
+    dashboardSummary,
+    setDashboardSummary,
+  ] = useState({
+    upcomingCount: 0,
+    missedCount: 0,
+    adherenceRate: 0,
+  });
+
+  const [
+    dashboardDoses,
+    setDashboardDoses,
+  ] = useState([]);
+
+  const [
+    isLoadingDashboardData,
+    setIsLoadingDashboardData,
+  ] = useState(false);
+
+  const [
+    dashboardDataMessage,
+    setDashboardDataMessage,
+  ] = useState("");
+
+  const [editMedication, setEditMedication] = useState(null);
+  const [editMedicationOpen, setEditMedicationOpen] = useState(false);
+
+  const [addMedicationOpen, setAddMedicationOpen] = useState(false);
+
+  const [newMedication, setNewMedication] = useState({
+    medicationName: "",
+    medicationForm: "",
+    dosage: "",
+    topicalDosage: "",
+    frequency: "Once daily",
+    weeklyDay: "",
+   timing: "At a Specific Time",
+    timingOffsetMinutes: 0,
+    reminderTimes: ["08:00"],
+    startDate: new Date().toISOString().split("T")[0],
+    endDate: "",
+    instructions: "",
+  });
+
+  const [
+    caregiverMessage,
+  ] = useState(() => {
+    const index =
+      Math.floor(
+        Math.random() *
+        caregiverMessages.length
+      );
+
+    return caregiverMessages[
+      index
     ];
+  });
 
-    events.forEach((event) =>
-      window.addEventListener(event, syncSettings)
-    );
+  const greeting =
+    getTimeGreeting();
 
-    return () => {
-      events.forEach((event) =>
-        window.removeEventListener(event, syncSettings)
-      );
-    };
-  }, []);
-
-  useEffect(() => {
-    try {
-      const saved = JSON.parse(
-        localStorage.getItem(storageKey) || "[]"
-      );
-      const ids = Array.isArray(saved) ? saved : [];
-      setReadAlertIds(ids);
-      readAlertIdsRef.current = ids;
-    } catch {
-      setReadAlertIds([]);
-      readAlertIdsRef.current = [];
-    }
-
-    previousAlertIds.current = null;
-    previousRequestIds.current = null;
-    setMissedDoseAlerts([]);
-    setPatientRequests([]);
-    setLinkedPatients([]);
-  }, [storageKey]);
-
-  useEffect(() => {
-    const handleOutsideClick = (event) => {
-      if (
-        notificationRef.current &&
-        !notificationRef.current.contains(event.target)
-      ) {
-        setNotificationOpen(false);
-      }
-
-      if (
-        dashboardRef.current &&
-        !dashboardRef.current.contains(event.target)
-      ) {
-        setDashboardOpen(false);
-      }
-    };
-
-    const handleEscape = (event) => {
-      if (event.key === "Escape") {
-        setNotificationOpen(false);
-        setDashboardOpen(false);
-      }
-    };
-
-    document.addEventListener("mousedown", handleOutsideClick);
-    document.addEventListener("keydown", handleEscape);
-
-    return () => {
-      document.removeEventListener("mousedown", handleOutsideClick);
-      document.removeEventListener("keydown", handleEscape);
-    };
-  }, []);
-
-  useEffect(() => {
-    return () => clearTimeout(bellTimer.current);
-  }, []);
-
-  const getAlertId = (dose) =>
-    String(
-      dose._id ||
-        `${dose.userEmail}-${dose.medicationName}-${dose.scheduledTime}`
-    );
-
-  const getPatientInfo = (email) =>
-    linkedPatients.find(
-      (patient) =>
-        String(patient.patientEmail || "").toLowerCase() ===
-        String(email || "").toLowerCase()
-    );
-
-  const unreadAlerts = missedDoseAlerts.filter(
-    (dose) => !readAlertIds.includes(getAlertId(dose))
-  );
-
-  const pendingRequests = patientRequests.filter(
-    (request) => request.status === "Pending"
-  );
-
-  const totalUnreadNotifications =
-    unreadAlerts.length + pendingRequests.length;
-
-  const saveReadIds = (ids) => {
-    const updated = [...new Set(ids.map(String))];
-    readAlertIdsRef.current = updated;
-    setReadAlertIds(updated);
-    localStorage.setItem(storageKey, JSON.stringify(updated));
-  };
-
-  const markOneAsRead = (dose) => {
-    const id = getAlertId(dose);
-    if (readAlertIdsRef.current.includes(id)) return;
-
-    saveReadIds([...readAlertIdsRef.current, id]);
-  };
-
-  const markAllAsRead = () => {
-    saveReadIds([
-      ...readAlertIdsRef.current,
-      ...missedDoseAlerts.map(getAlertId),
-    ]);
-  };
-
-  const playNotificationSound = () => {
-    if (localStorage.getItem("caregiverNotificationSound") === "false") {
-      return;
-    }
-
-    const audio = new Audio(notificationSound);
-    audio.volume = 0.7;
-
-    audio.play().catch((error) => {
-      console.warn(
-        "Caregiver notification sound blocked:",
-        error
-      );
-    });
-  };
-
-  const animateBell = () => {
-    setBellRinging(false);
-    clearTimeout(bellTimer.current);
-
-    requestAnimationFrame(() => {
-      setBellRinging(true);
-    });
-
-    bellTimer.current = setTimeout(() => {
-      setBellRinging(false);
-    }, 2200);
-  };
-
-  useEffect(() => {
-    if (!user?.email) return;
-
-    let active = true;
-    let fetching = false;
-
-    const fetchCaregiverNotifications = async () => {
-      if (fetching) return;
-      fetching = true;
-
-      try {
-        const encodedEmail = encodeURIComponent(user.email);
-
-        const [
-          requestsResponse,
-          patientsResponse,
-          dashboardResponse,
-        ] = await Promise.all([
-          axios.get(
-            `${API}/caregiver/patient-requests/${encodedEmail}`
-          ),
-          axios.get(
-            `${API}/caregiver/my-patients/${encodedEmail}`
-          ),
-          axios.get(
-            `${API}/caregiver/dashboard-data/${encodedEmail}`
-          ),
-        ]);
-
-        if (!active) return;
-
-        const requests = requestsResponse.data?.requests || [];
-        const patients = patientsResponse.data?.patients || [];
-        const doses = dashboardResponse.data?.doses || [];
-
-        const missed = doses.filter(
-          (dose) => dose.status === "Missed"
-        );
-
-        setPatientRequests(requests);
-        setLinkedPatients(patients);
-        setMissedDoseAlerts(missed);
-
-        const currentIds = new Set(
-          missed.map(getAlertId)
-        );
-
-        // Only pending connection requests count as new request alerts.
-        const currentRequestIds = new Set(
-          requests
-            .filter((request) => request.status === "Pending")
-            .map((request) => String(request._id))
-        );
-
-        // Ignore existing alerts on the first fetch after opening the page.
-        // Announce newly arriving missed doses OR patient link requests.
-        if (
-          previousAlertIds.current !== null &&
-          previousRequestIds.current !== null
-        ) {
-          const hasNewMissedDose = [...currentIds].some(
-            (id) =>
-              !previousAlertIds.current.has(id) &&
-              !readAlertIdsRef.current.includes(id)
-          );
-
-          const hasNewPatientRequest = [...currentRequestIds].some(
-            (id) => !previousRequestIds.current.has(id)
-          );
-
-          if (hasNewMissedDose || hasNewPatientRequest) {
-            // Visual alert remains active even when sound is muted.
-            animateBell();
-            playNotificationSound();
-          }
-        }
-
-        previousAlertIds.current = currentIds;
-        previousRequestIds.current = currentRequestIds;
-      } catch (error) {
-        if (active) {
-          console.error(
-            "Caregiver notification error:",
-            error
-          );
-        }
-      } finally {
-        fetching = false;
-      }
-    };
-
-    fetchCaregiverNotifications();
-
-    const interval = setInterval(
-      fetchCaregiverNotifications,
-      5000
-    );
-
-    return () => {
-      active = false;
-      clearInterval(interval);
-    };
-  }, [user?.email]);
-
-  const handlePatientRequest = async (requestId, status) => {
-    if (!user?.email || processingRequestId) return;
-
-    try {
-      setProcessingRequestId(requestId);
-      setMessage("");
-
-      const response = await axios.put(
-        `${API}/caregiver/patient-request/${requestId}`,
-        {
-          caregiverEmail: user.email,
-          status,
-        }
-      );
-
-      if (response.data?.success) {
-        setPatientRequests((previous) =>
-          previous.filter(
-            (request) => request._id !== requestId
-          )
-        );
-
-        setMessage(
-          status === "Accepted"
-            ? t(
-                "Patient request accepted successfully!",
-                "تم قبول طلب المريض بنجاح!"
-              )
-            : t(
-                "Patient request rejected successfully!",
-                "تم رفض طلب المريض بنجاح!"
-              )
-        );
-
-        if (status === "Accepted") {
-          try {
-            const patientsResponse = await axios.get(
-              `${API}/caregiver/my-patients/${encodeURIComponent(
-                user.email
-              )}`
-            );
-
-            setLinkedPatients(
-              patientsResponse.data?.patients || []
-            );
-          } catch (refreshError) {
-            console.error(
-              "Refresh linked patients error:",
-              refreshError
-            );
-          }
-        }
-      } else {
-        setMessage(
-          response.data?.message ||
-            t(
-              "Unable to update patient request.",
-              "تعذر تحديث طلب المريض."
-            )
-        );
-      }
-    } catch (error) {
-      console.error("Patient request error:", error);
-
-      setMessage(
-        error.response?.data?.message ||
-          t(
-            "Unable to update patient request.",
-            "تعذر تحديث طلب المريض."
-          )
-      );
-    } finally {
-      setProcessingRequestId("");
-    }
-  };
-
-  const handleLogout = () => {
-    if (
-      window.confirm(
-        t(
-          "Are you sure you want to logout from MediMind?",
-          "هل أنت متأكد من تسجيل الخروج من MediMind؟"
-        )
-      )
-    ) {
-      dispatch(logout());
-      navigate("/Splashscreen");
-    }
-  };
-
-  const formatTime = (value) => {
-    if (!value) {
+  const formatTime = (
+    time
+  ) => {
+    if (!time) {
       return t("Not scheduled", "غير مجدول");
     }
 
-    const match = String(value).match(
-      /^(\d{1,2}):(\d{2})$/
+    const [
+      hours,
+      minutes,
+    ] = time
+      .split(":")
+      .map(Number);
+
+    const date =
+      new Date();
+
+    date.setHours(
+      hours,
+      minutes,
+      0,
+      0
     );
 
-    if (!match) return String(value);
-
-    const hour = Number(match[1]);
-    const minute = Number(match[2]);
-
-    if (hour > 23 || minute > 59) {
-      return String(value);
-    }
-
-    const hour12 = String(hour % 12 || 12).padStart(2, "0");
-    const minuteText = String(minute).padStart(2, "0");
-
-    return `${hour12}:${minuteText} ${
-      isArabic
-        ? hour < 12
-          ? "ص"
-          : "م"
-        : hour < 12
-        ? "AM"
-        : "PM"
-    }`;
-  };
-
-  const formatDosage = (value) => {
-    if (value === null || value === undefined) {
-      return "-";
-    }
-
-    const dosage = String(value);
-
-    if (!isArabic) return dosage;
-
-    const units = {
-      tablet: "قرص",
-      tablets: "أقراص",
-      capsule: "كبسولة",
-      capsules: "كبسولات",
-      pill: "حبة",
-      pills: "حبات",
-      mg: "ملغ",
-      mcg: "ميكروغرام",
-      ml: "مل",
-      g: "غرام",
-      drop: "قطرة",
-      drops: "قطرات",
-    };
-
-    return dosage.replace(
-      /\b(tablets?|capsules?|pills?|mcg|mg|ml|g|drops?)\b/gi,
-      (match) => units[match.toLowerCase()] || match
+    return date.toLocaleTimeString(
+      isArabic ? "ar-OM" : "en-GB",
+      {
+        hour: "2-digit",
+        minute: "2-digit",
+      }
     );
   };
 
-  const getAvatar = (path) => {
-    if (!path) return FALLBACK_AVATAR;
+  const fetchLinkedPatients =
+    async () => {
+      if (!user?.email) {
+        return;
+      }
 
-    if (
-      path.startsWith("http://") ||
-      path.startsWith("https://")
-    ) {
-      return path;
-    }
+      try {
+        setIsLoadingPatients(
+          true
+        );
 
-    return `${API}${path.startsWith("/") ? "" : "/"}${path}`;
-  };
+        setPatientsMessage(
+          ""
+        );
 
-  const viewPatient = (email) => {
-    setNotificationOpen(false);
+        const response = await axios.get(
+          `http://localhost:3002/caregiver/my-patients/${encodeURIComponent(
+            user.email
+          )}`
+        );
+        console.log("MY PATIENTS API:", response.data);
+       const latestPatients = response.data?.patients || [];
 
-    navigate("/caregiver-home", {
-      state: {
-        openPatientEmail: email,
-      },
-    });
-  };
+setPatients(latestPatients);
 
-  const selectDashboard = (email) => {
-    setDashboardOpen(false);
-
-    navigate("/caregiver-home", {
-      state: {
-        dashboardPatientEmail: email,
-      },
-    });
-  };
-
-  const isActive = (path) =>
-    location.pathname === path ||
-    location.pathname.startsWith(`${path}/`);
-
-    
-const [notificationSoundEnabled, setNotificationSoundEnabled] =
-  useState(() => {
-    return localStorage.getItem("caregiverNotificationSound") !== "false";
-  });
-
-useEffect(() => {
-  const syncNotificationSound = () => {
-    setNotificationSoundEnabled(
-      localStorage.getItem("caregiverNotificationSound") !== "false"
-    );
-  };
-
-  window.addEventListener(
-    "caregiver-notification-sound-change",
-    syncNotificationSound
-  );
-
-  return () => {
-    window.removeEventListener(
-      "caregiver-notification-sound-change",
-      syncNotificationSound
-    );
-  };
-}, []);
-
+setSelectedPatient((currentPatient) => {
+  if (!currentPatient) return null;
 
   return (
-    <>
+    latestPatients.find(
+      (patient) =>
+        patient.patientEmail === currentPatient.patientEmail
+    ) || null
+  );
+});
+      } catch (error) {
+        console.error(
+          "Fetch linked patients error:",
+          error
+        );
+
+        setPatientsMessage(
+          error.response?.data
+            ?.message ||
+          t("Unable to load linked patients.", "تعذّر تحميل المرضى المرتبطين.")
+        );
+      } finally {
+        setIsLoadingPatients(
+          false
+        );
+      }
+    };
+
+  const fetchDashboardData =
+    async () => {
+      if (!user?.email) {
+        return;
+      }
+
+      try {
+        setIsLoadingDashboardData(
+          true
+        );
+
+        setDashboardDataMessage(
+          ""
+        );
+
+        const response = await axios.get(
+          `http://localhost:3002/caregiver/dashboard-data/${encodeURIComponent(user.email)}`
+        );
+
+        setDashboardSummary({
+          upcomingCount:
+            response.data
+              ?.summary
+              ?.upcomingCount ||
+            0,
+
+          missedCount:
+            response.data
+              ?.summary
+              ?.missedCount ||
+            0,
+
+          adherenceRate:
+            response.data
+              ?.summary
+              ?.adherenceRate ||
+            0,
+        });
+
+        setDashboardDoses(
+          response.data
+            ?.doses ||
+          []
+        );
+      } catch (error) {
+        console.error(
+          "Fetch caregiver dashboard data error:",
+          error
+        );
+
+        setDashboardDataMessage(
+          error.response?.data
+            ?.message ||
+          t("Unable to load medication activity.", "تعذّر تحميل نشاط الأدوية.")
+        );
+      } finally {
+        setIsLoadingDashboardData(
+          false
+        );
+      }
+    };
+
+  useEffect(() => {
+    fetchLinkedPatients();
+    fetchDashboardData();
+
+    const interval = setInterval(() => {
+      fetchDashboardData();
+    }, 30000);
+
+    return () => clearInterval(interval);
+  }, [user?.email]);
+
+  useEffect(() => {
+    const patientEmail =
+      location.state?.openPatientEmail;
+
+    if (!patientEmail || patients.length === 0) {
+      return;
+    }
+
+    const patient = patients.find(
+      (item) =>
+        item.patientEmail === patientEmail
+    );
+
+    if (patient) {
+      setSelectedPatient(patient);
+      setIsPatientModalOpen(true);
+
+      navigate("/caregiver-home", {
+        replace: true,
+        state: {},
+      });
+    }
+  }, [
+    location.state,
+    patients,
+    navigate,
+  ]);
+
+  useEffect(() => {
+    if (
+      location.state &&
+      Object.prototype.hasOwnProperty.call(
+        location.state,
+        "dashboardPatientEmail"
+      )
+    ) {
+      setDashboardPatientEmail(
+        location.state.dashboardPatientEmail || ""
+      );
+    }
+  }, [location.state]);
+
+  const handleOpenPatient = (
+    patient
+  ) => {
+    setSelectedPatient(
+      patient
+    );
+
+    setIsPatientModalOpen(
+      true
+    );
+  };
+
+  const handleClosePatient =
+    () => {
+      setIsPatientModalOpen(
+        false
+      );
+
+      setSelectedPatient(
+        null
+      );
+    };
+
+  const handleOpenMedications =
+    async (patient) => {
+      if (
+        !user?.email ||
+        !patient?.patientEmail
+      ) {
+        return;
+      }
+
+      setSelectedPatient(
+        patient
+      );
+
+      setPatientMedications(
+        []
+      );
+
+      setMedicationMessage(
+        ""
+      );
+
+      setIsMedicationModalOpen(
+        true
+      );
+
+      try {
+        setIsLoadingMedications(
+          true
+        );
+
+        const response = await axios.get(
+          `http://localhost:3002/caregiver/patient-medications/${encodeURIComponent(
+            user.email
+          )}/${encodeURIComponent(
+            patient.patientEmail
+          )}`
+        );
+
+        setPatientMedications(
+          response.data
+            ?.medications ||
+          []
+        );
+      } catch (error) {
+        console.error(
+          "Fetch patient medications error:",
+          error
+        );
+
+        setMedicationMessage(
+          error.response?.data
+            ?.message ||
+          t("Unable to load patient medications.", "تعذّر تحميل أدوية المريض.")
+        );
+      } finally {
+        setIsLoadingMedications(
+          false
+        );
+      }
+    };
+
+  const handleCloseMedications =
+    () => {
+      setIsMedicationModalOpen(
+        false
+      );
+
+      setPatientMedications(
+        []
+      );
+
+      setMedicationMessage(
+        ""
+      );
+    };
+
+  const handleDisconnectPatient = async (patient) => {
+    if (!user?.email || !patient?.patientEmail) return;
+
+    const confirmed = window.confirm(
+      isArabic ? `هل تريد إلغاء ربط ${patient.patientName || "هذا المريض"}؟ ستفقد إمكانية الوصول إلى معلومات أدويته.` : `Disconnect from ${patient.patientName || "this patient"}? You will lose access to their medication information.`
+    );
+
+    if (!confirmed) return;
+
+    try {
+
+      await axios.delete(
+        "http://localhost:3002/caregiver-links/disconnect",
+        {
+          data: {
+            caregiverEmail: user.email,
+            patientEmail: patient.patientEmail,
+          },
+        }
+      );
+
+      setPatients((current) =>
+        current.filter(
+          (item) => item.patientEmail !== patient.patientEmail
+        )
+      );
+
+      setDashboardPatientEmail((current) =>
+        current === patient.patientEmail ? "" : current
+      );
+
+      setDashboardDoses((current) =>
+        current.filter(
+          (dose) => dose.userEmail !== patient.patientEmail
+        )
+      );
+
+      setSelectedPatient(null);
+      setIsPatientModalOpen(false);
+      setIsMedicationModalOpen(false);
+      setPatientMedications([]);
+
+      await fetchDashboardData();
+
+      alert(t("Patient disconnected successfully.", "تم إلغاء ربط المريض بنجاح."));
+    } catch (error) {
+      console.error("Disconnect patient error:", error);
+
+      alert(
+        error.response?.data?.message ||
+        t("Unable to disconnect patient.", "تعذّر إلغاء ربط المريض.")
+      );
+    }
+  };
+
+  const handleOpenReports = (
+    patient
+  ) => {
+    if (
+      !patient?.patientEmail
+    ) {
+      return;
+    }
+
+    navigate(
+      `/caregiver-reports?patient=${encodeURIComponent(
+        patient.patientEmail
+      )}`
+    );
+  };
+
+  const getPatientName = (
+    email
+  ) => {
+    const patient =
+      patients.find(
+        (item) =>
+          item.patientEmail ===
+          email
+      );
+
+    return (
+      patient?.patientName ||
+      email ||
+      "Patient"
+    );
+  };
+
+  const getStatusBadgeClass =
+    (status) => {
+      if (
+        status === "Taken"
+      ) {
+        return "badge bg-success";
+      }
+
+      if (
+        status === "Missed"
+      ) {
+        return "badge bg-danger";
+      }
+
+      if (
+        status === "Skipped"
+      ) {
+        return "badge bg-secondary";
+      }
+
+      return "badge bg-warning text-dark";
+    };
+
+
+  const selectedDashboardPatient = patients.find(
+    (patient) => patient.patientEmail === dashboardPatientEmail
+  );
+
+  const selectedPatientDoses = dashboardDoses.filter(
+    (dose) => dose.userEmail === dashboardPatientEmail
+  );
+
+  const selectedPatientTaken = selectedPatientDoses.filter(
+    (dose) => dose.status === "Taken"
+  ).length;
+
+  const selectedPatientMissed = selectedPatientDoses.filter(
+    (dose) => dose.status === "Missed"
+  ).length;
+
+  const selectedPatientUpcoming = selectedPatientDoses.filter(
+    (dose) => dose.status === "Upcoming"
+  ).length;
+
+  const selectedPatientCompleted =
+    selectedPatientTaken + selectedPatientMissed;
+
+  const selectedPatientAdherence =
+    selectedPatientCompleted > 0
+      ? Math.round(
+        (selectedPatientTaken / selectedPatientCompleted) * 100
+      )
+      : 0;
+
+  const visibleDashboardDoses = dashboardPatientEmail
+    ? selectedPatientDoses
+    : dashboardDoses;
+
+  const visibleMissedDoseAlerts = visibleDashboardDoses.filter(
+    (dose) => dose.status === "Missed"
+  );
+
+  const visibleUpcomingDoseAlerts = visibleDashboardDoses.filter(
+    (dose) => dose.status === "Upcoming"
+  );
+
+
+  const handleCaregiverDeleteMedication = async (medicationId) => {
+    if (!selectedPatient?.medicationManagementPermission) {
+      alert(t("Patient has not allowed medication management.", "المريض لم يسمح بإدارة أدويته."));
+      return;
+    }
+
+    const confirmed = window.confirm(
+      "Are you sure you want to delete this medication?"
+    );
+
+    if (!confirmed) return;
+
+    try {
+
+      await axios.delete(
+        `http://localhost:3002/caregiver/patient-medications/${encodeURIComponent(
+          user.email
+        )}/${encodeURIComponent(
+          selectedPatient.patientEmail
+        )}/${medicationId}`
+      );
+
+      setPatientMedications((currentMedications) =>
+        currentMedications.filter(
+          (medication) => medication._id !== medicationId
+        )
+      );
+
+      alert(t("Medication deleted successfully.", "تم حذف الدواء بنجاح."));
+    } catch (error) {
+      alert(
+        error.response?.data?.message ||
+        t("Unable to delete medication.", "تعذّر حذف الدواء.")
+      );
+    }
+  };
+
+
+  const handleCaregiverUpdateMedication = async () => {
+    if (!editMedication) return;
+
+    try {
+
+      const response = await axios.put(
+        `http://localhost:3002/caregiver/patient-medications/${encodeURIComponent(
+          user.email
+        )}/${encodeURIComponent(
+          selectedPatient.patientEmail
+        )}/${editMedication._id}`,
+        {
+          medicationName: editMedication.medicationName,
+          dosage: editMedication.dosage,
+          frequency: editMedication.frequency,
+          timing: editMedication.timing,
+          mealType: editMedication.mealType || "",
+          timingOffsetMinutes:
+            editMedication.timingOffsetMinutes || 0,
+          reminderTimes:
+            editMedication.reminderTimes || [],
+          startDate: editMedication.startDate,
+          isActive: editMedication.isActive,
+          instructions:
+            editMedication.instructions || "",
+          prescriptionImage:
+            editMedication.prescriptionImage || "",
+        }
+      );
+
+      setPatientMedications((current) =>
+        current.map((medication) =>
+          medication._id === editMedication._id
+            ? response.data.medication
+            : medication
+        )
+      );
+
+      setEditMedicationOpen(false);
+      setEditMedication(null);
+
+      alert(t("Medication updated successfully.", "تم تحديث الدواء بنجاح."));
+    } catch (error) {
+      alert(
+        error.response?.data?.message ||
+        t("Unable to update medication.", "تعذّر تحديث الدواء.")
+      );
+    }
+  };
+
+
+  const handleCaregiverAddMedication = async () => {
+    const fail = (english, arabic) => {
+      alert(t(english, arabic));
+    };
+
+    if (!user?.email || !selectedPatient?.patientEmail) {
+      return fail(
+        "Please select a patient.",
+        "يرجى اختيار المريض."
+      );
+    }
+
+    if (!selectedPatient.medicationManagementPermission) {
+      return fail(
+        "Patient has not allowed medication management.",
+        "المريض لم يسمح بإدارة أدويته."
+      );
+    }
+
+    const medicationName = newMedication.medicationName.trim();
+    const medicationForm = newMedication.medicationForm;
+    const dosage = newMedication.dosage.trim();
+    const frequency = newMedication.frequency;
+    const reminderTimes =
+      frequency === "As needed" ? [] : newMedication.reminderTimes;
+
+    // Required fields
+    if (
+      !medicationName ||
+      !medicationForm ||
+      !dosage ||
+      !frequency ||
+      !newMedication.timing ||
+      !newMedication.startDate ||
+      !newMedication.endDate
+    ) {
+      return fail(
+        "Please complete all required medication fields.",
+        "يرجى إكمال جميع حقول الدواء المطلوبة."
+      );
+    }
+
+    // Check medication form against Oman dataset
+    const catalogMedicine = caregiverMedicationOptions.find(
+      (medicine) =>
+        normalizeMedicineName(medicine.tradeName) ===
+        normalizeMedicineName(medicationName)
+    );
+
+    if (catalogMedicine) {
+      const expectedForm =
+        detectCaregiverMedicationForm(catalogMedicine);
+
+      if (expectedForm && medicationForm !== expectedForm) {
+        return fail(
+          `Invalid medication form. Expected: ${expectedForm}.`,
+          `الشكل الدوائي غير صحيح. الشكل المتوقع: ${expectedForm}.`
+        );
+      }
+    }
+
+    // Validate dosage amount and unit
+    const dosageMatch = dosage.match(
+      /^(\d+(?:\.\d+)?)\s+([a-zA-Z]+)$/
+    );
+
+    if (!dosageMatch) {
+      return fail(
+        "Please enter a valid dosage amount and unit.",
+        "يرجى إدخال كمية جرعة ووحدة صحيحتين."
+      );
+    }
+
+    const dosageAmount = Number(dosageMatch[1]);
+    const dosageUnit = dosageMatch[2];
+
+    if (!Number.isFinite(dosageAmount) || dosageAmount <= 0) {
+      return fail(
+        "Dosage must be greater than zero.",
+        "يجب أن تكون الجرعة أكبر من صفر."
+      );
+    }
+
+    if (
+      !caregiverDosageUnits[medicationForm]?.includes(dosageUnit)
+    ) {
+      return fail(
+        "Invalid dosage unit for this medication form.",
+        "وحدة الجرعة غير مناسبة للشكل الدوائي."
+      );
+    }
+
+    const requiresMealOffset =
+  /^(Before|After) (Meal|Breakfast|Lunch|Dinner)$/.test(
+    newMedication.timing
+  );
+
+if (
+  requiresMealOffset &&
+  (
+    !Number.isInteger(Number(newMedication.timingOffsetMinutes)) ||
+    Number(newMedication.timingOffsetMinutes) < 1 ||
+    Number(newMedication.timingOffsetMinutes) > 720
+  )
+) {
+  return fail(
+    "Please enter a valid timing offset between 1 and 720 minutes.",
+    "يرجى إدخال مدة صحيحة من 1 إلى 720 دقيقة."
+  );
+}
+    // Validate dates
+    const now = new Date();
+    const today = [
+      now.getFullYear(),
+      String(now.getMonth() + 1).padStart(2, "0"),
+      String(now.getDate()).padStart(2, "0"),
+    ].join("-");
+
+    if (newMedication.startDate < today) {
+      return fail(
+        "Start date cannot be in the past.",
+        "لا يمكن أن يكون تاريخ البدء في الماضي."
+      );
+    }
+
+    if (newMedication.endDate < newMedication.startDate) {
+      return fail(
+        "End date cannot be earlier than start date.",
+        "لا يمكن أن يكون تاريخ الانتهاء قبل تاريخ البدء."
+      );
+    }
+
+    // Weekly medication requires a weekday
+    const weeklyDays = Array.isArray(newMedication.weeklyDay)
+      ? newMedication.weeklyDay
+      : newMedication.weeklyDay
+        ? [newMedication.weeklyDay]
+        : [];
+
+    if (frequency === "Weekly" && weeklyDays.length === 0) {
+      return fail(
+        "Please select a day for weekly medication.",
+        "يرجى اختيار يوم للدواء الأسبوعي."
+      );
+    }
+
+    // Validate reminder count and times
+    const requiredCount = caregiverRequiredTimes(frequency);
+
+    if (reminderTimes.length !== requiredCount) {
+      return fail(
+        `This frequency requires ${requiredCount} reminder time(s).`,
+        `هذا التكرار يتطلب ${requiredCount} وقت/أوقات للتذكير.`
+      );
+    }
+
+    const validTime = /^([01]\d|2[0-3]):[0-5]\d$/;
+
+    if (reminderTimes.some((time) => !validTime.test(time))) {
+      return fail(
+        "Please select all required reminder times.",
+        "يرجى اختيار جميع أوقات التذكير."
+      );
+    }
+
+    // Prevent repeated reminder times
+    if (new Set(reminderTimes).size !== reminderTimes.length) {
+      return fail(
+        "Reminder times must be different.",
+        "يجب أن تكون أوقات التذكير مختلفة."
+      );
+    }
+
+    // Validate fixed hourly intervals
+    const fixedIntervals = {
+      "Every 6 hours": 6,
+      "Every 8 hours": 8,
+      "Every 12 hours": 12,
+    };
+
+    if (fixedIntervals[frequency]) {
+      const requiredMinutes = fixedIntervals[frequency] * 60;
+
+      const sortedTimes = reminderTimes
+        .map((time) => {
+          const [hours, minutes] = time.split(":").map(Number);
+          return hours * 60 + minutes;
+        })
+        .sort((a, b) => a - b);
+
+      for (let i = 0; i < sortedTimes.length; i++) {
+        const currentTime = sortedTimes[i];
+        const nextTime = sortedTimes[(i + 1) % sortedTimes.length];
+
+        const difference =
+          (nextTime - currentTime + 1440) % 1440;
+
+        if (difference !== requiredMinutes) {
+          return fail(
+            `Reminders must be exactly ${fixedIntervals[frequency]} hours apart.`,
+            `يجب أن تكون التذكيرات بفاصل ${fixedIntervals[frequency]} ساعات.`
+          );
+        }
+      }
+    }
+
+    try {
+      // Get this patient's current medications
+      const existingResponse = await axios.get(
+        `http://localhost:3002/caregiver/patient-medications/${encodeURIComponent(
+          user.email
+        )}/${encodeURIComponent(selectedPatient.patientEmail)}`
+      );
+
+      const existingMedications =
+        existingResponse.data?.medications || [];
+
+      // STRICT DUPLICATE NAME CHECK
+      const duplicate = existingMedications.some(
+        (medication) =>
+          normalizeMedicineName(medication.medicationName) ===
+          normalizeMedicineName(medicationName)
+      );
+
+      if (duplicate) {
+        return fail(
+          "This medication is already added. Please edit the existing medication instead.",
+          "هذا الدواء موجود مسبقًا. يرجى تعديل الدواء الحالي بدلًا من إضافته مرة أخرى."
+        );
+      }
+
+      // Add medication for the selected patient
+      const response = await axios.post(
+        `http://localhost:3002/caregiver/patient-medications/${encodeURIComponent(
+          user.email
+        )}/${encodeURIComponent(selectedPatient.patientEmail)}`,
+        {
+          ...newMedication,
+          medicationName,
+          dosage,
+          reminderTimes,
+          weeklyDay: frequency === "Weekly" ? weeklyDays : [],
+        }
+      );
+
+      // Update the caregiver medication list
+      if (response.data?.medication) {
+        setPatientMedications((current) => [
+          ...current,
+          response.data.medication,
+        ]);
+      }
+
+      setAddMedicationOpen(false);
+
+      // Reset form
+      setNewMedication({
+        medicationName: "",
+        medicationForm: "",
+        dosage: "",
+        topicalDosage: "",
+        frequency: "Once daily",
+        weeklyDay: "",
+        timing: "Specific Time",
+        timingOffsetMinutes: 0,
+        reminderTimes: ["08:00"],
+        startDate: today,
+        endDate: "",
+        instructions: "",
+      });
+
+      await fetchDashboardData();
+
+      alert(
+        t(
+          "Medication added successfully.",
+          "تمت إضافة الدواء بنجاح."
+        )
+      );
+    } catch (error) {
+      console.error("Caregiver Add Medication Error:", error);
+
+      alert(
+        error.response?.data?.message ||
+        t(
+          "Unable to add medication.",
+          "تعذرت إضافة الدواء."
+        )
+      );
+    }
+  };
+
+
+
+
+return (
+  <Container
+    fluid
+    className={`dashboard-page mm-caregiver-home ${
+      theme === "dark" ? "mm-ch-dark" : ""
+    }`}
+    dir={isArabic ? "rtl" : "ltr"}
+    style={{
+      minHeight: "100vh",
+      backgroundImage: `url(${
+        theme === "dark" ? darkBackground : lightBackground
+      })`,
+      backgroundSize: "cover",
+      backgroundPosition: "center",
+      backgroundRepeat: "no-repeat",
+      backgroundAttachment: "fixed",
+    }}
+  >
       <style>{`
-        @keyframes mmCaregiverBellShake {
-          0%, 100% { transform: rotate(0deg); }
-          20%, 60% { transform: rotate(-12deg); }
-          40%, 80% { transform: rotate(12deg); }
-        }
-
-        .mm-caregiver-header {
-          --cg-bg: #ffffff;
-          --cg-text: #233e64;
-          --cg-muted: #526579;
-          --cg-border: #dbe4ee;
-          --cg-section: #f5f8fc;
-          --cg-panel: #ffffff;
-          --cg-unread: #edf5ff;
-          --cg-shadow: 0 12px 35px rgba(15, 23, 42, 0.16);
-
-          position: relative;
-          z-index: 100;
-          width: 100%;
-          background: var(--cg-bg);
-          color: var(--cg-text);
-          border-bottom: 1px solid var(--cg-border);
-          box-shadow: 0 3px 12px rgba(0,0,0,0.06);
-          box-sizing: border-box;
-        }
-
-        .mm-caregiver-header.mm-caregiver-header-dark {
-          --cg-bg: #182338;
-          --cg-text: #f1f5f9;
-          --cg-muted: #cbd5e1;
-          --cg-border: #41566e;
-          --cg-section: #243a51;
-          --cg-panel: #1b2d42;
-          --cg-unread: #294362;
-          --cg-shadow: 0 12px 35px rgba(0,0,0,0.35);
-        }
-
-        .mm-caregiver-header *,
-        .mm-caregiver-header *::before,
-        .mm-caregiver-header *::after {
-          box-sizing: border-box;
-        }
-
-        .mm-caregiver-header .cg-inner {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          gap: 18px;
-          padding: 12px 25px;
-          min-height: 88px;
-          width: 100%;
-        }
-
-        .mm-caregiver-header .cg-main {
-          display: flex;
-          align-items: center;
-          flex: 1 1 auto;
-          min-width: 0;
-          gap: 22px;
-        }
-
-        .mm-caregiver-header .cg-logo {
-          width: 115px;
-          height: auto;
-          object-fit: contain;
-          flex-shrink: 0;
-        }
-
-        .mm-caregiver-header .cg-nav {
-          display: flex;
-          align-items: center;
-          gap: 18px;
-          min-width: 0;
-          overflow-x: auto;
-          scrollbar-width: none;
-        }
-
-        .mm-caregiver-header .cg-nav::-webkit-scrollbar {
-          display: none;
-        }
-
-        .mm-caregiver-header .cg-nav-link {
-          color: var(--cg-text) !important;
-          background: transparent;
-          border: none;
-          border-bottom: 2px solid transparent;
-          padding: 9px 3px;
-          font-size: 16px;
-          font-weight: 600;
-          line-height: 1.5;
-          text-decoration: none;
-          white-space: nowrap;
-          cursor: pointer;
-        }
-
-        .mm-caregiver-header .cg-nav-link:hover,
-        .mm-caregiver-header .cg-nav-link.active {
-          color: #3986e8 !important;
-          border-bottom-color: #3986e8;
-        }
-
-        .mm-caregiver-header .cg-actions {
-          display: flex;
-          align-items: center;
-          justify-content: flex-end;
-          flex-shrink: 0;
-          gap: 14px;
-        }
-
-        .mm-caregiver-header .cg-profile {
-          width: 54px;
-          height: 54px;
-          border-radius: 50%;
-          object-fit: cover;
-          border: 2px solid var(--cg-border);
-          background: var(--cg-section);
-        }
-
-        .mm-caregiver-header .cg-logout {
-          border: 1px solid #dc3545;
-          border-radius: 10px;
-          padding: 10px 15px;
-          background: #dc3545;
-          color: #ffffff;
-          font-size: 15px;
-          font-weight: 600;
-          white-space: nowrap;
-          cursor: pointer;
-        }
-
-        .mm-caregiver-header .cg-logout:hover {
-          background: #bb2d3b;
-        }
-
-        .mm-caregiver-header .cg-bell-wrapper {
-          position: relative;
-          flex-shrink: 0;
-        }
-
-        .mm-caregiver-header .cg-bell-button {
-          position: relative;
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          width: 42px;
-          height: 42px;
-          border: none;
-          border-radius: 50%;
-          background: transparent;
-          color: var(--cg-text);
-          cursor: pointer;
-          font-size: 23px;
-        }
-
-        .mm-caregiver-header .cg-bell-button:hover {
-          background: var(--cg-section);
-        }
-
-        .mm-caregiver-header .cg-bell-ringing {
-          display: inline-flex;
-          transform-origin: top center;
-          animation: mmCaregiverBellShake 0.7s ease-in-out 3;
-        }
-
-        .mm-caregiver-header .cg-badge-count {
-          position: absolute;
-          top: -2px;
-          inset-inline-end: -5px;
-          min-width: 19px;
-          height: 19px;
-          padding: 0 4px;
-          border-radius: 999px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          background: #dc3545;
-          color: white;
-          font-size: 11px;
-          font-weight: 700;
-        }
-
-        .mm-caregiver-header .cg-panel {
-          position: absolute;
-          top: calc(100% + 12px);
-          inset-inline-end: 0;
-          width: min(420px, calc(100vw - 24px));
-          max-height: min(540px, calc(100vh - 115px));
-          overflow-y: auto;
-          overflow-x: hidden;
-          padding: 18px;
-          background: var(--cg-panel);
-          color: var(--cg-text);
-          border: 1px solid var(--cg-border);
-          border-radius: 15px;
-          box-shadow: var(--cg-shadow);
-          z-index: 2000;
-          text-align: start;
-          scrollbar-width: thin;
-        }
-
-        .mm-caregiver-header .cg-panel-header {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          flex-wrap: wrap;
-          gap: 10px;
-          padding-bottom: 15px;
-          margin-bottom: 15px;
-          border-bottom: 1px solid var(--cg-border);
-        }
-
-        .mm-caregiver-header .cg-panel-title {
-          margin: 0;
-          color: var(--cg-text);
-          font-size: 21px;
-          font-weight: 700;
-        }
-
-        .mm-caregiver-header .cg-section-title {
-          margin: 18px 0 12px;
-          color: var(--cg-text);
-          font-size: 18px;
-          font-weight: 700;
-        }
-
-        .mm-caregiver-header .cg-notification-card {
-          padding: 15px;
-          margin-bottom: 12px;
-          border: 1px solid var(--cg-border);
-          border-radius: 12px;
-          background: var(--cg-section);
-          color: var(--cg-text);
-          overflow-wrap: anywhere;
-        }
-
-        .mm-caregiver-header .cg-notification-card.unread {
-          background: var(--cg-unread);
-          border-inline-start: 3px solid #3986e8;
-        }
-
-        .mm-caregiver-header .cg-person {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-          min-width: 0;
-          margin-bottom: 12px;
-        }
-
-        .mm-caregiver-header .cg-person-avatar {
-          width: 46px;
-          height: 46px;
-          border-radius: 50%;
-          object-fit: cover;
-          border: 2px solid var(--cg-border);
-          flex-shrink: 0;
-        }
-
-        .mm-caregiver-header .cg-person-name {
-          color: var(--cg-text);
-          font-size: 17px;
-          font-weight: 700;
-          overflow-wrap: anywhere;
-        }
-
-        .mm-caregiver-header .cg-notification-text {
-          color: var(--cg-text);
-          font-size: 16px;
-          line-height: 1.7;
-          margin: 8px 0;
-          overflow-wrap: anywhere;
-        }
-
-        .mm-caregiver-header .cg-muted {
-          color: var(--cg-muted) !important;
-          font-size: 14px;
-          line-height: 1.6;
-          overflow-wrap: anywhere;
-        }
-
-        .mm-caregiver-header .cg-status {
-          display: inline-flex;
-          align-items: center;
-          gap: 5px;
-          padding: 5px 9px;
-          border-radius: 7px;
-          background: #fee2e2;
-          color: #991b1b;
-          font-size: 13px;
-          font-weight: 700;
-        }
-
-        .mm-caregiver-header .cg-actions-row {
-          display: flex;
-          flex-wrap: wrap;
-          align-items: center;
-          gap: 9px;
-          margin-top: 13px;
-        }
-
-        .mm-caregiver-header .cg-action-button {
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          gap: 6px;
-          border: 1px solid transparent;
-          border-radius: 9px;
-          padding: 9px 13px;
-          font-size: 14px;
-          font-weight: 600;
-          cursor: pointer;
-          text-decoration: none;
-          line-height: 1.4;
-        }
-
-        .mm-caregiver-header .cg-accept {
-          background: #198754;
-          color: #ffffff;
-        }
-
-        .mm-caregiver-header .cg-reject {
-          background: #dc3545;
-          color: #ffffff;
-        }
-
-        .mm-caregiver-header .cg-view {
-          background: #e6f0ff;
-          color: #155cb5;
-          border-color: #bfd7ff;
-        }
-
-        .mm-caregiver-header .cg-read {
-          background: transparent;
-          border: 1px solid var(--cg-border);
-          color: var(--cg-text);
-        }
-
-        .mm-caregiver-header .cg-action-button:disabled {
-          opacity: 0.55;
-          cursor: not-allowed;
-        }
-
-        .mm-caregiver-header .cg-empty {
-          padding: 20px 12px;
-          text-align: center;
-          color: var(--cg-muted);
-          font-size: 15px;
-          line-height: 1.7;
-        }
-
-        .mm-caregiver-header .cg-dashboard-wrapper {
-          position: relative;
-          display: inline-flex;
-          align-items: center;
-          gap: 3px;
-          flex-shrink: 0;
-        }
-
-        .mm-caregiver-header .cg-dashboard-toggle {
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          border: none;
-          border-radius: 6px;
-          padding: 9px 5px;
-          background: transparent;
-          color: var(--cg-text);
-          font-size: 15px;
-          cursor: pointer;
-        }
-
-        .mm-caregiver-header .cg-dashboard-toggle:hover {
-          color: #3986e8;
-          background: var(--cg-section);
-        }
-
-        .mm-caregiver-header .cg-dashboard-toggle:focus-visible {
-          outline: 2px solid #3986e8;
-          outline-offset: 2px;
-        }
-
-        .mm-caregiver-header .cg-dashboard-menu {
-          position: absolute;
-          top: calc(100% + 10px);
-          inset-inline-start: 0;
-          width: 235px;
-          max-height: 300px;
-          overflow-y: auto;
-          padding: 7px;
-          border-radius: 12px;
-          border: 1px solid var(--cg-border);
-          background: var(--cg-panel);
-          box-shadow: var(--cg-shadow);
-          z-index: 2100;
-        }
-
-        .mm-caregiver-header .cg-dashboard-item {
-          display: block;
-          width: 100%;
-          padding: 11px 12px;
-          border: none;
-          border-radius: 7px;
-          background: transparent;
-          color: var(--cg-text);
-          text-align: start;
-          font-size: 15px;
-          cursor: pointer;
-          overflow-wrap: anywhere;
-        }
-
-        .mm-caregiver-header .cg-dashboard-item:hover {
-          background: var(--cg-section);
-        }
-
-        .mm-caregiver-header .cg-dashboard-divider {
-          height: 1px;
-          margin: 6px 0;
-          background: var(--cg-border);
-        }
-
-        .mm-caregiver-header .cg-feedback {
-          padding: 10px 12px;
-          margin-bottom: 12px;
-          border-radius: 9px;
-          background: var(--cg-section);
-          color: var(--cg-text);
-          border: 1px solid var(--cg-border);
-          font-size: 14px;
-          line-height: 1.6;
-        }
-
-        .mm-caregiver-header .cg-panel button:focus-visible,
-        .mm-caregiver-header .cg-nav button:focus-visible {
-          outline: 2px solid #3986e8;
-          outline-offset: 2px;
-        }
-
-        @media (max-width: 1050px) {
-          .mm-caregiver-header .cg-inner {
-            padding: 12px 15px;
-            gap: 12px;
-          }
-
-          .mm-caregiver-header .cg-main {
-            gap: 12px;
-          }
-
-          .mm-caregiver-header .cg-nav {
-            gap: 11px;
-          }
-
-          .mm-caregiver-header .cg-nav-link {
-            font-size: 14px;
-          }
-
-          .mm-caregiver-header .cg-logo {
-            width: 95px;
-          }
-
-          .mm-caregiver-header .cg-actions {
-            gap: 9px;
-          }
-        }
-
-        @media (max-width: 760px) {
-          .mm-caregiver-header .cg-inner {
-            flex-wrap: wrap;
-          }
-
-          .mm-caregiver-header .cg-main {
-            width: 100%;
-            flex-basis: 100%;
-          }
-
-          .mm-caregiver-header .cg-nav {
-            flex: 1;
-          }
-
-          .mm-caregiver-header .cg-actions {
-            margin-inline-start: auto;
-          }
-
-          .mm-caregiver-header .cg-profile {
-            width: 38px;
-            height: 38px;
-          }
-
-          .mm-caregiver-header .cg-logout {
-            padding: 8px 11px;
-            font-size: 13px;
-          }
-        }
-
-        @media (max-width: 480px) {
-          .mm-caregiver-header .cg-panel {
-            position: fixed;
-            top: 110px;
-            left: 12px;
-            right: 12px;
-            width: auto;
-            max-height: calc(100dvh - 125px);
-            padding: 14px;
-          }
-
-          .mm-caregiver-header .cg-panel-title {
-            font-size: 19px;
-          }
-
-          .mm-caregiver-header .cg-notification-card {
-            padding: 12px;
-          }
-
-          .mm-caregiver-header .cg-notification-text {
-            font-size: 15px;
-          }
-
-          .mm-caregiver-header .cg-logo {
-            width: 80px;
-          }
-        }
-
-        @media (prefers-reduced-motion: reduce) {
-          .mm-caregiver-header .cg-bell-ringing {
-            animation: none;
-          }
-        }
-          
-/* White header like the patient side */
-.mm-caregiver-header,
-.mm-caregiver-header.mm-caregiver-header-dark {
-  --cg-bg: #ffffff;
-  --cg-text: #233e64;
-  --cg-border: #e5e7eb;
-
-  background: #ffffff !important;
-  color: #233e64 !important;
-  border-bottom: 1px solid #e5e7eb !important;
-}
-
-/* Make header cover the entire viewport */
-.mm-caregiver-header {
-  width: 100vw !important;
-  max-width: none !important;
-  margin-left: calc(50% - 50vw) !important;
-  margin-right: calc(50% - 50vw) !important;
-  box-sizing: border-box;
-}
-
-/* Header content */
-.mm-caregiver-header .cg-inner {
-  width: 100%;
-  max-width: none;
-  padding-left: 30px;
-  padding-right: 30px;
-  box-sizing: border-box;
-}
-
-/* Navigation links */
-.mm-caregiver-header .cg-nav-link {
-  color: #233e64 !important;
-}
-
-/* Bell icon */
-.mm-caregiver-header .cg-bell-button {
-  color: #172b48 !important;
-}
-
-/* Keep notification panel dark in dark mode */
-.mm-caregiver-header.mm-caregiver-header-dark .cg-panel,
-.mm-caregiver-header.mm-caregiver-header-dark .cg-dashboard-menu {
-  --cg-text: #f1f5f9;
-  --cg-muted: #cbd5e1;
-  --cg-border: #41566e;
-  --cg-section: #243a51;
-  --cg-panel: #1b2d42;
-  --cg-unread: #294362;
-}
-
-
-/* ==========================================
-   CAREGIVER NOTIFICATIONS - ALWAYS LIGHT
-   ========================================== */
-
-/* White notification dropdown in every theme */
-.mm-caregiver-header .cg-panel,
-.mm-caregiver-header.mm-caregiver-header-dark .cg-panel {
-  --cg-panel: #ffffff;
-  --cg-text: #20334a;
-  --cg-muted: #526579;
-  --cg-border: #dbe4ee;
-  --cg-section: #f5f8fc;
-  --cg-unread: #edf5ff;
-
-  background: #ffffff !important;
+        .mm-caregiver-home { min-height:100vh; background:#f4f7fc; color:#20304a; }
+        .mm-caregiver-home .dashboard-card { background:#fff; color:inherit; border:1px solid #e2e8f0; border-radius:14px; }
+        .mm-caregiver-home .dashboard-table { width:100%; min-width:560px; }
+        .mm-caregiver-home .dashboard-table th, .mm-caregiver-home .dashboard-table td { padding:10px; }
+        .mm-caregiver-home .text-muted { color:#66758a !important; }
+        .mm-caregiver-home.mm-ch-dark { background:#101827; color:#e8edf6; }
+        .mm-caregiver-home.mm-ch-dark .dashboard-card { background:#1d293b; border-color:#35445b; }
+        .mm-caregiver-home.mm-ch-dark .text-muted { color:#b5c2d5 !important; }
+        .mm-caregiver-home.mm-ch-dark .dashboard-table, .mm-caregiver-home.mm-ch-dark .table { color:#e8edf6; }
+        .mm-caregiver-home.mm-ch-dark .dashboard-table th, .mm-caregiver-home.mm-ch-dark .dashboard-table td, .mm-caregiver-home.mm-ch-dark .table th, .mm-caregiver-home.mm-ch-dark .table td { background:#1d293b; color:#e8edf6; border-color:#43516a; }
+        .mm-caregiver-home.mm-ch-dark .badge.bg-light { background:#34445b !important; color:#fff !important; border-color:#5b6a81 !important; }
+        .mm-caregiver-modal.mm-ch-dark .modal-content { background:#1d293b; color:#e8edf6; border-color:#43516a; }
+        .mm-caregiver-modal.mm-ch-dark .modal-header, .mm-caregiver-modal.mm-ch-dark .modal-footer { border-color:#43516a; }
+        .mm-caregiver-modal.mm-ch-dark .form-control, .mm-caregiver-modal.mm-ch-dark .form-select { background:#111b2b; color:#f1f5f9; border-color:#4b5c74; }
+        .mm-caregiver-modal.mm-ch-dark .table { --bs-table-bg:#1d293b; --bs-table-color:#e8edf6; --bs-table-border-color:#43516a; }
+        .mm-caregiver-modal.mm-ch-dark .text-muted { color:#b5c2d5 !important; }
+        .mm-caregiver-modal.mm-ch-dark .btn-close { filter:invert(1); }
+        @media(max-width:768px) { .mm-caregiver-home > .row { padding-left:12px !important; padding-right:12px !important; } .mm-caregiver-home h2 { font-size:1.45rem; } .mm-caregiver-modal .modal-dialog { margin:10px; } }
+
+        
+/* Fix caregiver dashboard empty-state text */
+
+.mm-caregiver-home .cg-empty-state {
+  background-color: #f8f9fa !important;
   color: #20334a !important;
-  border: 1px solid #dbe4ee !important;
-  border-radius: 15px;
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+  border: 1px dashed #ced4da;
+  border-radius: 10px;
 }
 
-/* Notification headings */
-.mm-caregiver-header .cg-panel-title,
-.mm-caregiver-header .cg-section-title,
-.mm-caregiver-header.mm-caregiver-header-dark .cg-panel-title,
-.mm-caregiver-header.mm-caregiver-header-dark .cg-section-title {
+.mm-caregiver-home .cg-empty-state h5 {
   color: #20334a !important;
+  font-weight: 600;
 }
 
-/* Notification cards */
-.mm-caregiver-header .cg-notification-card,
-.mm-caregiver-header.mm-caregiver-header-dark .cg-notification-card {
-  background: #f5f8fc !important;
-  color: #20334a !important;
-  border-color: #dbe4ee !important;
-}
-
-/* Unread notifications */
-.mm-caregiver-header .cg-notification-card.unread,
-.mm-caregiver-header.mm-caregiver-header-dark .cg-notification-card.unread {
-  background: #edf5ff !important;
-  border-inline-start: 3px solid #3986e8 !important;
-}
-
-/* Patient names and medication details */
-.mm-caregiver-header .cg-panel .cg-person-name,
-.mm-caregiver-header .cg-panel .cg-notification-text,
-.mm-caregiver-header .cg-panel .cg-notification-text strong {
-  color: #20334a !important;
-}
-
-/* Secondary text */
-.mm-caregiver-header .cg-panel .cg-muted {
+.mm-caregiver-home .cg-empty-state p,
+.mm-caregiver-home.mm-ch-dark .cg-empty-state .text-muted {
   color: #526579 !important;
 }
 
-/* Mark as Read buttons */
-.mm-caregiver-header .cg-panel .cg-read {
-  color: #233e64 !important;
+        
+/* CAREGIVER DASHBOARD TEXT READABILITY */
+
+/* Small descriptions under dashboard statistics */
+.mm-caregiver-home .dashboard-card .text-muted {
+  font-size: 15px !important;
+  line-height: 1.8 !important;
+  font-weight: 500 !important;
+  color: #526579 !important;
+}
+
+/* Dark mode: brighter, more readable descriptions */
+.mm-caregiver-home.mm-ch-dark .dashboard-card .text-muted {
+  color: #d5e5ff !important;
+}
+
+/* Descriptions outside cards */
+.mm-caregiver-home .row > .col .text-muted,
+.mm-caregiver-home .row > [class*="col-"] .text-muted {
+  font-size: 15px;
+  line-height: 1.8;
+}
+
+/* Dark mode descriptions outside cards */
+.mm-caregiver-home.mm-ch-dark .text-muted {
+  color: #d5e5ff !important;
+}
+
+/* Keep light empty-state cards readable */
+.mm-caregiver-home.mm-ch-dark .cg-empty-state .text-muted {
+  color: #526579 !important;
+}
+
+/* Improve Arabic text readability */
+.mm-caregiver-home[dir="rtl"] .dashboard-card .text-muted {
+  font-size: 16px !important;
+  line-height: 1.9 !important;
+  font-weight: 500 !important;
+}
+
+/* My Patients section description */
+.mm-caregiver-home[dir="rtl"] .text-muted {
+  font-size: 16px;
+  line-height: 1.9;
+}
+
+
+/* Keep caregiver dashboard dropdown above page content */
+.mm-caregiver-header {
+  position: relative !important;
+  z-index: 9999 !important;
+  overflow: visible !important;
+}
+
+.mm-caregiver-header .cg-inner,
+.mm-caregiver-header .cg-main,
+.mm-caregiver-header .cg-nav,
+.mm-caregiver-header .cg-dashboard-wrapper {
+  overflow: visible !important;
+}
+
+.mm-caregiver-header .cg-dashboard-wrapper {
+  position: relative !important;
+}
+
+.mm-caregiver-header .cg-dashboard-menu {
+  position: absolute !important;
+  top: calc(100% + 8px) !important;
+  inset-inline-start: 0 !important;
+  z-index: 10000 !important;
+  min-width: 230px;
   background: #ffffff !important;
-  border-color: #cbd5e1 !important;
+  color: #233e64 !important;
+  border: 1px solid #dbe4ee !important;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.18);
 }
 
-/* Patient request feedback */
-.mm-caregiver-header .cg-panel .cg-feedback {
-  background: #eff6ff !important;
-  color: #20334a !important;
-  border-color: #bfdbfe !important;
+.mm-caregiver-header .cg-dashboard-item {
+  color: #233e64 !important;
 }
 
-/* Missed dose badge */
-.mm-caregiver-header .cg-panel .cg-status {
-  background: #fee2e2 !important;
-  color: #991b1b !important;
-}
-
-/* View Patient button */
-.mm-caregiver-header .cg-panel .cg-view {
-  background: #e6f0ff !important;
-  color: #155cb5 !important;
-  border-color: #bfd7ff !important;
-}
 
       `}</style>
+      <CaregiverHeader />
 
-      <header
-        className={`mm-caregiver-header ${
-          isDark ? "mm-caregiver-header-dark" : ""
-        }`}
-        dir={isArabic ? "rtl" : "ltr"}
-      >
-        <div className="cg-inner">
-          <div className="cg-main">
-            <img
-              src={medimindlogo}
-              alt="MediMind logo"
-              className="cg-logo"
-            />
+      <Row className="p-4">
+        <Col>
+          <h2 className="mb-2">
+            {isArabic
+              ? ({
+                "Good morning": "صباح الخير",
+                "Good afternoon": "مساء الخير",
+                "Good evening": "مساء الخير"
+              }[greeting] || greeting)
+              : greeting}
+            {isArabic ? "، " : ", "}
+            {user?.name || t("Caregiver", "مقدم الرعاية")}!
+          </h2>
 
-            <nav
-              className="cg-nav"
-              aria-label={t(
-                "Caregiver navigation",
-                "تنقل مقدم الرعاية"
-              )}
+          <p
+
+            className="mb-2"
+            style={{
+              color: theme === "dark" ? "#e0edff" : "#0b3d91",
+              fontSize: isArabic ? "21px" : "20px",
+              fontWeight: "700",
+              lineHeight: "1.9",
+            }}
+
+          >
+            <span
+              style={{
+                marginInlineEnd: "7px",
+              }}
             >
-              <div
-                className="cg-dashboard-wrapper"
-                ref={dashboardRef}
-              >
-                <Link
-                  to="/caregiver-home"
-                  className={`cg-nav-link ${
-                    isActive("/caregiver-home")
-                      ? "active"
-                      : ""
-                  }`}
-                  onClick={() => setDashboardOpen(false)}
-                >
-                  {t("Dashboard", "لوحة التحكم")}
-                </Link>
+              {
+                caregiverMessage.icon
+              }
+            </span>
 
-                <button
-                  type="button"
-                  className="cg-dashboard-toggle"
-                  onClick={() =>
-                    setDashboardOpen((current) => !current)
-                  }
-                  aria-label={t(
-                    "Choose a patient dashboard",
-                    "اختيار لوحة تحكم المريض"
+            {isArabic ? caregiverMessage.ar : caregiverMessage.text}
+          </p>
+
+          <p
+            className="mb-0"
+            style={{
+              color: theme === "dark" ? "#d5e5ff" : "#405775",
+              fontSize: isArabic ? "18px" : "17px",
+              fontWeight: "500",
+              lineHeight: "1.9",
+            }}
+          >
+            {t(
+              "Monitor your patients' medications and adherence.",
+              "تابع أدوية مرضاك ومدى التزامهم بتناولها."
+            )}
+          </p>
+          {dashboardPatientEmail && selectedDashboardPatient && (
+            <div
+              className="mt-3"
+              style={{
+                padding: "12px 16px",
+                backgroundColor: theme === "dark" ? "#26354a" : "#eef5ff",
+                borderRadius: "10px",
+                border: "1px solid #d6e6ff",
+              }}
+            >
+              <strong style={{
+                color: theme === "dark" ? "#ffffff" : "#0b3d91",
+                fontWeight: "700",
+              }}>
+                {isArabic
+                  ? `أنت تعرض ملخص الأدوية وإحصائيات الالتزام للمريض: ${selectedDashboardPatient.patientName || "المريض"}`
+                  : `Viewing medication summary and adherence statistics for ${selectedDashboardPatient.patientName || "Patient"}`}
+              </strong>
+            </div>
+          )}
+        </Col>
+      </Row>
+
+      {dashboardDataMessage && (
+        <Row className="px-4">
+          <Col>
+            <Alert color="danger">
+              {
+                dashboardDataMessage
+              }
+            </Alert>
+          </Col>
+        </Row>
+      )}
+
+      <Row className="px-4">
+        <Col
+          md="3"
+          className="mb-3"
+        >
+          <Card className="dashboard-card h-100">
+            <CardBody>
+              <h5>
+                {dashboardPatientEmail ? t("Today's Doses", "جرعات اليوم") : t("Linked Patients", "مرضاك ")}
+              </h5>
+
+              <h2>
+                {isLoadingPatients || isLoadingDashboardData
+                  ? "..."
+                  : dashboardPatientEmail
+                    ? selectedPatientDoses.length
+                    : patients.length}
+              </h2>
+
+              <p className="text-muted mb-0">
+                {dashboardPatientEmail
+                  ? selectedDashboardPatient?.patientName || t("Selected patient", "المريض المحدد")
+                  : t("Accepted patient links", "طلبات الربط المقبولة")}
+              </p>
+            </CardBody>
+          </Card>
+        </Col>
+
+        <Col
+          md="3"
+          className="mb-3"
+        >
+          <Card className="dashboard-card h-100">
+            <CardBody>
+              <h5>
+                {t("Upcoming Medications", "الأدوية القادمة")}
+              </h5>
+
+              <h2>
+                {isLoadingDashboardData
+                  ? "..."
+                  : dashboardPatientEmail
+                    ? selectedPatientUpcoming
+                    : dashboardSummary.upcomingCount}
+              </h2>
+
+              <p className="text-muted mb-0">
+                {t("Remaining doses today", "الجرعات المتبقية اليوم")}
+              </p>
+            </CardBody>
+          </Card>
+        </Col>
+
+        <Col
+          md="3"
+          className="mb-3"
+        >
+          <Card className="dashboard-card missed-card h-100">
+            <CardBody>
+              <h5>
+                {t("Missed Doses", "الجرعات الفائتة")}
+              </h5>
+
+              <h2>
+                {isLoadingDashboardData
+                  ? "..."
+                  : dashboardPatientEmail
+                    ? selectedPatientMissed
+                    : dashboardSummary.missedCount}
+              </h2>
+
+              <p className="text-muted mb-0">
+                {dashboardPatientEmail
+                  ? isArabic
+                    ? `الجرعات التي فاتت ${selectedDashboardPatient?.patientName || "المريض"} اليوم`
+                    : `Missed by ${selectedDashboardPatient?.patientName || "patient"} today`
+                  : t(
+                    "Missed across linked patients today",
+                    "الجرعات الفائتة لجميع المرضى المرتبطين اليوم"
                   )}
-                  aria-expanded={dashboardOpen}
-                  aria-haspopup="true"
-                >
-                  ▾
-                </button>
+              </p>
+            </CardBody>
+          </Card>
+        </Col>
 
-                {dashboardOpen && (
-                  <div className="cg-dashboard-menu">
-                    <button
-                      type="button"
-                      className="cg-dashboard-item"
-                      onClick={() => selectDashboard("")}
-                    >
-                      {t("All Patients", "جميع المرضى")}
-                    </button>
+        <Col
+          md="3"
+          className="mb-3"
+        >
+          <Card className="dashboard-card adherence-card h-100">
+            <CardBody>
+              <h5>
+                {t("Adherence Rate", "نسبة الالتزام")}
+              </h5>
 
-                    {linkedPatients.length > 0 && (
-                      <div className="cg-dashboard-divider" />
-                    )}
+              <h2>
+                {isLoadingDashboardData
+                  ? "..."
+                  : `${dashboardPatientEmail
+                    ? selectedPatientAdherence
+                    : dashboardSummary.adherenceRate
+                  }%`}
+              </h2>
 
-                    {linkedPatients.map((patient) => (
-                      <button
-                        type="button"
-                        className="cg-dashboard-item"
-                        key={
-                          patient._id ||
-                          patient.patientEmail
-                        }
-                        onClick={() =>
-                          selectDashboard(
-                            patient.patientEmail
-                          )
-                        }
-                      >
-                        {patient.patientName ||
-                          patient.patientEmail}
-                      </button>
-                    ))}
+              <Progress
+                value={
+                  dashboardPatientEmail
+                    ? selectedPatientAdherence
+                    : dashboardSummary.adherenceRate
+                }
+                className="mt-2"
+              />
 
-                    {linkedPatients.length === 0 && (
-                      <div className="cg-empty">
-                        {t(
-                          "No linked patients",
-                          "لا يوجد مرضى مرتبطون"
-                        )}
-                      </div>
-                    )}
-                  </div>
+              <p className="text-muted mt-2 mb-0">
+                {t(
+                  "Based on completed doses today",
+                  "بناءً على الجرعات المكتملة اليوم"
                 )}
+              </p>
+            </CardBody>
+          </Card>
+        </Col>
+      </Row>
+      {!dashboardPatientEmail && (
+        <Row className="px-4 pt-4">
+          <Col md="12">
+            <div className="mb-3">
+
+              <h4
+                className="mb-1"
+                style={{
+                  color: theme === "dark" ? "#ffffff" : "#20304a",
+                  fontSize: isArabic ? "26px" : "25px",
+                  fontWeight: "700",
+                  lineHeight: "1.7",
+                }}
+              >
+                {t("My Patients", "مرضاي")}
+              </h4>
+
+              <p
+                className="mb-0"
+                style={{
+                  color: theme === "dark" ? "#d5e5ff" : "#405775",
+                  fontSize: isArabic ? "18px" : "17px",
+                  fontWeight: "500",
+                  lineHeight: "1.9",
+                }}
+              >
+                {t(
+                  "View and manage your linked patients.",
+                  "عرض وإدارة المرضى المرتبطين بحسابك."
+                )}
+              </p>
+
+            </div>
+
+            {isLoadingPatients && (
+              <Alert color="info">
+                {t("Loading linked patients...", "جارٍ تحميل المرضى المرتبطين...")}
+              </Alert>
+            )}
+
+            {patientsMessage && (
+              <Alert color="danger">
+                {
+                  patientsMessage
+                }
+              </Alert>
+            )}
+
+            {!isLoadingPatients &&
+              !patientsMessage &&
+              patients.length ===
+              0 && (
+                <Card className="dashboard-card">
+                  <CardBody className="cg-empty-state text-center py-5">
+                    <h5>
+                      {t("No linked patients yet", "لا يوجد مرضى مرتبطون بعد")}
+                    </h5>
+
+                    <p className="text-muted mb-0">
+                      {t("Accepted patients will appear here.", "سيظهر هنا المرضى الذين تم قبول طلبات ربطهم.")}
+                    </p>
+                  </CardBody>
+                </Card>
+              )}
+
+            <Row>
+              {patients.map(
+                (patient) => (
+                  <Col
+                    md="6"
+                    lg="4"
+                    className="mb-4"
+                    key={
+                      patient._id ||
+                      patient.patientEmail
+                    }
+                  >
+                    <Card
+                      className="dashboard-card h-100"
+                      style={{
+                        borderRadius:
+                          "14px",
+                      }}
+                    >
+                      <CardBody>
+                        <div className="d-flex align-items-center mb-3">
+                          <img
+                            src={
+                              patient.patientProfilePicture
+                                ? `http://localhost:3002${patient.patientProfilePicture}`
+                                : "https://cdn-icons-png.flaticon.com/512/3135/3135715.png"
+                            }
+                            alt={
+                              patient.patientName ||
+                              "Patient"
+                            }
+                            style={{
+                              width:
+                                "64px",
+
+                              height:
+                                "64px",
+
+                              borderRadius:
+                                "50%",
+
+                              objectFit:
+                                "cover",
+
+                              marginInlineEnd: "14px",
+
+                              border:
+                                "2px solid #dee2e6",
+                            }}
+                            onError={(
+                              event
+                            ) => {
+                              event.currentTarget.src =
+                                "https://cdn-icons-png.flaticon.com/512/3135/3135715.png";
+                            }}
+                          />
+
+                          <div>
+                            <h5 className="mb-1">
+                              {patient.patientName ||
+                                "Patient"}
+                            </h5>
+
+                            <p className="text-muted small mb-0">
+                              {t("Patient", "مريض")}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="mb-3">
+                          <small
+                            className="text-muted d-block mb-2"
+                            style={{
+                              fontWeight:
+                                "600",
+                            }}
+                          >
+                            {t("MEDICAL CONDITIONS", "الحالات الطبية")}
+                          </small>
+
+                          {patient
+                            .medicalConditions
+                            ?.length >
+                            0 ? (
+                            <div
+                              style={{
+                                display:
+                                  "flex",
+
+                                flexWrap:
+                                  "wrap",
+
+                                gap:
+                                  "7px",
+                              }}
+                            >
+                              {patient.medicalConditions.map(
+                                (
+                                  condition
+                                ) => (
+                                  <span
+                                    key={
+                                      condition
+                                    }
+                                    className="badge bg-light text-dark border"
+                                    style={{
+                                      padding:
+                                        "7px 10px",
+                                    }}
+                                  >
+                                    {
+                                      condition
+                                    }
+                                  </span>
+                                )
+                              )}
+                            </div>
+                          ) : (
+                            <p className="text-muted mb-0">
+                              {t("Not provided", "غير محدد")}
+                            </p>
+                          )}
+                        </div>
+
+                        <div
+                          className="pt-3"
+                          style={{
+                            borderTop:
+                              "1px solid #e9ecef",
+                          }}
+                        >
+                          <span
+                            onClick={() =>
+                              handleOpenPatient(
+                                patient
+                              )
+                            }
+                            style={{
+                              color:
+                                "#0d6efd",
+
+                              cursor:
+                                "pointer",
+
+                              textDecoration:
+                                "underline",
+
+                              fontSize:
+                                "14px",
+
+                              fontWeight:
+                                "500",
+                            }}
+                          >
+                            {t("View Profile", "عرض الملف الشخصي")}
+                          </span>
+
+
+                          <div className="cg-patient-actions">
+
+                            <Button
+                              type="button"
+                              color="primary"
+                              className="cg-patient-action-btn"
+                              onClick={() => handleOpenMedications(patient)}
+                            >
+                              {t("Medications", "الأدوية")}
+                            </Button>
+
+                            <Button
+                              type="button"
+                              color="danger"
+                              className="cg-patient-action-btn"
+                              onClick={() => handleDisconnectPatient(patient)}
+                            >
+                              {t("Disconnect Patient", "إلغاء الارتباط بالمريض")}
+                            </Button>
+                          </div>
+
+                        </div>
+                      </CardBody>
+                    </Card>
+                  </Col>
+                )
+              )}
+            </Row>
+          </Col>
+        </Row>
+      )}
+
+      <Row className="px-4 pb-4">
+        <Col
+          md="8"
+          className="mb-4 mb-md-0"
+        >
+          <Card className="dashboard-card h-100">
+            <CardBody>
+
+
+
+              <div className="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+                <h4 className="mb-0">
+                  {t("Patient Medication Overview", "نظرة عامة على أدوية المريض")}
+                </h4>
+
+                {dashboardPatientEmail && (
+  <Button
+    color="primary"
+    type="button"
+    disabled={
+      !selectedDashboardPatient ||
+      selectedDashboardPatient.medicationManagementPermission !== true
+    }
+    title={
+      selectedDashboardPatient?.medicationManagementPermission === true
+        ? t("Add Medication", "إضافة دواء")
+        : t(
+            "Patient permission required",
+            "يتطلب إذن المريض"
+          )
+    }
+    onClick={() => {
+      setSelectedPatient(selectedDashboardPatient);
+      setAddMedicationOpen(true);
+    }}
+  >
+    {t("+ Add Medication", "+ إضافة دواء")}
+  </Button>
+)}
               </div>
 
-              <Link
-                to="/caregiver-reports"
-                className={`cg-nav-link ${
-                  isActive("/caregiver-reports")
-                    ? "active"
-                    : ""
-                }`}
-              >
-                {t("Reports", "التقارير")}
-              </Link>
 
-              <Link
-                to="/caregiver-analytics"
-                className={`cg-nav-link ${
-                  isActive("/caregiver-analytics")
-                    ? "active"
-                    : ""
-                }`}
-              >
-                {t("Analytics", "التحليلات")}
-              </Link>
 
-              <Link
-                to="/caregiver-settings"
-                className={`cg-nav-link ${
-                  isActive("/caregiver-settings")
-                    ? "active"
-                    : ""
-                }`}
-              >
-                {t("Settings", "الإعدادات")}
-              </Link>
-            </nav>
-          </div>
 
-          <div className="cg-actions">
-            <div
-              className="cg-bell-wrapper"
-              ref={notificationRef}
-            >
-              <button
-                type="button"
-                className="cg-bell-button"
-                onClick={() =>
-                  setNotificationOpen((current) => !current)
-                }
-                aria-label={t(
-                  "Notifications",
-                  "الإشعارات"
-                )}
-                aria-expanded={notificationOpen}
-                title={t(
-                  "Notifications",
-                  "الإشعارات"
-                )}
-              >
-                <span
-                  className={
-                    bellRinging
-                      ? "cg-bell-ringing"
-                      : ""
-                  }
-                >
-                  <FaBell />
-                </span>
+              {isLoadingDashboardData && (
+                <Alert color="info">
+                  Loading
+                  medication
+                  activity...
+                </Alert>
+              )}
 
-                {totalUnreadNotifications > 0 && (
-                  <span className="cg-badge-count">
-                    {totalUnreadNotifications > 99
-                      ? "99+"
-                      : totalUnreadNotifications}
-                  </span>
-                )}
-              </button>
+              {!isLoadingDashboardData &&
+                visibleDashboardDoses.length === 0 && (
+                  <div
+                    className="cg-empty-state text-center py-5"
+                    style={{
+                      border:
+                        "1px dashed #ced4da",
 
-              {notificationOpen && (
-                <div
-                  className="cg-panel"
-                  dir={isArabic ? "rtl" : "ltr"}
-                  role="region"
-                  aria-label={t(
-                    "Caregiver notifications",
-                    "إشعارات مقدم الرعاية"
-                  )}
-                >
-                  <div className="cg-panel-header">
-                    <h5 className="cg-panel-title">
+                      borderRadius:
+                        "10px",
+
+                      backgroundColor:
+                        "#f8f9fa",
+
+                      paddingLeft:
+                        "20px",
+
+                      paddingRight:
+                        "20px",
+                    }}
+                  >
+
+                    <h5 className="mb-2">
                       {t(
-                        "Notifications",
-                        "الإشعارات"
+                        "No medication activity available today",
+                        "لا يوجد نشاط للأدوية اليوم"
                       )}
                     </h5>
 
-                    {unreadAlerts.length > 0 && (
-                      <button
-                        type="button"
-                        className="cg-action-button cg-read"
-                        onClick={markAllAsRead}
-                      >
-                        <FaCheck size={12} />
-                        {t(
-                          "Mark All as Read",
-                          "تحديد الكل كمقروء"
-                        )}
-                      </button>
-                    )}
-                  </div>
-
-                  {message && (
-                    <div
-                      className="cg-feedback"
-                      role="status"
-                    >
-                      {message}
-                    </div>
-                  )}
-
-                  {pendingRequests.length > 0 && (
-                    <section>
-                      <h6 className="cg-section-title">
-                        {t(
-                          "New Patient Requests",
-                          "طلبات المرضى الجديدة"
-                        )}
-                      </h6>
-
-                      {pendingRequests.map((request) => (
-                        <div
-                          className="cg-notification-card unread"
-                          key={request._id}
-                        >
-                          <div className="cg-person">
-                            <img
-                              src={getAvatar(
-                                request.patientProfilePicture
-                              )}
-                              alt={t(
-                                "Patient",
-                                "المريض"
-                              )}
-                              className="cg-person-avatar"
-                              onError={(event) => {
-                                event.currentTarget.src =
-                                  FALLBACK_AVATAR;
-                              }}
-                            />
-
-                            <div>
-                              <div className="cg-person-name">
-                                {request.patientName ||
-                                  request.patientEmail ||
-                                  t(
-                                    "Patient",
-                                    "المريض"
-                                  )}
-                              </div>
-
-                              {request.patientEmail && (
-                                <div className="cg-muted">
-                                  {request.patientEmail}
-                                </div>
-                              )}
-                            </div>
-                          </div>
-
-                          <p className="cg-notification-text">
-                            {t(
-                              "Wants to connect with you as their caregiver.",
-                              "يرغب في ربط حسابه بك بصفتك مقدم الرعاية."
-                            )}
-                          </p>
-
-                          <div className="cg-actions-row">
-                            <button
-                              type="button"
-                              className="cg-action-button cg-accept"
-                              disabled={
-                                processingRequestId ===
-                                request._id
-                              }
-                              onClick={() =>
-                                handlePatientRequest(
-                                  request._id,
-                                  "Accepted"
-                                )
-                              }
-                            >
-                              <FaCheck size={12} />
-                              {processingRequestId ===
-                              request._id
-                                ? t(
-                                    "Processing...",
-                                    "جارٍ المعالجة..."
-                                  )
-                                : t("Accept", "قبول")}
-                            </button>
-
-                            <button
-                              type="button"
-                              className="cg-action-button cg-reject"
-                              disabled={
-                                processingRequestId ===
-                                request._id
-                              }
-                              onClick={() =>
-                                handlePatientRequest(
-                                  request._id,
-                                  "Rejected"
-                                )
-                              }
-                            >
-                              <FaTimes size={12} />
-                              {t("Reject", "رفض")}
-                            </button>
-                          </div>
-                        </div>
-                      ))}
-                    </section>
-                  )}
-
-                  <section>
-                    <h6 className="cg-section-title">
+                    <p className="text-muted mb-0">
                       {t(
-                        "Missed Medication Alerts",
-                        "تنبيهات الجرعات الفائتة"
+                        "Dose activity will appear here after linked patients have scheduled medications.",
+                        "سيظهر نشاط الجرعات هنا بعد أن يقوم المرضى المرتبطون بجدولة أدويتهم."
                       )}
-                    </h6>
+                    </p>
 
-                    {missedDoseAlerts.length === 0 ? (
-                      <div className="cg-empty">
-                        <FaBell
-                          style={{
-                            fontSize: "24px",
-                            marginBottom: "10px",
-                            opacity: 0.55,
-                          }}
-                        />
+                  </div>
+                )}
 
-                        <div>
-                          {t(
-                            "No missed-dose alerts.",
-                            "لا توجد تنبيهات جرعات فائتة."
-                          )}
-                        </div>
-                      </div>
-                    ) : (
-                      missedDoseAlerts
-                        .slice(0, 5)
-                        .map((dose) => {
-                          const patient = getPatientInfo(
-                            dose.userEmail
-                          );
+              {!isLoadingDashboardData &&
+                visibleDashboardDoses.length > 0 && (
+                  <div
+                    style={{
+                      overflowX:
+                        "auto",
+                    }}
+                  >
+                    <table className="dashboard-table">
+                      <thead>
+                        <tr>
+                          <th>
+                            {t("Patient", 'المريض')}
+                          </th>
 
-                          const isRead =
-                            readAlertIds.includes(
-                              getAlertId(dose)
-                            );
+                          <th>
+                            {t("Medication", 'الدواء')}
+                          </th>
 
-                          return (
-                            <div
-                              key={getAlertId(dose)}
-                              className={`cg-notification-card ${
-                                !isRead ? "unread" : ""
-                              }`}
+                          <th>
+                            {t("Dosage", 'الجرعة')}
+                          </th>
+
+                          <th>
+                            {t("Time", 'الوقت')}
+                          </th>
+
+                          <th>
+                            {t("Status", 'الحالة')}
+                          </th>
+                        </tr>
+                      </thead>
+
+                      <tbody>
+                        {visibleDashboardDoses.map(
+                          (
+                            dose
+                          ) => (
+                            <tr
+                              key={
+                                dose._id
+                              }
                             >
-                              <div className="cg-person">
-                                <img
-                                  src={getAvatar(
-                                    patient?.patientProfilePicture
-                                  )}
-                                  alt={t(
-                                    "Patient",
-                                    "المريض"
-                                  )}
-                                  className="cg-person-avatar"
-                                  onError={(event) => {
-                                    event.currentTarget.src =
-                                      FALLBACK_AVATAR;
-                                  }}
-                                />
-
-                                <div
-                                  style={{
-                                    flex: 1,
-                                    minWidth: 0,
-                                  }}
-                                >
-                                  <div className="cg-person-name">
-                                    {patient?.patientName ||
-                                      dose.userEmail ||
-                                      t(
-                                        "Patient",
-                                        "المريض"
-                                      )}
-                                  </div>
-
-                                  <span className="cg-status">
-                                    {t(
-                                      "Missed Dose",
-                                      "جرعة فائتة"
-                                    )}
-                                  </span>
-                                </div>
-                              </div>
-
-                              <p className="cg-notification-text">
-                                {t(
-                                  "Missed medication:",
-                                  "الدواء الفائت:"
-                                )}{" "}
-                                <strong>
-                                  {dose.medicationName}
-                                </strong>
-
-                                {dose.dosage && (
-                                  <>
-                                    {" "}
-                                    (
-                                    {formatDosage(
-                                      dose.dosage
-                                    )}
-                                    )
-                                  </>
+                              <td>
+                                {getPatientName(
+                                  dose.userEmail
                                 )}
-                              </p>
+                              </td>
 
-                              <div className="cg-muted">
-                                <FaClock
-                                  size={12}
-                                  style={{
-                                    marginInlineEnd: "6px",
-                                  }}
-                                />
-                                {t(
-                                  "Scheduled at",
-                                  "الموعد المحدد"
-                                )}{" "}
+                              <td>
+                                {
+                                  dose.medicationName
+                                }
+                              </td>
+
+                              <td>
+                                {
+                                  dose.dosage
+                                }
+                              </td>
+
+                              <td>
                                 {formatTime(
                                   dose.scheduledTime
                                 )}
-                              </div>
+                              </td>
 
-                              <div className="cg-actions-row">
-                                <button
-                                  type="button"
-                                  className="cg-action-button cg-view"
-                                  onClick={() =>
-                                    viewPatient(
-                                      dose.userEmail
-                                    )
-                                  }
+                              <td>
+                                <span
+                                  className={getStatusBadgeClass(dose.status)}
                                 >
-                                  <FaUser size={12} />
-                                  {t(
-                                    "View Patient",
-                                    "عرض المريض"
-                                  )}
-                                </button>
-
-                                {!isRead && (
-                                  <button
-                                    type="button"
-                                    className="cg-action-button cg-read"
-                                    onClick={() =>
-                                      markOneAsRead(dose)
-                                    }
-                                  >
-                                    <FaCheck size={12} />
-                                    {t(
-                                      "Mark as Read",
-                                      "تحديد كمقروء"
-                                    )}
-                                  </button>
-                                )}
-                              </div>
-                            </div>
-                          );
-                        })
-                    )}
-                  </section>
-
-                  {pendingRequests.length === 0 &&
-                    missedDoseAlerts.length === 0 && (
-                      <p className="cg-muted">
-                        {t(
-                          "You're all caught up!",
-                          "لا توجد إشعارات جديدة!"
+                                  {
+                                    (isArabic ? ({ Taken: "تم تناولها", Missed: "فائتة", Skipped: "تم تخطيها", Upcoming: "قادمة" }[dose.status] || dose.status) : dose.status)
+                                  }
+                                </span>
+                              </td>
+                            </tr>
+                          )
                         )}
-                      </p>
-                    )}
-                </div>
-              )}
-            </div>
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+            </CardBody>
+          </Card>
+        </Col>
 
-            <img
-              src={getAvatar(user?.profilepic)}
-              alt={t(
-                "Profile",
-                "الصورة الشخصية"
+        <Col md="4">
+          <Card className="dashboard-card h-100">
+            <CardBody>
+              <h4 className="mb-3">
+                {t("Caregiver Alerts", 'تنبيهات مقدم الرعاية')}
+              </h4>
+
+              {isLoadingDashboardData && (
+                <Alert color="info">
+                  {t("Loading alerts...", 'جارٍ تحميل التنبيهات...')}
+                </Alert>
               )}
-              className="cg-profile"
-              onError={(event) => {
-                event.currentTarget.src =
-                  FALLBACK_AVATAR;
-              }}
+
+              {!isLoadingDashboardData &&
+                visibleMissedDoseAlerts.length ===
+                0 &&
+                visibleUpcomingDoseAlerts.length ===
+                0 && (
+                  <div
+                    className="cg-empty-state text-center py-5"
+                    style={{
+                      border:
+                        "1px dashed #ced4da",
+
+                      borderRadius:
+                        "10px",
+
+                      backgroundColor:
+                        "#f8f9fa",
+
+                      paddingLeft:
+                        "15px",
+
+                      paddingRight:
+                        "15px",
+                    }}
+                  >
+
+                    <h5 className="mb-2">
+                      {t(
+                        "No alerts at the moment",
+                        "لا توجد تنبيهات في الوقت الحالي"
+                      )}
+                    </h5>
+
+                    <p className="text-muted mb-0">
+                      {t(
+                        "Missed-dose and upcoming reminder alerts will appear here.",
+                        "ستظهر هنا تنبيهات الجرعات الفائتة والتذكيرات القادمة."
+                      )}
+                    </p>
+
+                  </div>
+                )}
+
+              {visibleMissedDoseAlerts
+                .slice(0, 3)
+                .map(
+                  (dose) => (
+                    <Alert
+                      color="danger"
+                      key={
+                        dose._id
+                      }
+                    >
+                      <strong>
+                        {t("Missed Dose", 'جرعة فائتة')}
+                      </strong>
+
+                      <div className="mt-1">
+                        {getPatientName(
+                          dose.userEmail
+                        )}{" "}
+                        {t("missed", "فاتته جرعة من")} {" "}
+                        {
+                          dose.medicationName
+                        }{" "}
+                        {t("at", "الساعة")} {" "}
+                        {formatTime(
+                          dose.scheduledTime
+                        )}
+                        .
+                      </div>
+                    </Alert>
+                  )
+                )}
+
+              {visibleUpcomingDoseAlerts
+                .slice(0, 3)
+                .map(
+                  (dose) => (
+                    <Alert
+                      color="warning"
+                      key={
+                        dose._id
+                      }
+                    >
+                      <strong>
+                        {t("Upcoming Medication", "دواء قادم")}
+                      </strong>
+
+                      <div className="mt-1">
+                        {getPatientName(
+                          dose.userEmail
+                        )}{" "}
+                        {t("should take", "ينبغي أن يتناول")} {" "}
+                        {
+                          dose.medicationName
+                        }{" "}
+                        {t("at", "الساعة")} {" "}
+                        {formatTime(
+                          dose.scheduledTime
+                        )}
+                        .
+                      </div>
+                    </Alert>
+                  )
+                )}
+            </CardBody>
+          </Card>
+        </Col>
+      </Row>
+
+      <Modal dir={isArabic ? "rtl" : "ltr"} className={`mm-caregiver-modal ${theme === "dark" ? "mm-ch-dark" : ""}`}
+        isOpen={
+          isPatientModalOpen
+        }
+        toggle={
+          handleClosePatient
+        }
+        centered
+        size="lg"
+      >
+        <ModalHeader
+          toggle={
+            handleClosePatient
+          }
+        >
+          {t("Patient Profile", 'ملف المريض')}
+        </ModalHeader>
+
+        <ModalBody>
+          {selectedPatient && (
+            <>
+              <div className="text-center mb-4">
+                <img
+                  src={
+                    selectedPatient.patientProfilePicture
+                      ? `http://localhost:3002${selectedPatient.patientProfilePicture}`
+                      : "https://cdn-icons-png.flaticon.com/512/3135/3135715.png"
+                  }
+                  alt={
+                    selectedPatient.patientName ||
+                    "Patient"
+                  }
+                  style={{
+                    width:
+                      "105px",
+
+                    height:
+                      "105px",
+
+                    borderRadius:
+                      "50%",
+
+                    objectFit:
+                      "cover",
+
+                    border:
+                      "3px solid #dee2e6",
+
+                    marginBottom:
+                      "12px",
+                  }}
+                  onError={(
+                    event
+                  ) => {
+                    event.currentTarget.src =
+                      "https://cdn-icons-png.flaticon.com/512/3135/3135715.png";
+                  }}
+                />
+
+                <h4 className="mb-1">
+                  {selectedPatient.patientName ||
+                    "Patient"}
+                </h4>
+
+                <p className="text-muted mb-0">
+                  {t("Relationship:", "العلاقة:")}{" "}
+                  {selectedPatient.relationship ||
+                    t("Not provided", "غير محدد")}
+                </p>
+              </div>
+
+              <hr />
+
+              <Row>
+                <Col
+                  md="6"
+                  className="mb-3"
+                >
+                  <strong>
+                    {t("Phone Number", 'رقم الهاتف')}
+                  </strong>
+
+                  <p className="text-muted mb-0">
+                    {selectedPatient.patientPhoneNumber ||
+                      t("Not provided", "غير محدد")}
+                  </p>
+                </Col>
+
+                <Col
+                  md="6"
+                  className="mb-3"
+                >
+                  <strong>
+                    {t("Age", 'العمر')}
+                  </strong>
+
+                  <p className="text-muted mb-0">
+                    {selectedPatient.age ||
+                      t("Not provided", "غير محدد")}
+                  </p>
+                </Col>
+
+                <Col
+                  md="6"
+                  className="mb-3"
+                >
+                  <strong>
+                    {t("Height", 'الطول')}
+                  </strong>
+
+                  <p className="text-muted mb-0">
+                    {selectedPatient.height
+                      ? `${selectedPatient.height} cm`
+                      : t("Not provided", "غير محدد")}
+                  </p>
+                </Col>
+
+                <Col
+                  md="6"
+                  className="mb-3"
+                >
+                  <strong>
+                    {t("Weight", 'الوزن')}
+                  </strong>
+
+                  <p className="text-muted mb-0">
+                    {selectedPatient.weight
+                      ? `${selectedPatient.weight} kg`
+                      : t("Not provided", "غير محدد")}
+                  </p>
+                </Col>
+
+                <Col
+                  md="6"
+                  className="mb-3"
+                >
+                  <strong>
+                    {t("Blood Type", 'فصيلة الدم')}
+                  </strong>
+
+                  <p className="text-muted mb-0">
+                    {selectedPatient.bloodType ||
+                      t("Not provided", "غير محدد")}
+                  </p>
+                </Col>
+
+                <Col
+                  md="6"
+                  className="mb-3"
+                >
+                  <strong>
+                    Emergency
+                    Contact
+                  </strong>
+
+                  <p className="text-muted mb-0">
+                    {selectedPatient.emergencyContact ||
+                      t("Not provided", "غير محدد")}
+                  </p>
+                </Col>
+              </Row>
+
+              <div className="mb-3">
+                <strong>
+                  Medical
+                  Conditions
+                </strong>
+
+                {selectedPatient
+                  .medicalConditions
+                  ?.length >
+                  0 ? (
+                  <div
+                    className="mt-2"
+                    style={{
+                      display:
+                        "flex",
+
+                      flexWrap:
+                        "wrap",
+
+                      gap:
+                        "8px",
+                    }}
+                  >
+                    {selectedPatient.medicalConditions.map(
+                      (
+                        condition
+                      ) => (
+                        <span
+                          key={
+                            condition
+                          }
+                          className="badge bg-light text-dark border"
+                        >
+                          {
+                            condition
+                          }
+                        </span>
+                      )
+                    )}
+                  </div>
+                ) : (
+                  <p className="text-muted mt-2 mb-0">
+                    {t("Not provided", "غير محدد")}
+                  </p>
+                )}
+              </div>
+
+              <div>
+                <strong>
+                  {t("Allergies", 'الحساسية')}
+                </strong>
+
+                {selectedPatient
+                  .allergies
+                  ?.length >
+                  0 ? (
+                  <div
+                    className="mt-2"
+                    style={{
+                      display:
+                        "flex",
+
+                      flexWrap:
+                        "wrap",
+
+                      gap:
+                        "8px",
+                    }}
+                  >
+                    {selectedPatient.allergies.map(
+                      (
+                        allergy
+                      ) => (
+                        <span
+                          key={
+                            allergy
+                          }
+                          className="badge bg-warning text-dark"
+                        >
+                          {
+                            allergy
+                          }
+                        </span>
+                      )
+                    )}
+                  </div>
+                ) : (
+                  <p className="text-muted mt-2 mb-0">
+                    {t("Not provided", "غير محدد")}
+                  </p>
+                )}
+              </div>
+            </>
+          )}
+        </ModalBody>
+
+        <ModalFooter>
+          <Button
+            color="secondary"
+            onClick={
+              handleClosePatient
+            }
+          >
+            {t("Close", 'إغلاق')}
+          </Button>
+        </ModalFooter>
+      </Modal>
+
+      <Modal dir={isArabic ? "rtl" : "ltr"} className={`mm-caregiver-modal ${theme === "dark" ? "mm-ch-dark" : ""}`}
+        isOpen={
+          isMedicationModalOpen
+        }
+        toggle={
+          handleCloseMedications
+        }
+        centered
+        size="lg"
+      >
+        <ModalHeader
+          toggle={
+            handleCloseMedications
+          }
+        >
+          {isArabic ? `أدوية ${selectedPatient?.patientName || "المريض"}` : `${selectedPatient?.patientName || "Patient"}'s Medications`}
+        </ModalHeader>
+
+        <ModalBody>
+          {isLoadingMedications && (
+            <Alert color="info">
+              {t("Loading medications...", "جارٍ تحميل الأدوية...")}
+            </Alert>
+          )}
+
+          {medicationMessage && (
+            <Alert color="danger">
+              {
+                medicationMessage
+              }
+            </Alert>
+          )}
+
+          <div className="d-flex justify-content-end flex-wrap gap-2 mb-3">
+  <Button
+    type="button"
+    color="secondary"
+    outline
+    onClick={fetchLinkedPatients}
+    disabled={isLoadingPatients}
+  >
+    {t("Refresh Permissions", "تحديث الصلاحيات")}
+  </Button>
+
+  <Button
+    type="button"
+    color="primary"
+    disabled={
+      selectedPatient?.medicationManagementPermission !== true
+    }
+    onClick={() => setAddMedicationOpen(true)}
+  >
+    {t("+ Add Medication", "+ إضافة دواء")}
+  </Button>
+</div>
+
+{selectedPatient &&
+  selectedPatient.medicationManagementPermission !== true && (
+    <Alert color="warning">
+      {t(
+        "The patient must allow medication management before you can add, edit, or delete medications.",
+        "يجب أن يسمح المريض بإدارة الأدوية قبل الإضافة أو التعديل أو الحذف."
+      )}
+    </Alert>
+  )}
+
+          {!isLoadingMedications &&
+            !medicationMessage &&
+            patientMedications.length ===
+            0 && (
+              <div className="text-center py-5">
+                <h5>
+                  {t("No medications found", 'لا توجد أدوية')}
+                </h5>
+
+                <p className="text-muted mb-0">
+                  This patient has
+                  not added any
+                  medications yet.
+                </p>
+              </div>
+            )}
+
+          <div style={{ overflowX: "auto" }}>
+            <table className="table table-hover align-middle">
+              <thead style={{ backgroundColor: "#eef5ff" }}>
+                <tr>
+                  <th>{t("Medication", 'الدواء')}</th>
+                  <th>{t("Dosage", 'الجرعة')}</th>
+                  <th>{t("Frequency", 'التكرار')}</th>
+                  <th>{t("Timing", 'التوقيت')}</th>
+                  <th>{t("Reminder", 'التذكير')}</th>
+                  <th>{t("Instructions", 'التعليمات')}</th>
+                  <th>{t("Prescription", 'الوصفة الطبية')}</th>
+                  <th>{t("Actions", 'الإجراءات')}</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                {patientMedications.map((medication) => (
+                  <tr key={medication._id}>
+                    <td>
+                      <strong>{medication.medicationName}</strong>
+                    </td>
+
+                    <td>{medication.dosage}</td>
+
+                    <td>{isArabic ? ({ "Once daily": "مرة يوميًا", "Twice daily": "مرتين يوميًا", "Three times daily": "ثلاث مرات يوميًا", "Weekly": "أسبوعيًا", "As needed": "عند الحاجة" }[medication.frequency] || medication.frequency) : medication.frequency}</td>
+
+                    <td>{isArabic ? ({ "Specific Time": "وقت محدد", "Before Meal": "قبل الأكل", "After Meal": "بعد الأكل" }[medication.timing] || medication.timing) : medication.timing}</td>
+
+                    <td>
+                      {medication.reminderTimes?.length > 0
+                        ? medication.reminderTimes.map(formatTime).join(", ")
+                        : t("Not provided", "غير محدد")}
+                    </td>
+
+                    <td style={{ minWidth: "140px" }}>
+                      {medication.instructions || "—"}
+                    </td>
+
+                    <td>
+                      {medication.prescriptionImage ? (
+                        <a
+                          href={`http://localhost:3002${medication.prescriptionImage}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          {t("View", 'عرض')}
+                        </a>
+                      ) : (
+                        "—"
+                      )}
+                    </td>
+
+                    <td>
+  <div className="d-flex align-items-center gap-2">
+    <button
+      type="button"
+      className="btn btn-link p-1"
+      disabled={
+        selectedPatient?.medicationManagementPermission !== true
+      }
+      title={t("Edit Medication", "تعديل الدواء")}
+      aria-label={t("Edit Medication", "تعديل الدواء")}
+      onClick={() => {
+        setEditMedication({
+          ...medication,
+          startDate: medication.startDate
+            ? medication.startDate.split("T")[0]
+            : "",
+        });
+
+        setEditMedicationOpen(true);
+      }}
+    >
+      <FiEdit2 size={19} color="#8b5cf6" />
+    </button>
+
+    <button
+      type="button"
+      className="btn btn-link p-1"
+      disabled={
+        selectedPatient?.medicationManagementPermission !== true
+      }
+      title={t("Delete Medication", "حذف الدواء")}
+      aria-label={t("Delete Medication", "حذف الدواء")}
+      onClick={() =>
+        handleCaregiverDeleteMedication(medication._id)
+      }
+    >
+      <FiTrash2 size={19} color="#ef4444" />
+    </button>
+  </div>
+</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </ModalBody>
+
+        <ModalFooter>
+          <Button
+            color="secondary"
+            onClick={
+              handleCloseMedications
+            }
+          >
+            {t("Close", 'إغلاق')}
+          </Button>
+        </ModalFooter>
+      </Modal>
+
+      <Modal dir={isArabic ? "rtl" : "ltr"} className={`mm-caregiver-modal ${theme === "dark" ? "mm-ch-dark" : ""}`}
+        isOpen={editMedicationOpen}
+        toggle={() => setEditMedicationOpen(false)}
+      >
+        <ModalHeader
+          toggle={() => setEditMedicationOpen(false)}
+        >
+          {t("Edit Medication", 'تعديل الدواء')}
+        </ModalHeader>
+
+        <ModalBody>
+          {editMedication && (
+            <>
+              <label className="mb-1">{t("Medication Name", 'اسم الدواء')}</label>
+              <input
+                className="form-control mb-3"
+                value={editMedication.medicationName || ""}
+                onChange={(e) =>
+                  setEditMedication({
+                    ...editMedication,
+                    medicationName: e.target.value,
+                  })
+                }
+              />
+
+              <label className="mb-1">{t("Dosage", 'الجرعة')}</label>
+              <input
+                className="form-control mb-3"
+                value={editMedication.dosage || ""}
+                onChange={(e) =>
+                  setEditMedication({
+                    ...editMedication,
+                    dosage: e.target.value,
+                  })
+                }
+              />
+              <label className="mb-1">{t("Instructions", 'التعليمات')}</label>
+              <textarea
+                className="form-control"
+                value={editMedication.instructions || ""}
+                onChange={(e) =>
+                  setEditMedication({
+                    ...editMedication,
+                    instructions: e.target.value,
+                  })
+                }
+              />
+            </>
+          )}
+        </ModalBody>
+
+
+
+        <ModalFooter>
+          <Button
+            color="primary"
+            onClick={handleCaregiverUpdateMedication}
+          >
+            {t("Save Changes", 'حفظ التغييرات')}
+          </Button>
+
+          <Button
+            color="secondary"
+            onClick={() => setEditMedicationOpen(false)}
+          >
+            {t("Cancel", 'إلغاء')}
+          </Button>
+        </ModalFooter>
+      </Modal>
+      <Modal dir={isArabic ? "rtl" : "ltr"} className={`mm-caregiver-modal ${theme === "dark" ? "mm-ch-dark" : ""}`}
+        isOpen={addMedicationOpen}
+        toggle={() => setAddMedicationOpen(false)}
+      >
+        <ModalHeader
+          toggle={() => setAddMedicationOpen(false)}
+        >
+          {t("Add Medication", 'إضافة دواء')}
+        </ModalHeader>
+
+        <ModalBody>
+
+          <label className="mb-1">
+            {t("Medication Name", "اسم الدواء")} *
+          </label>
+
+          <input
+            type="text"
+            list="caregiver-medicine-list"
+            className="form-control mb-2"
+            placeholder={t(
+              "Search medication name...",
+              "ابحث عن اسم الدواء..."
+            )}
+            autoComplete="off"
+            value={newMedication.medicationName}
+            onChange={(e) => {
+              const name = e.target.value;
+
+              const matchingMedicine = caregiverMedicationOptions.find(
+                (medicine) =>
+                  normalizeMedicineName(medicine.tradeName) ===
+                  normalizeMedicineName(name)
+              );
+
+              const detectedForm = matchingMedicine
+                ? detectCaregiverMedicationForm(matchingMedicine)
+                : "";
+
+              setNewMedication((current) => ({
+                ...current,
+                medicationName: name,
+                medicationForm: matchingMedicine
+                  ? detectedForm
+                  : current.medicationForm,
+                dosage: matchingMedicine ? "" : current.dosage,
+              }));
+            }}
+          />
+
+          <datalist id="caregiver-medicine-list">
+            {[...new Set(
+              caregiverMedicationOptions.map((medicine) => medicine.tradeName)
+            )].map((name) => (
+              <option key={name} value={name} />
+            ))}
+          </datalist>
+
+          <small className="text-muted d-block mb-3">
+            {t(
+              "Select a medication from the Oman dataset or enter it manually.",
+              "اختر دواء من قاعدة بيانات الأدوية العُمانية أو أدخله يدويًا."
+            )}
+          </small>
+
+          <label className="mb-1">{t("Medication Form", "شكل الدواء")}</label>
+          <select className="form-select mb-3" value={newMedication.medicationForm}
+            onChange={(e) => setNewMedication({ ...newMedication, medicationForm: e.target.value, dosage: "" })}>
+            <option value="">{t("Select medication form", "اختر شكل الدواء")}</option>
+            {[
+              ["Tablet", "قرص"], ["Capsule", "كبسولة"], ["Injection", "حقنة"],
+              ["Cream/Ointment", "كريم / مرهم"], ["Inhaler", "بخاخ"],
+              ["Eye Drops", "قطرة عين"], ["Ear Drops", "قطرة أذن"],
+              ["Liquid/Syrup", "شراب"], ["Patch", "لصقة"],
+              ["Suppository", "تحميلة"], ["Other", "أخرى"]
+            ].map(([value, ar]) => <option key={value} value={value}>{isArabic ? ar : value}</option>)}
+          </select>
+
+
+          <label className="mb-1">{t("Dosage Amount", 'كمية الجرعة')}</label>
+          <div className="d-flex gap-2 mb-3">
+            <input
+              type="number"
+              className="form-control"
+              placeholder={t("Amount", "الكمية")}
+              min="0.01"
+              step="any"
+              value={newMedication.dosage.split(" ")[0] || ""}
+              onChange={(e) =>
+                setNewMedication({
+                  ...newMedication,
+                  dosage: `${e.target.value} ${newMedication.dosage.split(" ")[1] || ""
+                    }`.trim(),
+                })
+              }
             />
 
-            <button
-              type="button"
-              className="cg-logout"
-              onClick={handleLogout}
+            <select
+              className="form-select"
+              value={newMedication.dosage.split(" ")[1] || ""}
+              onChange={(e) =>
+                setNewMedication({
+                  ...newMedication,
+                  dosage: `${newMedication.dosage.split(" ")[0] || ""
+                    } ${e.target.value}`.trim(),
+                })
+              }
             >
-              {t(
-                "Logout",
-                "تسجيل الخروج"
-              )}
-            </button>
+              <option value="">{t("Unit", "الوحدة")}</option>
+                {(caregiverDosageUnits[newMedication.medicationForm] || []).map(
+  (unit) => (
+    <option key={unit} value={unit}>
+      {unit}
+    </option>
+  )
+)}
+            </select>
           </div>
-        </div>
-      </header>
-    </>
+
+
+          <label className="mb-1">
+            {t("Frequency", "التكرار")}
+          </label>
+
+          <select
+            className="form-select mb-3"
+            value={newMedication.frequency}
+            onChange={(e) => {
+              const selectedFrequency = e.target.value;
+              const requiredCount = caregiverRequiredTimes(selectedFrequency);
+
+              setNewMedication((current) => ({
+                ...current,
+                frequency: selectedFrequency,
+                weeklyDay: "",
+                reminderTimes: Array(requiredCount).fill(""),
+              }));
+            }}
+          >
+            <option value="Once daily">
+              {t("Once daily", "مرة يوميًا")}
+            </option>
+
+            <option value="Twice daily">
+              {t("Twice daily", "مرتين يوميًا")}
+            </option>
+
+            <option value="Three times daily">
+              {t("Three times daily", "ثلاث مرات يوميًا")}
+            </option>
+
+            <option value="Every 6 hours">
+              {t("Every 6 hours", "كل 6 ساعات")}
+            </option>
+
+            <option value="Every 8 hours">
+              {t("Every 8 hours", "كل 8 ساعات")}
+            </option>
+
+            <option value="Every 12 hours">
+              {t("Every 12 hours", "كل 12 ساعة")}
+            </option>
+
+            <option value="Weekly">
+              {t("Weekly", "أسبوعيًا")}
+            </option>
+
+            <option value="As needed">
+              {t("As needed", "عند الحاجة")}
+            </option>
+          </select>
+
+          {newMedication.frequency === "Weekly" && (
+            <>
+              <label className="mb-1">{t("Day of the Week", 'يوم الأسبوع')}</label>
+              <select
+                className="form-select mb-3"
+                value={newMedication.weeklyDay}
+                onChange={(e) =>
+                  setNewMedication({
+                    ...newMedication,
+                    weeklyDay: e.target.value,
+                  })
+                }
+                required
+              >
+                <option value="">{t("Select a day", "اختر يومًا")}</option>
+                {[
+                  "Sunday",
+                  "Monday",
+                  "Tuesday",
+                  "Wednesday",
+                  "Thursday",
+                  "Friday",
+                  "Saturday",
+                ].map((day) => (
+                  <option key={day} value={day}>
+                    {isArabic ? ({ Sunday: "الأحد", Monday: "الاثنين", Tuesday: "الثلاثاء", Wednesday: "الأربعاء", Thursday: "الخميس", Friday: "الجمعة", Saturday: "السبت" }[day] || day) : day}
+                  </option>
+                ))}
+              </select>
+            </>
+          )}
+
+
+<label className="mb-1">
+  {t("Medication Timing", "توقيت تناول الدواء")}
+</label>
+
+<select
+  className="form-select mb-3"
+  value={newMedication.timing}
+  onChange={(e) =>
+    setNewMedication((current) => ({
+      ...current,
+      timing: e.target.value,
+      timingOffsetMinutes: 0,
+    }))
+  }
+>
+  {[
+    ["At a Specific Time", "وقت محدد"],
+    ["Before Meal", "قبل الوجبة"],
+    ["With Meal", "مع الوجبة"],
+    ["After Meal", "بعد الوجبة"],
+    ["Before Breakfast", "قبل الإفطار"],
+    ["With Breakfast", "مع الإفطار"],
+    ["After Breakfast", "بعد الإفطار"],
+    ["Before Lunch", "قبل الغداء"],
+    ["With Lunch", "مع الغداء"],
+    ["After Lunch", "بعد الغداء"],
+    ["Before Dinner", "قبل العشاء"],
+    ["With Dinner", "مع العشاء"],
+    ["After Dinner", "بعد العشاء"],
+    ["Morning", "الصباح"],
+    ["At Wake Time", "عند الاستيقاظ"],
+    ["Before Sleep", "قبل النوم"],
+  ].map(([value, arabic]) => (
+    <option key={value} value={value}>
+      {isArabic ? arabic : value}
+    </option>
+  ))}
+</select>
+
+{/^(Before|After) (Meal|Breakfast|Lunch|Dinner)$/.test(
+  newMedication.timing
+) && (
+  <>
+    <label className="mb-1">
+      {t(
+        "Minutes Before/After Meal",
+        "عدد الدقائق قبل أو بعد الوجبة"
+      )}
+    </label>
+
+    <input
+      type="number"
+      className="form-control mb-3"
+      min="1"
+      max="720"
+      step="1"
+      value={newMedication.timingOffsetMinutes || ""}
+      onChange={(e) =>
+        setNewMedication((current) => ({
+          ...current,
+          timingOffsetMinutes: e.target.value,
+        }))
+      }
+    />
+  </>
+)}
+
+
+
+          {newMedication.frequency !== "As needed" && (
+            <>
+              <label className="mb-1">
+                {t("Reminder Times", "أوقات التذكير")}
+              </label>
+
+              {newMedication.reminderTimes.map((time, index) => (
+                <div key={index} className="mb-2">
+                  <label className="small">
+                    {t("Dose", "الجرعة")} {index + 1}
+                  </label>
+
+                  <input
+                    type="time"
+                    className="form-control"
+                    value={time}
+                    onChange={(e) => {
+                      setNewMedication((current) => {
+                        const updatedTimes = [...current.reminderTimes];
+                        updatedTimes[index] = e.target.value;
+
+                        return {
+                          ...current,
+                          reminderTimes: updatedTimes,
+                        };
+                      });
+                    }}
+                  />
+                </div>
+              ))}
+            </>
+          )}
+
+
+          <label className="mb-1">{t("Start Date", 'تاريخ البدء')}</label>
+          <Input
+  type="date"
+  value={newMedication.startDate}
+  min={`${new Date().getFullYear()}-${String(
+    new Date().getMonth() + 1
+  ).padStart(2, "0")}-${String(
+    new Date().getDate()
+  ).padStart(2, "0")}`}
+  onChange={(e) => {
+    const newStartDate = e.target.value;
+
+    setNewMedication((prev) => ({
+      ...prev,
+      startDate: newStartDate,
+      endDate:
+        prev.endDate && prev.endDate < newStartDate
+          ? ""
+          : prev.endDate,
+    }));
+  }}
+  required
+/>
+          <label className="mb-1">{t("End Date", "تاريخ الانتهاء")}</label>
+          <Input
+  type="date"
+  value={newMedication.endDate}
+  min={newMedication.startDate}
+  disabled={!newMedication.startDate}
+  onChange={(e) => {
+    setNewMedication((prev) => ({
+      ...prev,
+      endDate: e.target.value,
+    }));
+  }}
+  required
+/>
+
+
+          <label className="mb-1">{t("Instructions", 'التعليمات')}</label>
+          <textarea
+            className="form-control"
+            placeholder={t("Optional", "اختياري")}
+            value={newMedication.instructions}
+            onChange={(e) =>
+              setNewMedication({
+                ...newMedication,
+                instructions: e.target.value,
+              })
+            }
+          />
+        </ModalBody>
+
+        <ModalFooter>
+          <Button
+            color="primary"
+            onClick={handleCaregiverAddMedication}
+          >
+            {t("Add Medication", 'إضافة دواء')}
+          </Button>
+
+          <Button
+            color="secondary"
+            onClick={() => setAddMedicationOpen(false)}
+          >
+            {t("Cancel", 'إلغاء')}
+          </Button>
+        </ModalFooter>
+      </Modal>
+
+      <Footer />
+    </Container>
   );
 };
 
-export default CaregiverHeader;
+export default CaregiverHome;
