@@ -14,7 +14,7 @@ import {
 
 import { useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
-
+import Footer from "./Footer";
 import Header from "./Header";
 
 const Home = () => {
@@ -26,6 +26,17 @@ const isArabic = language === "ar";
 
 const t = (english, arabic) =>
   isArabic ? arabic : english;
+  useEffect(() => {
+    const syncLanguage = () =>
+      setLanguage(localStorage.getItem("medimindLanguage") || "en");
+    window.addEventListener("medimind-language-change", syncLanguage);
+    window.addEventListener("storage", syncLanguage);
+    return () => {
+      window.removeEventListener("medimind-language-change", syncLanguage);
+      window.removeEventListener("storage", syncLanguage);
+    };
+  }, []);
+
   const user = useSelector(
     (state) => state.user.user
   );
@@ -61,24 +72,66 @@ const [
   
 
 
-  const formatTime = (time) => {
-    if (!time) {
-      return "Not scheduled";
-    }
+const formatDosage = (dosage) => {
+  if (dosage === null || dosage === undefined) {
+    return "-";
+  }
 
-    const [hours, minutes] = time
-      .split(":")
-      .map(Number);
+  const value = String(dosage).trim();
 
-    const date = new Date();
+  if (!isArabic) return value;
 
-    date.setHours(hours, minutes, 0, 0);
-
-    return date.toLocaleTimeString([], {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
+  const units = {
+    tablet: "قرص",
+    tablets: "أقراص",
+    capsule: "كبسولة",
+    capsules: "كبسولات",
+    pill: "حبة",
+    pills: "حبات",
+    mg: "ملغ",
+    g: "غرام",
+    mcg: "ميكروغرام",
+    ml: "مل",
+    drops: "قطرات",
+    drop: "قطرة",
+    tsp: "ملعقة صغيرة",
+    tbsp: "ملعقة كبيرة",
   };
+
+  // Translate units only, preserving numbers.
+  return value.replace(
+    /\b(tablets?|capsules?|pills?|mg|mcg|g|ml|drops?|tsp|tbsp)\b/gi,
+    (match) => units[match.toLowerCase()] || match
+  );
+};
+
+  
+const formatTime = (time) => {
+  if (!time) {
+    return t("Not scheduled", "غير مجدول");
+  }
+
+  const [hours, minutes] = time.split(":").map(Number);
+
+  if (
+    !Number.isInteger(hours) ||
+    !Number.isInteger(minutes) ||
+    hours < 0 || hours > 23 ||
+    minutes < 0 || minutes > 59
+  ) {
+    return time;
+  }
+
+  const formattedHour = String(hours % 12 || 12).padStart(2, "0");
+  const formattedMinute = String(minutes).padStart(2, "0");
+
+  if (isArabic) {
+    return `${formattedHour}:${formattedMinute} ${hours < 12 ? "ص" : "م"}`;
+  }
+
+  return `${formattedHour}:${formattedMinute} ${hours < 12 ? "AM" : "PM"}`;
+};
+
 
   const loadTodayDoses = async () => {
     if (!user?.email) {
@@ -287,10 +340,279 @@ const nextReminders = groupedUpcomingReminders.slice(0, 2);
   return (
    <Container
   fluid
-  className="dashboard-page"
+  className="dashboard-page patient-home-page"
   dir={isArabic ? "rtl" : "ltr"}
 >
       <Header />
+
+      
+
+<style>{`
+  /* Statistics cards */
+  .dashboard-page .dashboard-card .text-muted {
+    font-size: 17px !important;
+    color: #475569 !important;
+    line-height: 1.8 !important;
+  }
+
+  /* Statistics numbers */
+  .dashboard-page .dashboard-card h3 {
+    font-size: 30px !important;
+    font-weight: 700 !important;
+  }
+
+  /* Caregiver heading */
+  .dashboard-page .dashboard-card h4 {
+    font-size: 25px !important;
+    font-weight: 700 !important;
+  }
+
+  /* Caregiver details */
+  .dashboard-page .dashboard-card h5 {
+    font-size: 20px !important;
+    line-height: 1.7 !important;
+  }
+
+  /* Welcome description */
+  .dashboard-page > .row .text-muted {
+    font-size: 17px !important;
+    line-height: 1.8 !important;
+  }
+
+  /* Dark mode */
+  body.dark-mode .dashboard-page .dashboard-card .text-muted,
+  body.dark-theme .dashboard-page .dashboard-card .text-muted,
+  [data-theme="dark"] .dashboard-page .dashboard-card .text-muted {
+    color: #cbd5e1 !important;
+  }
+
+        .patient-home-page .dashboard-card {
+          border-radius: 16px;
+        }
+        .patient-home-page .dashboard-card .text-muted {
+          font-size: 16px !important;
+          line-height: 1.65;
+        }
+        .patient-home-page .dashboard-card h4 {
+          font-size: 23px;
+          font-weight: 700;
+          line-height: 1.5;
+        }
+        .patient-home-page .dashboard-card h5 {
+          font-size: 19px;
+          line-height: 1.5;
+        }
+        .patient-home-page .dashboard-card .badge {
+          font-size: 14px;
+          padding: 7px 10px;
+          white-space: normal;
+          line-height: 1.4;
+        }
+        .patient-home-page .dashboard-card .btn {
+          font-size: 15px;
+          line-height: 1.45;
+          padding: 9px 12px;
+          white-space: normal;
+        }
+        .patient-home-page .dashboard-table {
+          width: 100%;
+          min-width: 740px;
+          border-collapse: separate;
+          border-spacing: 0;
+          table-layout: auto;
+          font-size: 16px;
+        }
+        .patient-home-page .dashboard-table th,
+        .patient-home-page .dashboard-table td {
+          padding: 14px 12px;
+          vertical-align: middle;
+          line-height: 1.6;
+          text-align: start;
+          overflow-wrap: anywhere;
+        }
+        .patient-home-page .dashboard-table th {
+          font-size: 16px;
+          font-weight: 700;
+          white-space: nowrap;
+        }
+        .patient-home-page .dashboard-table td:first-child {
+          min-width: 150px;
+          max-width: 250px;
+          font-weight: 600;
+        }
+        .patient-home-page .dashboard-table td:last-child {
+          min-width: 155px;
+        }
+        .patient-home-page .dashboard-table td .d-flex {
+          align-items: center;
+        }
+        .patient-home-page .reminder-box {
+          padding: 16px;
+          border-radius: 13px;
+          line-height: 1.7;
+          font-size: 17px;
+        }
+        .patient-home-page .reminder-box h5 {
+          overflow-wrap: anywhere;
+          font-size: 19px;
+        }
+        .patient-home-page .reminder-box .text-muted {
+          font-size: 16px !important;
+        }
+        .patient-home-page > .row:first-of-type h4 {
+          font-size: 26px;
+          line-height: 1.5;
+          font-weight: 700;
+        }
+        .patient-home-page > .row:first-of-type p {
+          font-size: 17px;
+        }
+        .patient-home-page[dir="rtl"] .dashboard-table {
+          direction: rtl;
+        }
+        body.dark-mode .patient-home-page .dashboard-table td,
+        body.dark-theme .patient-home-page .dashboard-table td,
+        [data-theme="dark"] .patient-home-page .dashboard-table td {
+          color: #f1f5f9;
+        }
+        @media (max-width: 768px) {
+          .patient-home-page .dashboard-card h4 { font-size: 21px; }
+          .patient-home-page .dashboard-table { font-size: 15px; }
+        }
+          /* All statistics cards */
+.patient-home-page .dashboard-card p,
+.patient-home-page .dashboard-card small,
+.patient-home-page .dashboard-card .text-muted {
+font-size: 20px !important;
+line-height: 1.8 !important;
+}
+
+/* Make secondary text darker */
+.patient-home-page .dashboard-card .text-muted {
+color: #334155 !important;
+}
+
+/* Statistics numbers */
+.patient-home-page .dashboard-card h3 {
+font-size: 36px !important;
+font-weight: 800 !important;
+}
+
+/* Section headings */
+.patient-home-page .dashboard-card h4 {
+font-size: 27px !important;
+font-weight: 700 !important;
+}
+
+/* Caregiver information */
+.patient-home-page .dashboard-card h5 {
+font-size: 22px !important;
+}
+
+/* Buttons */
+.patient-home-page .dashboard-card .btn {
+font-size: 18px !important;
+font-weight: 600 !important;
+}
+
+/* Dark mode */
+body.dark-mode .patient-home-page .dashboard-card .text-muted,
+body.dark-theme .patient-home-page .dashboard-card .text-muted,
+[data-theme="dark"] .patient-home-page .dashboard-card .text-muted {
+color: #cbd5e1 !important;
+}
+
+/* Welcome description */
+.patient-home-page > .row:first-of-type p.text-muted {
+  font-size: 21px !important;
+  line-height: 1.8 !important;
+  color: #334155 !important;
+}
+
+/* Dashboard buttons */
+.patient-home-page > .row:first-of-type .btn,
+.patient-home-page .dashboard-card .btn {
+  font-size: 19px !important;
+  font-weight: 600 !important;
+  padding: 13px 22px !important;
+  line-height: 1.5 !important;
+}
+
+/* Dark mode welcome text */
+body.dark-mode .patient-home-page > .row:first-of-type p.text-muted,
+body.dark-theme .patient-home-page > .row:first-of-type p.text-muted,
+[data-theme="dark"] .patient-home-page > .row:first-of-type p.text-muted {
+  color: #cbd5e1 !important;
+}
+
+
+/* Medication overview action buttons */
+.patient-home-page .dashboard-table td:last-child .btn {
+  font-size: 17px !important;
+  font-weight: 600 !important;
+  padding: 10px 12px !important;
+  line-height: 1.5 !important;
+  white-space: normal !important;
+  max-width: 190px;
+  overflow-wrap: anywhere;
+}
+
+/* Medication table status badges */
+.patient-home-page .dashboard-table .badge {
+  font-size: 16px !important;
+  padding: 8px 10px !important;
+}
+
+/* Reminder alerts */
+.patient-home-page .reminder-box,
+.patient-home-page .alert {
+  font-size: 18px !important;
+  line-height: 1.8 !important;
+}
+
+/* Dosage column */
+.patient-home-page .dashboard-table .medication-dosage {
+  font-size: 19px !important;
+  font-weight: 600 !important;
+  color: #1e293b;
+  min-width: 115px;
+  text-align: center;
+}
+
+/* Action column */
+.patient-home-page .dashboard-table th:last-child,
+.patient-home-page .dashboard-table td:last-child {
+  min-width: 200px;
+  text-align: center;
+}
+
+/* Action buttons */
+.patient-home-page .dashboard-table td:last-child .btn {
+  font-size: 17px !important;
+  font-weight: 600 !important;
+  padding: 10px 14px !important;
+  border-radius: 9px;
+  line-height: 1.5 !important;
+  white-space: normal !important;
+}
+
+/* Button alignment */
+.patient-home-page .dashboard-table td:last-child .d-flex {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Dark mode dosage */
+body.dark-mode .patient-home-page .medication-dosage,
+body.dark-theme .patient-home-page .medication-dosage,
+[data-theme="dark"] .patient-home-page .medication-dosage {
+  color: #f1f5f9 !important;
+}
+
+      `}</style>
+
 
       <Row className="p-4 align-items-center justify-content-between">
         <Col md="6">
@@ -299,7 +621,15 @@ const nextReminders = groupedUpcomingReminders.slice(0, 2);
 {user?.name || t("User", "مستخدم")}
           </h4>
 
-          <p className="text-muted mb-0">
+         <p
+  className="text-muted mb-0"
+  style={{
+    fontSize: "21px",
+    fontWeight: "500",
+    lineHeight: "1.8",
+    color: "#334155",
+  }}
+>
            {t(
   "Here is your medication schedule for today.",
   "إليك جدول أدويتك لهذا اليوم."
@@ -313,11 +643,13 @@ const nextReminders = groupedUpcomingReminders.slice(0, 2);
         >
           <button
             className="btn btn-primary"
-            style={{
-              borderRadius: "10px",
-              padding: "10px 20px",
-              fontWeight: "500",
-            }}
+           style={{
+  borderRadius: "10px",
+  padding: "13px 24px",
+  fontSize: "19px",
+  fontWeight: "600",
+  lineHeight: "1.5",
+}}
             onClick={() =>
               navigate("/medications/add")
             }
@@ -490,7 +822,7 @@ const nextReminders = groupedUpcomingReminders.slice(0, 2);
               <p
                 className="text-muted mt-2 mb-0"
                 style={{
-                  fontSize: "12px",
+                  fontSize: "17px",
                 }}
               >
                {isArabic
@@ -591,8 +923,14 @@ const nextReminders = groupedUpcomingReminders.slice(0, 2);
           </div>
 
           {!isLoadingCaregiver && (
-            <Button
-              color="primary"
+            <Button style={{
+  fontSize: "19px",
+  fontWeight: "600",
+  padding: "13px 22px",
+  borderRadius: "10px",
+  lineHeight: "1.5",
+}}
+color="primary"
               outline={Boolean(myCaregiver)}
               onClick={() =>
                 navigate("/caregiver")
@@ -633,7 +971,7 @@ const nextReminders = groupedUpcomingReminders.slice(0, 2);
                     <p className="text-muted mb-3">
                      {t(
   "Add a medication and choose its reminder time to see it here.",
-  "أضيفي دواءً وحددي وقت التذكير ليظهر هنا."
+  "أضف دواءً وحدد وقت التذكير ليظهر هنا."
 )}
                     </p>
 
@@ -678,9 +1016,15 @@ const nextReminders = groupedUpcomingReminders.slice(0, 2);
                                 }
                               </td>
 
-                              <td>
-                                {dose.dosage}
-                              </td>
+                              
+
+<td className="medication-dosage">
+  <span dir="auto">
+    {formatDosage(dose.dosage)}
+  </span>
+</td>
+
+
 
                               <td>
                                 {formatTime(
@@ -728,9 +1072,11 @@ const nextReminders = groupedUpcomingReminders.slice(0, 2);
                                       {processingDoseId ===
                                       dose._id
                                         ? t("Updating...", "جارٍ التحديث...")
+
 : dose.status === "Missed"
-? t("Mark as Taken Late", "تسجيل الجرعة كمتناولة متأخرًا")
-: t("Mark as Taken", "تم تناول الجرعة")}
+  ? t("Taken Late", "تناولتها متأخرًا")
+  : t("Mark as Taken", "تم التناول")}
+
                                     </Button>
 
                                     {dose.status ===
@@ -750,7 +1096,7 @@ const nextReminders = groupedUpcomingReminders.slice(0, 2);
                                           )
                                         }
                                       >
-                                        Skip
+                                        {t("Skip", "تخطي")}
                                       </Button>
                                     )}
                                   </div>
@@ -814,9 +1160,11 @@ const nextReminders = groupedUpcomingReminders.slice(0, 2);
   >
     <h5>{reminder.medicationName}</h5>
 
-    <p className="mb-2">
-      {reminder.dosage}
-    </p>
+    
+<p className="mb-2">
+  {formatDosage(reminder.dosage)}
+</p>
+
 
     {reminder.doses.map((dose) => (
       <div
@@ -860,6 +1208,7 @@ const nextReminders = groupedUpcomingReminders.slice(0, 2);
           </Card>
         </Col>
       </Row>
+      <Footer />
     </Container>
   );
 };
