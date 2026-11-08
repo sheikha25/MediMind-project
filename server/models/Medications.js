@@ -13,6 +13,25 @@ const MedicationSchema = mongoose.Schema({
     trim: true,
   },
 
+  // Medication reference information
+medicationCatalogId: {
+  type: String,
+  default: "",
+  trim: true,
+},
+
+activeIngredient1: {
+  type: String,
+  default: "",
+  trim: true,
+},
+
+activeIngredient2: {
+  type: String,
+  default: "",
+  trim: true,
+},
+
   medicationForm: {
     type: String,
     required: true,
