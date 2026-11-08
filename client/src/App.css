@@ -314,3 +314,1047 @@ body.dark-theme .form-control {
 body.dark-theme .form-control::placeholder {
   color: #a9b7c6;
 }
+
+/* Patient Registration Logo */
+
+.patient-register-brand {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  margin: 0 auto 18px;
+}
+
+.patient-register-logo {
+  width: 150px;
+  height: 110px;
+  object-fit: contain;
+  display: block;
+  margin-bottom: -15px;
+}
+
+.patient-register-brand-name {
+  font-size: 25px;
+  font-weight: 800;
+  letter-spacing: 2px;
+  color: #3b82f6;
+  text-align: center;
+}
+
+/* Patient Registration Password Eye Icons */
+
+.patient-password-toggle {
+  color: #1e3a8a;
+}
+
+body.dark-theme .patient-password-toggle {
+  color: white;
+}
+
+
+/* Theme Settings */
+.dashboard-page .theme-settings-content {
+  color: var(--bs-body-color);
+}
+
+body.dark-theme .dashboard-page .theme-settings-content {
+  color: #f1f5f9;
+}
+
+body.dark-theme .dashboard-page .theme-settings-content .card {
+  background-color: #1e293b;
+  color: #f1f5f9;
+}
+
+body.dark-theme .dashboard-page .theme-settings-content .form-control {
+  background-color: #334155;
+  color: #ffffff;
+  border-color: #64748b;
+}
+
+/* Medications page — Light Mode */
+.medications-title {
+  color: #1e3a8a;
+}
+
+.medications-description {
+  color: #6b7280;
+}
+
+/* Medications page — Dark Mode */
+body.dark-theme .medications-title {
+  color: #f1f5f9;
+}
+
+body.dark-theme .medications-description {
+  color: #cbd5e1;
+}
+
+/* =========================================
+   MEDIMIND — MEDICATIONS PAGE
+   Arabic / English + Light / Dark Mode
+========================================= */
+
+.medications-page {
+  font-size: 16px;
+}
+
+/* Page Title */
+.medications-page .medications-title {
+  font-size: 38px !important;
+  font-weight: 800;
+  line-height: 1.4;
+  color: #1e3a8a;
+}
+
+/* Page Description */
+.medications-page .medications-description {
+  font-size: 20px !important;
+  font-weight: 500;
+  line-height: 1.8;
+  color: #475569;
+}
+
+/* Dark Mode */
+body.dark-theme .medications-page .medications-title {
+  color: #ffffff !important;
+}
+
+body.dark-theme .medications-page .medications-description {
+  color: #e2e8f0 !important;
+}
+
+/* Smaller screens */
+@media (max-width: 768px) {
+  .medications-page .medications-title {
+    font-size: 30px !important;
+  }
+
+  .medications-page .medications-description {
+    font-size: 17px !important;
+  }
+}
+.medications-page .medications-card {
+  background-color: #ffffff;
+  color: #1e293b;
+}
+
+.medications-page .medications-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 16px;
+}
+
+.medications-page .medications-table th {
+  font-size: 17px !important;
+  font-weight: 700;
+  padding: 16px !important;
+  text-align: start !important;
+  white-space: nowrap;
+}
+
+.medications-page .medications-table td {
+  font-size: 16px;
+  padding: 16px !important;
+  color: #1e293b;
+  vertical-align: middle;
+  line-height: 1.6;
+}
+
+.medications-page .medications-table tbody tr {
+  background-color: #ffffff;
+}
+
+.medications-page .medications-table tbody tr:hover {
+  background-color: #f1f5f9;
+}
+
+.medications-page .form-control {
+  font-size: 16px;
+}
+
+.medications-page .btn {
+  font-size: 16px;
+}
+
+/* DARK MODE */
+
+body.dark-theme .medications-page .medications-title {
+  color: #ffffff !important;
+}
+
+body.dark-theme .medications-page .medications-description {
+  color: #cbd5e1 !important;
+}
+
+body.dark-theme .medications-page .medications-card {
+  background-color: #17283b !important;
+  color: #f1f5f9 !important;
+  border-color: #475569 !important;
+}
+
+body.dark-theme .medications-page .medications-table tbody tr {
+  background-color: #17283b !important;
+}
+
+body.dark-theme .medications-page .medications-table tbody tr:hover {
+  background-color: #243b53 !important;
+}
+
+body.dark-theme .medications-page .medications-table td {
+  color: #f1f5f9 !important;
+  border-bottom-color: #475569 !important;
+}
+
+body.dark-theme .medications-page .medications-table td:first-child {
+  color: #93c5fd !important;
+}
+
+body.dark-theme .medications-page .form-control {
+  background-color: #243b53 !important;
+  color: #ffffff !important;
+  border-color: #64748b !important;
+}
+
+body.dark-theme .medications-page .form-control::placeholder {
+  color: #cbd5e1 !important;
+}
+
+/* Improve button visibility */
+
+body.dark-theme .medications-page .btn-outline-primary {
+  color: #93c5fd !important;
+  border-color: #60a5fa !important;
+}
+
+/* Keep the medication table scrollable */
+
+.medications-page .medications-table {
+  min-width: 1050px;
+}
+
+.medications-page .medications-card {
+  overflow: hidden;
+}
+
+
+/* Medications — Action Buttons */
+
+.medications-page .medications-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.medications-page .medications-actions .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  min-height: 46px;
+  padding: 10px 18px;
+  border-radius: 10px;
+  font-size: 17px !important;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* RTL: align buttons to the left side of the column */
+.medications-page .medications-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+/* Both directions: align buttons to the far end */
+.medications-page .medications-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+/* Both directions: align buttons to the far end */
+.medications-page[dir="rtl"] .medications-actions {
+  justify-content: flex-end;
+}
+
+/* Dark Mode */
+body.dark-theme .medications-page .btn-outline-primary {
+  color: #93c5fd !important;
+  border-color: #60a5fa !important;
+}
+
+body.dark-theme .medications-page .btn-outline-primary:hover {
+  background-color: #2563eb !important;
+  color: #ffffff !important;
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+  .medications-page .medications-actions,
+  .medications-page[dir="rtl"] .medications-actions {
+    justify-content: flex-start;
+  }
+}
+
+.medications-page .medications-search .form-control {
+  font-size: 17px !important;
+  min-height: 48px;
+  color: #1e293b;
+}
+
+body.dark-theme .medications-page .medications-search .form-control {
+  background-color: #243b53 !important;
+  color: #ffffff !important;
+  border-color: #64748b !important;
+}
+
+body.dark-theme .medications-page .medications-search .form-control::placeholder {
+  color: #cbd5e1 !important;
+}
+
+
+
+/* Keep table columns readable */
+.medications-page .medications-table {
+  min-width: 1350px;
+  table-layout: auto;
+}
+
+/* Status column */
+.medications-page .medications-table th:nth-child(9),
+.medications-page .medications-table td:nth-child(9) {
+  min-width: 125px;
+  width: 125px;
+  white-space: nowrap;
+}
+
+/* Medication name */
+.medications-page .medications-table th:nth-child(1),
+.medications-page .medications-table td:nth-child(1) {
+  min-width: 170px;
+}
+
+/* Dosage */
+.medications-page .medications-table th:nth-child(2),
+.medications-page .medications-table td:nth-child(2) {
+  min-width: 120px;
+}
+
+/* Actions */
+.medications-page .medications-table th:nth-child(10),
+.medications-page .medications-table td:nth-child(10) {
+  min-width: 100px;
+  white-space: nowrap;
+}
+
+
+.add-medication-page .add-medication-title {
+  font-size: 38px !important;
+  font-weight: 800;
+  line-height: 1.4;
+  color: #1e3a8a;
+}
+
+.add-medication-page .add-medication-description {
+  font-size: 20px !important;
+  font-weight: 500;
+  line-height: 1.8;
+  color: #475569;
+  margin-bottom: 0;
+}
+
+body.dark-theme .add-medication-page .add-medication-title {
+  color: #ffffff !important;
+}
+
+body.dark-theme .add-medication-page .add-medication-description {
+  color: #e2e8f0 !important;
+}
+
+@media (max-width: 768px) {
+  .add-medication-page .add-medication-title {
+    font-size: 30px !important;
+  }
+
+  .add-medication-page .add-medication-description {
+    font-size: 17px !important;
+  }
+}
+
+.add-medication-page .form-label {
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.add-medication-page .form-control,
+.add-medication-page .form-select {
+  font-size: 16px;
+  min-height: 46px;
+}
+
+.add-medication-page[dir="rtl"] .form-label {
+  text-align: right;
+}
+
+
+/* Add Medication - Dark Mode Date Inputs */
+body.dark-theme .add-medication-page input[type="date"] {
+  color: #ffffff !important;
+  background-color: #1e293b !important;
+  border: 1px solid #475569 !important;
+  color-scheme: dark;
+}
+
+/* Calendar icon */
+body.dark-theme .add-medication-page input[type="date"]::-webkit-calendar-picker-indicator {
+  
+  cursor: pointer;
+}
+
+
+/* Prescription Upload - Light Mode */
+.add-medication-page .prescription-upload-box {
+  border: 2px dashed #93a8d9;
+  background-color: #f8faff;
+}
+
+.add-medication-page .prescription-upload-box svg,
+.add-medication-page .prescription-upload-title,
+.add-medication-page .prescription-file-name {
+  color: #1e3a8a;
+}
+
+.add-medication-page .prescription-upload-hint {
+  color: #6b7280;
+}
+
+.add-medication-page .prescription-selected-file {
+  border: 1px solid #c8d8ff;
+  background-color: #eef4ff;
+}
+
+/* Prescription Upload - Dark Mode */
+body.dark-theme .add-medication-page .prescription-upload-box {
+  background-color: #1e293b !important;
+  border-color: #64748b !important;
+}
+
+body.dark-theme .add-medication-page .prescription-upload-box svg,
+body.dark-theme .add-medication-page .prescription-upload-title,
+body.dark-theme .add-medication-page .prescription-file-name {
+  color: #ffffff !important;
+}
+
+body.dark-theme .add-medication-page .prescription-upload-hint {
+  color: #cbd5e1 !important;
+}
+
+body.dark-theme .add-medication-page .prescription-selected-file {
+  background-color: #1e293b !important;
+  border-color: #475569 !important;
+}
+
+
+
+.add-medication-page .duplicate-medication-dialog {
+  background-color: #ffffff;
+  color: #222222;
+}
+
+body.dark-theme .add-medication-page .duplicate-medication-dialog {
+  background-color: #1e293b;
+  color: #ffffff;
+}
+
+body.dark-theme .add-medication-page .duplicate-medication-dialog h3,
+body.dark-theme .add-medication-page .duplicate-medication-dialog p,
+body.dark-theme .add-medication-page .duplicate-medication-dialog label {
+  color: #ffffff;
+}
+
+
+/* Edit Medication - Arabic styling */
+
+.edit-medication-ar {
+  font-family: Tahoma, Arial, sans-serif;
+}
+
+.edit-medication-ar h2 {
+  font-size: 28px;
+  font-weight: 700;
+  color: #ffffff !important;
+}
+
+.edit-medication-ar .form-label,
+.edit-medication-ar label {
+  font-size: 16px;
+  font-weight: 600;
+  color: #ffffff !important;
+}
+
+.edit-medication-ar p,
+.edit-medication-ar small,
+.edit-medication-ar .text-muted {
+  font-size: 14px;
+  color: #cbd5e1 !important;
+  line-height: 1.8;
+}
+
+.edit-medication-ar .form-control,
+.edit-medication-ar .form-select {
+  font-size: 15px;
+  min-height: 40px;
+}
+
+.edit-medication-ar input:disabled,
+.edit-medication-ar select:disabled {
+  color: #334155 !important;
+  -webkit-text-fill-color: #334155;
+  opacity: 1;
+  background-color: #e9eef5 !important;
+}
+
+.edit-medication-ar input[type="time"],
+.edit-medication-ar input[type="date"] {
+  direction: ltr;
+  text-align: left;
+}
+
+.edit-medication-ar .form-check-label {
+  font-size: 15px;
+}
+
+.edit-medication-ar .btn {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+
+/* Improve date and time controls in dark inputs */
+.edit-medication-ar input[type="date"],
+.edit-medication-ar input[type="time"] {
+  color-scheme: dark;
+  direction: ltr;
+  text-align: left;
+}
+
+/* Keep numerical dosage fields easy to read */
+.edit-medication-ar input[type="number"] {
+  direction: ltr;
+  text-align: left;
+}
+
+/* Improve Arabic field spacing */
+.edit-medication-ar .form-group {
+  margin-bottom: 20px;
+}
+
+
+/*
+   MEDIMIND REPORTS
+   Arabic / English + Light / Dark Theme
+ */
+
+/* RTL / LTR */
+.reports-page {
+  min-height: 100vh;
+}
+
+.reports-page[dir="rtl"] {
+  font-family: Tahoma, Arial, sans-serif;
+  text-align: right;
+}
+
+.reports-page[dir="ltr"] {
+  text-align: left;
+}
+
+.reports-page .reports-export-menu {
+  right: 0;
+  left: auto;
+}
+
+.reports-page[dir="rtl"] .reports-export-menu {
+  right: auto !important;
+  left: 0 !important;
+}
+
+.reports-page[dir="rtl"] .reports-export-menu button {
+  text-align: right !important;
+}
+
+.reports-page[dir="rtl"] .text-end {
+  text-align: left !important;
+}
+
+/* Light theme */
+.reports-page .reports-panel {
+  background-color: #dce9f8;
+}
+
+.reports-page .reports-card {
+  background-color: #ffffff;
+  color: #1e293b;
+}
+
+.reports-page .reports-tabs {
+  background-color: #c5d8f0;
+}
+
+/* Dark theme */
+body.dark-theme .reports-page {
+  background-color: transparent !important;
+}
+
+body.dark-theme .reports-page .reports-panel {
+  background-color: #17283a !important;
+}
+
+body.dark-theme .reports-page .reports-card {
+  background-color: #203449 !important;
+  color: #f1f5f9 !important;
+}
+
+body.dark-theme .reports-page .reports-tabs {
+  background-color: #243b53 !important;
+}
+
+body.dark-theme .reports-page h2,
+body.dark-theme .reports-page h4,
+body.dark-theme .reports-page h6 {
+  color: #ffffff !important;
+}
+
+body.dark-theme .reports-page p,
+body.dark-theme .reports-page small,
+body.dark-theme .reports-page .text-muted {
+  color: #cbd5e1 !important;
+}
+
+body.dark-theme .reports-page .reports-card strong {
+  color: #93c5fd !important;
+}
+
+/* Export dropdown */
+body.dark-theme .reports-page .reports-export-menu {
+  background-color: #243b53 !important;
+}
+
+body.dark-theme .reports-page .reports-export-menu button {
+  background-color: #243b53 !important;
+  color: #ffffff !important;
+}
+
+body.dark-theme .reports-page .reports-export-menu button:hover {
+  background-color: #334e68 !important;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .reports-page .reports-panel > div {
+    padding: 18px !important;
+  }
+
+  .reports-page .reports-card {
+    padding: 18px !important;
+  }
+}
+
+
+/*
+   REPORTS — FONT SIZE IMPROVEMENTS
+ */
+
+/* Main page title */
+.reports-page h2 {
+  font-size: 36px !important;
+  font-weight: 800 !important;
+}
+
+/* Page description */
+.reports-page > .row p {
+  font-size: 19px;
+  line-height: 1.8;
+}
+
+/* Report headings */
+.reports-page h4 {
+  font-size: 26px !important;
+}
+
+.reports-page h6 {
+  font-size: 22px !important;
+}
+
+/* Daily / Weekly / Monthly tabs */
+.reports-page .reports-tabs button {
+  font-size: 19px !important;
+}
+
+/* Export button */
+.reports-page .btn-primary {
+  font-size: 17px !important;
+}
+
+/* Medication names and report details */
+.reports-page .reports-card strong {
+  font-size: 18px !important;
+}
+
+/* Smaller descriptions */
+.reports-page .reports-card .small,
+.reports-page .reports-card small,
+.reports-page .reports-card .text-muted {
+  font-size: 16px !important;
+  line-height: 1.7;
+}
+
+/* Status badges */
+.reports-page .reports-card span {
+  font-size: 16px !important;
+}
+
+/* Export menu */
+.reports-page .reports-export-menu button {
+  font-size: 16px !important;
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+  .reports-page h2 {
+    font-size: 29px !important;
+  }
+
+  .reports-page h4 {
+    font-size: 23px !important;
+  }
+
+  .reports-page h6 {
+    font-size: 19px !important;
+  }
+
+  .reports-page .reports-tabs button {
+    font-size: 16px !important;
+    padding: 12px 8px !important;
+  }
+}
+
+
+
+/* REPORTS — FIX TAB TEXT VISIBILITY */
+
+/* Light theme */
+.reports-page .reports-tabs button {
+  color: #1e3a8a !important;
+}
+
+/* Dark theme — unselected tabs */
+body.dark-theme .reports-page .reports-tabs button {
+  color: #ffffff !important;
+}
+
+/* Dark theme — selected tab */
+body.dark-theme .reports-page .reports-tabs button[aria-selected="true"] {
+  color: #1e3a8a !important;
+}
+
+/* Edit Medication - Read-only medication name */
+.edit-medication-page .mm-edit-medication-name:disabled {
+  background-color: #f1f5f9 !important;
+  color: #1e293b !important;
+  -webkit-text-fill-color: #1e293b !important;
+  opacity: 1 !important;
+  cursor: not-allowed;
+}
+
+/* Edit Medication - Date & Time Icons */
+
+/* Dark Mode */
+body.dark-theme .edit-medication-page
+input[type="date"]::-webkit-calendar-picker-indicator,
+body.dark-theme .edit-medication-page
+input[type="time"]::-webkit-calendar-picker-indicator {
+  filter: invert(1) brightness(1.5) !important;
+  opacity: 1 !important;
+  cursor: pointer;
+}
+
+/* Light Mode */
+body:not(.dark-theme) .edit-medication-page
+input[type="date"]::-webkit-calendar-picker-indicator,
+body:not(.dark-theme) .edit-medication-page
+input[type="time"]::-webkit-calendar-picker-indicator {
+  filter: none !important;
+  opacity: 1 !important;
+  cursor: pointer;
+}
+
+/* Edit Medication - Helper Text */
+
+/* Dark Mode */
+body.dark-theme .edit-medication-page .form-text,
+body.dark-theme .edit-medication-page small.text-muted,
+body.dark-theme .edit-medication-page .text-muted {
+  color: #cbd5e1 !important;
+  opacity: 1 !important;
+}
+
+/* Light Mode */
+body:not(.dark-theme) .edit-medication-page .form-text,
+body:not(.dark-theme) .edit-medication-page small.text-muted,
+body:not(.dark-theme) .edit-medication-page .text-muted {
+  color: #64748b !important;
+  opacity: 1 !important;
+}
+
+/*PATIENT DASHBOARD - TODAY'S REMINDERS*/
+
+/* Dark Mode */
+body.dark-theme .reminder-box {
+  background-color: #243b53 !important;
+  border: 1px solid #405a75 !important;
+  color: #f8fafc !important;
+}
+
+/* Medication name and details */
+body.dark-theme .reminder-box h5,
+body.dark-theme .reminder-box p,
+body.dark-theme .reminder-box strong {
+  color: #ffffff !important;
+  opacity: 1 !important;
+}
+
+/* Secondary text and scheduled time */
+body.dark-theme .reminder-box .text-muted,
+body.dark-theme .reminder-box small {
+  color: #cbd5e1 !important;
+  opacity: 1 !important;
+}
+
+/* Light Mode */
+body:not(.dark-theme) .reminder-box {
+  background-color: #eef5ff !important;
+  color: #1e293b !important;
+}
+
+body:not(.dark-theme) .reminder-box h5,
+body:not(.dark-theme) .reminder-box p,
+body:not(.dark-theme) .reminder-box strong {
+  color: #1e293b !important;
+}
+
+/*
+   CAREGIVER DASHBOARD - DARK MODE FIX*/
+
+.mm-caregiver-home.mm-ch-dark {
+  color: #f8fafc !important;
+}
+
+/* Headings */
+.mm-caregiver-home.mm-ch-dark h2,
+.mm-caregiver-home.mm-ch-dark h3,
+.mm-caregiver-home.mm-ch-dark h4,
+.mm-caregiver-home.mm-ch-dark h5,
+.mm-caregiver-home.mm-ch-dark h6 {
+  color: #ffffff !important;
+}
+
+/* Descriptions and secondary text */
+.mm-caregiver-home.mm-ch-dark .text-muted,
+.mm-caregiver-home.mm-ch-dark small.text-muted {
+  color: #cbd5e1 !important;
+  opacity: 1 !important;
+}
+
+/* Dashboard cards */
+.mm-caregiver-home.mm-ch-dark .dashboard-card {
+  background-color: #182a3e !important;
+  border-color: #405a75 !important;
+  color: #f8fafc !important;
+}
+
+/* Dashboard card headings and values */
+.mm-caregiver-home.mm-ch-dark .dashboard-card h2,
+.mm-caregiver-home.mm-ch-dark .dashboard-card h5 {
+  color: #ffffff !important;
+}
+
+/* Greeting description */
+.mm-caregiver-home.mm-ch-dark > .row p.mb-2 {
+  color: #a9caff !important;
+}
+
+.cg-patient-actions {
+  display: flex;
+  gap: 15px;
+}
+
+/* My Patients - Buttons */
+
+.cg-patient-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.cg-patient-actions .btn {
+  min-width: 130px;
+  min-height: 42px;
+  padding: 10px 16px;
+  font-size: 14px !important;
+  font-weight: 600;
+  border-radius: 9px;
+  white-space: nowrap;
+  text-align: center;
+}
+
+/* View Profile Link */
+.mm-caregiver-home .cg-view-profile {
+  color: #ffffff !important;
+  font-size: 15px !important;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.mm-caregiver-home .cg-view-profile:hover {
+  color: #93c5fd !important;
+}
+
+
+.mm-caregiver-home .cg-overview-actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.mm-caregiver-home .cg-overview-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  padding: 6px;
+  font-size: 19px;
+  cursor: pointer;
+  border-radius: 6px;
+}
+
+.mm-caregiver-home .cg-overview-edit {
+  color: #a78bfa;
+}
+
+.mm-caregiver-home .cg-overview-delete {
+  color: #f87171;
+}
+
+.mm-caregiver-home .cg-overview-icon:hover {
+  background: rgba(148, 163, 184, 0.18);
+}
+
+.mm-caregiver-home .cg-overview-icon:focus-visible {
+  outline: 2px solid #60a5fa;
+  outline-offset: 2px;
+}
+
+/* ===========================================================
+   MEDIMIND ADMIN — Shared Patient-style background and sidebar
+   These rules intentionally override the older inline style tags
+   in AdminHome.jsx and AdminSettings.jsx.
+   Asset paths are relative to src/App.css (src/assets/).
+   =========================================================== */
+
+/* Dashboard — light image */
+body .dashboard-page.admin-home-page:not(.admin-home-dark) {
+  background: #f8fbff url("./assets/medimind-bg-light.png") center / cover no-repeat fixed !important;
+  color: #1f2937;
+  min-height: 100vh;
+}
+
+/* Dashboard — dark image */
+body .dashboard-page.admin-home-page.admin-home-dark {
+  background: #0d1b2a url("./assets/medimind-bg-dark.png") center / cover no-repeat fixed !important;
+  color: #e5e7eb;
+  min-height: 100vh;
+}
+
+/* Settings — light image */
+body .dashboard-page.mm-admin-settings:not(.mm-admin-settings-dark) {
+  background: #f8fbff url("./assets/medimind-bg-light.png") center / cover no-repeat fixed !important;
+  color: #243247;
+  min-height: 100vh;
+}
+
+/* Settings — dark image */
+body .dashboard-page.mm-admin-settings.mm-admin-settings-dark {
+  background: #0d1b2a url("./assets/medimind-bg-dark.png") center / cover no-repeat fixed !important;
+  color: #e7edf7;
+  min-height: 100vh;
+}
+
+/* Don't cover the medical pattern with a second content background. */
+body .dashboard-page.mm-admin-settings .mm-admin-content,
+body .dashboard-page.admin-home-page .admin-home-main {
+  background: transparent !important;
+}
+
+/* Sidebar matches Patient Settings in both modes. */
+body .dashboard-page.mm-admin-settings .mm-admin-sidebar,
+body .dashboard-page.mm-admin-settings.mm-admin-settings-dark .mm-admin-sidebar {
+  background: #17418c !important;
+  color: #fff !important;
+  min-height: 85vh;
+}
+body .dashboard-page.mm-admin-settings .mm-admin-sidebar h4 {
+  color: #fff !important;
+}
+body .dashboard-page.mm-admin-settings .mm-admin-link {
+  display: block;
+  width: 100%;
+  color: #fff !important;
+  background: transparent;
+  text-align: start;
+  border: 0;
+  padding: 13px 15px;
+  border-radius: 10px;
+}
+body .dashboard-page.mm-admin-settings .mm-admin-link:hover,
+body .dashboard-page.mm-admin-settings .mm-admin-link.active {
+  background: #0b5ed7 !important;
+  color: #fff !important;
+}
+body .dashboard-page.mm-admin-settings .mm-admin-link.active {
+  font-weight: 700;
+}
+
+/* Preserve accessible card contrast regardless of global theme rules. */
+body .dashboard-page.mm-admin-settings:not(.mm-admin-settings-dark) .card,
+body .dashboard-page.admin-home-page:not(.admin-home-dark) .dashboard-card {
+  background-color: #fff !important;
+  color: #243247 !important;
+}
+body .dashboard-page.mm-admin-settings.mm-admin-settings-dark .card,
+body .dashboard-page.admin-home-page.admin-home-dark .dashboard-card {
+  background-color: #1d2b42 !important;
+  color: #e7edf7 !important;
+  border-color: #40516a !important;
+}
+
+/* Strong, readable table column headings, in both themes. */
+body .dashboard-page.admin-home-page:not(.admin-home-dark) .dashboard-table th {
+  background: #edf3fc !important;
+  color: #1e3a8a !important;
+}
+body .dashboard-page.admin-home-page.admin-home-dark .dashboard-table th {
+  background: #293a55 !important;
+  color: #f1f5f9 !important;
+}
