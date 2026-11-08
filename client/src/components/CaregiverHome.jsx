@@ -1,6 +1,6 @@
 import { useEffect, useState, } from "react";
 import omanMedications from "../data/omanmedications.json";
-import { Container, Row, Col, Card, CardBody, Button, Modal, ModalHeader, ModalBody, ModalFooter, Alert, Progress, } from "reactstrap";
+import { Container, Row, Col, Card, CardBody, Button, Modal, ModalHeader, ModalBody, ModalFooter, Alert, Progress, Input} from "reactstrap";
 
 import { useSelector, } from "react-redux";
 
@@ -10,7 +10,8 @@ import axios from "axios";
 
 import CaregiverHeader from "./CaregiverHeader";
 import { FiEdit2, FiTrash2 } from "react-icons/fi";
-
+import lightBackground from "../assets/medimind-bg-light.png";
+import darkBackground from "../assets/medimind-bg-dark.png";
 
 const caregiverMessages = [
   {
@@ -98,7 +99,16 @@ const caregiverDosageUnits = {
   "Liquid/Syrup": ["ml", "mg"],
   Patch: ["patch", "patches"],
   Suppository: ["suppository", "suppositories"],
-  Other: ["mg", "g", "mcg", "ml", "units", "tablet", "capsule"],
+  Other: [
+    "mg", "g", "mcg", "ml", "units",
+    "tablet", "tablets",
+    "capsule", "capsules",
+    "drop", "drops",
+    "puff", "puffs",
+    "patch", "patches",
+    "application", "applications",
+    "suppository", "suppositories"
+  ],
 };
 
 const detectCaregiverMedicationForm = (medication) => {
@@ -262,7 +272,7 @@ const CaregiverHome = () => {
     topicalDosage: "",
     frequency: "Once daily",
     weeklyDay: "",
-    timing: "Specific Time",
+   timing: "At a Specific Time",
     timingOffsetMinutes: 0,
     reminderTimes: ["08:00"],
     startDate: new Date().toISOString().split("T")[0],
@@ -341,11 +351,20 @@ const CaregiverHome = () => {
           )}`
         );
         console.log("MY PATIENTS API:", response.data);
-        setPatients(
-          response.data
-            ?.patients ||
-          []
-        );
+       const latestPatients = response.data?.patients || [];
+
+setPatients(latestPatients);
+
+setSelectedPatient((currentPatient) => {
+  if (!currentPatient) return null;
+
+  return (
+    latestPatients.find(
+      (patient) =>
+        patient.patientEmail === currentPatient.patientEmail
+    ) || null
+  );
+});
       } catch (error) {
         console.error(
           "Fetch linked patients error:",
@@ -914,6 +933,24 @@ const CaregiverHome = () => {
       );
     }
 
+    const requiresMealOffset =
+  /^(Before|After) (Meal|Breakfast|Lunch|Dinner)$/.test(
+    newMedication.timing
+  );
+
+if (
+  requiresMealOffset &&
+  (
+    !Number.isInteger(Number(newMedication.timingOffsetMinutes)) ||
+    Number(newMedication.timingOffsetMinutes) < 1 ||
+    Number(newMedication.timingOffsetMinutes) > 720
+  )
+) {
+  return fail(
+    "Please enter a valid timing offset between 1 and 720 minutes.",
+    "يرجى إدخال مدة صحيحة من 1 إلى 720 دقيقة."
+  );
+}
     // Validate dates
     const now = new Date();
     const today = [
@@ -1099,12 +1136,24 @@ const CaregiverHome = () => {
 
 
 
-  return (
-    <Container
-      fluid
-      className={`dashboard-page mm-caregiver-home ${theme === "dark" ? "mm-ch-dark" : ""}`}
-      dir={isArabic ? "rtl" : "ltr"}
-    >
+return (
+  <Container
+    fluid
+    className={`dashboard-page mm-caregiver-home ${
+      theme === "dark" ? "mm-ch-dark" : ""
+    }`}
+    dir={isArabic ? "rtl" : "ltr"}
+    style={{
+      minHeight: "100vh",
+      backgroundImage: `url(${
+        theme === "dark" ? darkBackground : lightBackground
+      })`,
+      backgroundSize: "cover",
+      backgroundPosition: "center",
+      backgroundRepeat: "no-repeat",
+      backgroundAttachment: "fixed",
+    }}
+  >
       <style>{`
         .mm-caregiver-home { min-height:100vh; background:#f4f7fc; color:#20304a; }
         .mm-caregiver-home .dashboard-card { background:#fff; color:inherit; border:1px solid #e2e8f0; border-radius:14px; }
@@ -1710,18 +1759,30 @@ const CaregiverHome = () => {
                   {t("Patient Medication Overview", "نظرة عامة على أدوية المريض")}
                 </h4>
 
-                {dashboardPatientEmail &&
-                  selectedDashboardPatient?.medicationManagementPermission && (
-                    <Button
-                      color="primary"
-                      onClick={() => {
-                        setSelectedPatient(selectedDashboardPatient);
-                        setAddMedicationOpen(true);
-                      }}
-                    >
-                      {t("+ Add Medication", "+ إضافة دواء")}
-                    </Button>
-                  )}
+                {dashboardPatientEmail && (
+  <Button
+    color="primary"
+    type="button"
+    disabled={
+      !selectedDashboardPatient ||
+      selectedDashboardPatient.medicationManagementPermission !== true
+    }
+    title={
+      selectedDashboardPatient?.medicationManagementPermission === true
+        ? t("Add Medication", "إضافة دواء")
+        : t(
+            "Patient permission required",
+            "يتطلب إذن المريض"
+          )
+    }
+    onClick={() => {
+      setSelectedPatient(selectedDashboardPatient);
+      setAddMedicationOpen(true);
+    }}
+  >
+    {t("+ Add Medication", "+ إضافة دواء")}
+  </Button>
+)}
               </div>
 
 
@@ -2287,23 +2348,38 @@ const CaregiverHome = () => {
             </Alert>
           )}
 
-          {selectedPatient?.medicationManagementPermission && (
-            <div className="d-flex justify-content-end mb-4">
-              <Button
-                color="primary"
-                onClick={() => setAddMedicationOpen(true)}
-                style={{
-                  borderRadius: "10px",
-                  padding: "10px 18px",
-                  fontWeight: "600",
-                  backgroundColor: "#0b5ed7",
-                  border: "none",
-                }}
-              >
-                {t("+ Add Medication", '+ إضافة دواء')}
-              </Button>
-            </div>
-          )}
+          <div className="d-flex justify-content-end flex-wrap gap-2 mb-3">
+  <Button
+    type="button"
+    color="secondary"
+    outline
+    onClick={fetchLinkedPatients}
+    disabled={isLoadingPatients}
+  >
+    {t("Refresh Permissions", "تحديث الصلاحيات")}
+  </Button>
+
+  <Button
+    type="button"
+    color="primary"
+    disabled={
+      selectedPatient?.medicationManagementPermission !== true
+    }
+    onClick={() => setAddMedicationOpen(true)}
+  >
+    {t("+ Add Medication", "+ إضافة دواء")}
+  </Button>
+</div>
+
+{selectedPatient &&
+  selectedPatient.medicationManagementPermission !== true && (
+    <Alert color="warning">
+      {t(
+        "The patient must allow medication management before you can add, edit, or delete medications.",
+        "يجب أن يسمح المريض بإدارة الأدوية قبل الإضافة أو التعديل أو الحذف."
+      )}
+    </Alert>
+  )}
 
           {!isLoadingMedications &&
             !medicationMessage &&
@@ -2375,36 +2451,45 @@ const CaregiverHome = () => {
                     </td>
 
                     <td>
-                      {selectedPatient?.medicationManagementPermission && (
-                        <div className="d-flex align-items-center gap-3">
-                          <FiEdit2
-                            size={17}
-                            color="#8b5cf6"
-                            style={{ cursor: "pointer" }}
-                            title={t("Edit Medication", "تعديل الدواء")}
-                            onClick={() => {
-                              setEditMedication({
-                                ...medication,
-                                startDate: medication.startDate
-                                  ? medication.startDate.split("T")[0]
-                                  : "",
-                              });
-                              setEditMedicationOpen(true);
-                            }}
-                          />
+  <div className="d-flex align-items-center gap-2">
+    <button
+      type="button"
+      className="btn btn-link p-1"
+      disabled={
+        selectedPatient?.medicationManagementPermission !== true
+      }
+      title={t("Edit Medication", "تعديل الدواء")}
+      aria-label={t("Edit Medication", "تعديل الدواء")}
+      onClick={() => {
+        setEditMedication({
+          ...medication,
+          startDate: medication.startDate
+            ? medication.startDate.split("T")[0]
+            : "",
+        });
 
-                          <FiTrash2
-                            size={17}
-                            color="#ef4444"
-                            style={{ cursor: "pointer" }}
-                            title={t("Delete Medication", "حذف الدواء")}
-                            onClick={() =>
-                              handleCaregiverDeleteMedication(medication._id)
-                            }
-                          />
-                        </div>
-                      )}
-                    </td>
+        setEditMedicationOpen(true);
+      }}
+    >
+      <FiEdit2 size={19} color="#8b5cf6" />
+    </button>
+
+    <button
+      type="button"
+      className="btn btn-link p-1"
+      disabled={
+        selectedPatient?.medicationManagementPermission !== true
+      }
+      title={t("Delete Medication", "حذف الدواء")}
+      aria-label={t("Delete Medication", "حذف الدواء")}
+      onClick={() =>
+        handleCaregiverDeleteMedication(medication._id)
+      }
+    >
+      <FiTrash2 size={19} color="#ef4444" />
+    </button>
+  </div>
+</td>
                   </tr>
                 ))}
               </tbody>
@@ -2602,25 +2687,13 @@ const CaregiverHome = () => {
               }
             >
               <option value="">{t("Unit", "الوحدة")}</option>
-              {(
-                {
-                  Tablet: ["mg", "g", "mcg", "tablet"],
-                  Capsule: ["mg", "g", "mcg", "capsule"],
-                  Injection: ["mg", "mcg", "mL"],
-                  "Cream/Ointment": ["g", "mg"],
-                  Inhaler: ["puff"],
-                  "Eye Drops": ["drop"],
-                  "Ear Drops": ["drop"],
-                  "Liquid/Syrup": ["mL"],
-                  Patch: ["patch"],
-                  Suppository: ["mg", "g", "suppository"],
-                  Other: ["mg", "g", "mcg", "mL"],
-                }[newMedication.medicationForm] || []
-              ).map((unit) => (
-                <option key={unit} value={unit}>
-                  {unit}
-                </option>
-              ))}
+                {(caregiverDosageUnits[newMedication.medicationForm] || []).map(
+  (unit) => (
+    <option key={unit} value={unit}>
+      {unit}
+    </option>
+  )
+)}
             </select>
           </div>
 
@@ -2709,6 +2782,76 @@ const CaregiverHome = () => {
             </>
           )}
 
+
+<label className="mb-1">
+  {t("Medication Timing", "توقيت تناول الدواء")}
+</label>
+
+<select
+  className="form-select mb-3"
+  value={newMedication.timing}
+  onChange={(e) =>
+    setNewMedication((current) => ({
+      ...current,
+      timing: e.target.value,
+      timingOffsetMinutes: 0,
+    }))
+  }
+>
+  {[
+    ["At a Specific Time", "وقت محدد"],
+    ["Before Meal", "قبل الوجبة"],
+    ["With Meal", "مع الوجبة"],
+    ["After Meal", "بعد الوجبة"],
+    ["Before Breakfast", "قبل الإفطار"],
+    ["With Breakfast", "مع الإفطار"],
+    ["After Breakfast", "بعد الإفطار"],
+    ["Before Lunch", "قبل الغداء"],
+    ["With Lunch", "مع الغداء"],
+    ["After Lunch", "بعد الغداء"],
+    ["Before Dinner", "قبل العشاء"],
+    ["With Dinner", "مع العشاء"],
+    ["After Dinner", "بعد العشاء"],
+    ["Morning", "الصباح"],
+    ["At Wake Time", "عند الاستيقاظ"],
+    ["Before Sleep", "قبل النوم"],
+  ].map(([value, arabic]) => (
+    <option key={value} value={value}>
+      {isArabic ? arabic : value}
+    </option>
+  ))}
+</select>
+
+{/^(Before|After) (Meal|Breakfast|Lunch|Dinner)$/.test(
+  newMedication.timing
+) && (
+  <>
+    <label className="mb-1">
+      {t(
+        "Minutes Before/After Meal",
+        "عدد الدقائق قبل أو بعد الوجبة"
+      )}
+    </label>
+
+    <input
+      type="number"
+      className="form-control mb-3"
+      min="1"
+      max="720"
+      step="1"
+      value={newMedication.timingOffsetMinutes || ""}
+      onChange={(e) =>
+        setNewMedication((current) => ({
+          ...current,
+          timingOffsetMinutes: e.target.value,
+        }))
+      }
+    />
+  </>
+)}
+
+
+
           {newMedication.frequency !== "As needed" && (
             <>
               <label className="mb-1">
@@ -2744,21 +2887,42 @@ const CaregiverHome = () => {
 
 
           <label className="mb-1">{t("Start Date", 'تاريخ البدء')}</label>
-          <input
-            type="date"
-            className="form-control mb-3"
-            value={newMedication.startDate}
-            onChange={(e) =>
-              setNewMedication({
-                ...newMedication,
-                startDate: e.target.value,
-              })
-            }
-          />
+          <Input
+  type="date"
+  value={newMedication.startDate}
+  min={`${new Date().getFullYear()}-${String(
+    new Date().getMonth() + 1
+  ).padStart(2, "0")}-${String(
+    new Date().getDate()
+  ).padStart(2, "0")}`}
+  onChange={(e) => {
+    const newStartDate = e.target.value;
+
+    setNewMedication((prev) => ({
+      ...prev,
+      startDate: newStartDate,
+      endDate:
+        prev.endDate && prev.endDate < newStartDate
+          ? ""
+          : prev.endDate,
+    }));
+  }}
+  required
+/>
           <label className="mb-1">{t("End Date", "تاريخ الانتهاء")}</label>
-          <input type="date" className="form-control mb-3" min={newMedication.startDate}
-            value={newMedication.endDate}
-            onChange={(e) => setNewMedication({ ...newMedication, endDate: e.target.value })} />
+          <Input
+  type="date"
+  value={newMedication.endDate}
+  min={newMedication.startDate}
+  disabled={!newMedication.startDate}
+  onChange={(e) => {
+    setNewMedication((prev) => ({
+      ...prev,
+      endDate: e.target.value,
+    }));
+  }}
+  required
+/>
 
 
           <label className="mb-1">{t("Instructions", 'التعليمات')}</label>
