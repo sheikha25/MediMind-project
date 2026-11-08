@@ -34,6 +34,11 @@ import {
 
 import CaregiverHeader from "./CaregiverHeader";
 import Footer from "./Footer";
+import lightBackground from "../assets/medimind-bg-light.png";
+import darkBackground from "../assets/medimind-bg-dark.png";
+
+
+
 
 const CaregiverReports = () => {
   const [language, setLanguage] = useState(
@@ -1231,13 +1236,24 @@ const response = await axios.get(
     },
   ];
 
-  return (
-    <Container
-      fluid
-      className={`dashboard-page mm-caregiver-reports ${isDark ? "mm-reports-dark" : ""}`}
-      dir={isArabic ? "rtl" : "ltr"}
-      style={{ minHeight: "100vh" }}
-    >
+return (
+  <Container
+    fluid
+    className={`dashboard-page mm-caregiver-reports ${
+      isDark ? "mm-reports-dark" : ""
+    }`}
+    dir={isArabic ? "rtl" : "ltr"}
+    style={{
+      minHeight: "100vh",
+      backgroundImage: `url(${
+        isDark ? darkBackground : lightBackground
+      })`,
+      backgroundSize: "cover",
+      backgroundPosition: "center",
+      backgroundRepeat: "no-repeat",
+      backgroundAttachment: "fixed",
+    }}
+  >
       <style>{`
         .mm-caregiver-reports {
           background: #f7f9fc;
