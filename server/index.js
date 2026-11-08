@@ -23,6 +23,44 @@ const omanMedications = require("../client/src/data/omanmedications.json");
 
 
 
+const normalizeActiveIngredient = (value) => {
+  const ingredient = String(value || "")
+    .toLowerCase()
+    .trim();
+
+  if (
+    !ingredient ||
+    ingredient === "unknown" ||
+    ingredient === "n/a"
+  ) {
+    return "";
+  }
+
+  return ingredient
+    // Remove strength values such as 500 MG or 5 ML
+    .replace(/\b\d+(?:\.\d+)?\s*(?:mg|mcg|g|ml|iu|%)\b/gi, "")
+    // Remove spaces and punctuation
+    .replace(/[^a-z0-9]/g, "");
+};
+
+const getMedicationIngredients = (medication) => {
+  return [
+    medication?.activeIngredient1,
+    medication?.activeIngredient2,
+  ]
+    .map(normalizeActiveIngredient)
+    .filter(Boolean);
+};
+
+const findSharedIngredients = (firstMedication, secondMedication) => {
+  const firstIngredients = getMedicationIngredients(firstMedication);
+  const secondIngredients = getMedicationIngredients(secondMedication);
+
+  return firstIngredients.filter((ingredient) =>
+    secondIngredients.includes(ingredient)
+  );
+};
+
 const normalizeMedicationName = (name) =>
   String(name || "")
     .trim()
@@ -33,7 +71,7 @@ const normalizeMedicationName = (name) =>
 
 
 
-const medicationNameDistance = (first, second) => (
+const medicationNameDistance = (first, second) => {
   const a = normalizeMedicationName(first);
   const b = normalizeMedicationName(second);
 
@@ -500,29 +538,29 @@ app.get(
         req.params.caregiverEmail
       );
 
-     const currentUser = await UserModel.findOne({
-  email: caregiverEmail,
-  role: "caregiver",
-}).select("email role");
+      const currentUser = await UserModel.findOne({
+        email: caregiverEmail,
+        role: "caregiver",
+      }).select("email role");
 
-if (
-  !currentUser ||
-  currentUser.role !== "caregiver" ||
-  currentUser.email.toLowerCase() !== caregiverEmail.toLowerCase()
-) {
-  return res.status(403).json({
-    success: false,
-    message: "Unauthorized access to patient information.",
-  });
-}
+      if (
+        !currentUser ||
+        currentUser.role !== "caregiver" ||
+        currentUser.email.toLowerCase() !== caregiverEmail.toLowerCase()
+      ) {
+        return res.status(403).json({
+          success: false,
+          message: "Unauthorized access to patient information.",
+        });
+      }
 
       const patients =
         await CaregiverLinkModel.aggregate([
           {
             $match: {
-  caregiverEmail: currentUser.email,
-  status: "Accepted",
-},
+              caregiverEmail: currentUser.email,
+              status: "Accepted",
+            },
           },
           {
             $lookup: {
@@ -618,6 +656,28 @@ app.put("/patient/profile", async (req, res) => {
       });
     }
 
+
+    // Validate patient age before updating the database.
+    if (
+      age !== "" &&
+      age !== null &&
+      age !== undefined
+    ) {
+      const numericAge = Number(age);
+
+      if (
+        !Number.isInteger(numericAge) ||
+        numericAge < 0 ||
+        numericAge > 120
+      ) {
+        return res.status(400).send({
+          success: false,
+          message:
+            "Please enter a valid age between 0 and 120 (whole numbers only).",
+        });
+      }
+    }
+
     const formattedAllergies = Array.isArray(allergies)
       ? allergies
         .map((allergy) => allergy.trim())
@@ -641,7 +701,7 @@ app.put("/patient/profile", async (req, res) => {
               age === "" ||
                 age === null ||
                 age === undefined
-                ? undefined
+                ? null
                 : Number(age),
 
             height:
@@ -732,29 +792,29 @@ app.get(
         req.params.patientEmail
       );
 
-     const currentUser = await UserModel.findOne({
-  email: caregiverEmail,
-  role: "caregiver",
-}).select("email role");
+      const currentUser = await UserModel.findOne({
+        email: caregiverEmail,
+        role: "caregiver",
+      }).select("email role");
 
-if (
-  !currentUser ||
-  currentUser.role !== "caregiver" ||
-  currentUser.email.toLowerCase() !== caregiverEmail.toLowerCase()
-) {
-  return res.status(403).json({
-    success: false,
-    medications: [],
-    message: "Unauthorized access to patient medications.",
-  });
-}
+      if (
+        !currentUser ||
+        currentUser.role !== "caregiver" ||
+        currentUser.email.toLowerCase() !== caregiverEmail.toLowerCase()
+      ) {
+        return res.status(403).json({
+          success: false,
+          medications: [],
+          message: "Unauthorized access to patient medications.",
+        });
+      }
 
-     const acceptedLink =
-  await CaregiverLinkModel.findOne({
-    caregiverEmail: currentUser.email,
-    patientEmail,
-    status: "Accepted",
-  });
+      const acceptedLink =
+        await CaregiverLinkModel.findOne({
+          caregiverEmail: currentUser.email,
+          patientEmail,
+          status: "Accepted",
+        });
 
       if (!acceptedLink) {
         return res.status(403).send({
@@ -866,31 +926,31 @@ app.delete(
   async (req, res) => {
     try {
       const { caregiverEmail, patientEmail, medicationId } = req.params;
-const decodedCaregiverEmail = decodeURIComponent(caregiverEmail);
-const decodedPatientEmail = decodeURIComponent(patientEmail);
+      const decodedCaregiverEmail = decodeURIComponent(caregiverEmail);
+      const decodedPatientEmail = decodeURIComponent(patientEmail);
 
-const currentUser = await UserModel.findOne({
-  email: decodedCaregiverEmail,
-  role: "caregiver",
-}).select("email role");
+      const currentUser = await UserModel.findOne({
+        email: decodedCaregiverEmail,
+        role: "caregiver",
+      }).select("email role");
 
-if (
-  !currentUser ||
-  currentUser.role !== "caregiver" ||
-  currentUser.email.toLowerCase() !==
-    decodedCaregiverEmail.toLowerCase()
-) {
-  return res.status(403).json({
-    success: false,
-    message: "Unauthorized medication management.",
-  });
-}
-     const link = await CaregiverLinkModel.findOne({
-  caregiverEmail: currentUser.email,
-  patientEmail: decodedPatientEmail,
-  status: "Accepted",
-  medicationManagementPermission: true,
-});
+      if (
+        !currentUser ||
+        currentUser.role !== "caregiver" ||
+        currentUser.email.toLowerCase() !==
+        decodedCaregiverEmail.toLowerCase()
+      ) {
+        return res.status(403).json({
+          success: false,
+          message: "Unauthorized medication management.",
+        });
+      }
+      const link = await CaregiverLinkModel.findOne({
+        caregiverEmail: currentUser.email,
+        patientEmail: decodedPatientEmail,
+        status: "Accepted",
+        medicationManagementPermission: true,
+      });
 
       if (!link) {
         return res.status(403).send({
@@ -899,10 +959,10 @@ if (
         });
       }
 
-     const medication = await MedicationModel.findOneAndDelete({
-  _id: medicationId,
-  userEmail: decodedPatientEmail,
-});
+      const medication = await MedicationModel.findOneAndDelete({
+        _id: medicationId,
+        userEmail: decodedPatientEmail,
+      });
 
       if (!medication) {
         return res.status(404).send({
@@ -947,29 +1007,29 @@ app.put(
       const decodedPatientEmail =
         decodeURIComponent(patientEmail);
 
-     const currentUser = await UserModel.findOne({
-  email: decodedCaregiverEmail,
-  role: "caregiver",
-}).select("email role");
+      const currentUser = await UserModel.findOne({
+        email: decodedCaregiverEmail,
+        role: "caregiver",
+      }).select("email role");
 
-if (
-  !currentUser ||
-  currentUser.role !== "caregiver" ||
-  currentUser.email.toLowerCase() !==
-    decodedCaregiverEmail.toLowerCase()
-) {
-  return res.status(403).json({
-    success: false,
-    message: "Unauthorized medication management.",
-  });
-}
+      if (
+        !currentUser ||
+        currentUser.role !== "caregiver" ||
+        currentUser.email.toLowerCase() !==
+        decodedCaregiverEmail.toLowerCase()
+      ) {
+        return res.status(403).json({
+          success: false,
+          message: "Unauthorized medication management.",
+        });
+      }
 
-     const link = await CaregiverLinkModel.findOne({
-  caregiverEmail: currentUser.email,
-  patientEmail: decodedPatientEmail,
-  status: "Accepted",
-  medicationManagementPermission: true,
-});
+      const link = await CaregiverLinkModel.findOne({
+        caregiverEmail: currentUser.email,
+        patientEmail: decodedPatientEmail,
+        status: "Accepted",
+        medicationManagementPermission: true,
+      });
 
       if (!link) {
         return res.status(403).send({
@@ -1109,8 +1169,10 @@ if (
 
 
 
+
 app.post(
   "/caregiver/patient-medications/:caregiverEmail/:patientEmail",
+  upload.single("prescription"),
   async (req, res) => {
     try {
       const caregiverEmail = decodeURIComponent(
@@ -1121,43 +1183,44 @@ app.post(
         req.params.patientEmail
       );
 
-const currentUser = await UserModel.findOne({
-  email: caregiverEmail,
-  role: "caregiver",
-}).select("email role");
+      // 1. Verify caregiver
+      const currentUser = await UserModel.findOne({
+        email: caregiverEmail,
+        role: "caregiver",
+      }).select("email role");
 
-if (
-  !currentUser ||
-  currentUser.role !== "caregiver" ||
-  currentUser.email.toLowerCase() !== caregiverEmail.toLowerCase()
-) {
-  return res.status(403).json({
-    success: false,
-    message: "Unauthorized medication management.",
-  });
-}
+      if (
+        !currentUser ||
+        currentUser.role !== "caregiver" ||
+        currentUser.email.toLowerCase() !== caregiverEmail.toLowerCase()
+      ) {
+        return res.status(403).json({
+          success: false,
+          message: "Unauthorized medication management.",
+        });
+      }
 
-      // 1. Check caregiver connection and permission
+      // 2. Check accepted connection and permission
       const link = await CaregiverLinkModel.findOne({
-  caregiverEmail: currentUser.email,
-  patientEmail,
-  status: "Accepted",
-  medicationManagementPermission: true,
-});
+        caregiverEmail: currentUser.email,
+        patientEmail,
+        status: "Accepted",
+        medicationManagementPermission: true,
+      });
 
       if (!link) {
-        return res.status(403).send({
+        return res.status(403).json({
           success: false,
           message: "Patient has not allowed medication management.",
         });
       }
 
-       const {
-  medicationName,
-  medicationForm,
-  topicalDosage,
-  dosage,
-  frequency,
+      const {
+        medicationName,
+        medicationForm,
+        topicalDosage,
+        dosage,
+        frequency,
         timing,
         timingOffsetMinutes,
         reminderTimes,
@@ -1165,32 +1228,30 @@ if (
         weeklyDay,
         endDate,
         instructions,
-      } = req.body;
+      } = req.body || {};
 
-      const validMedicationForms = [
-  "Tablet",
-  "Capsule",
-  "Injection",
-  "Cream/Ointment",
-  "Inhaler",
-  "Eye Drops",
-  "Ear Drops",
-  "Liquid/Syrup",
-  "Patch",
-  "Suppository",
-  "Other",
-];
+      // 3. Validate required fields
+      const validForms = [
+        "Tablet",
+        "Capsule",
+        "Injection",
+        "Cream/Ointment",
+        "Inhaler",
+        "Eye Drops",
+        "Ear Drops",
+        "Liquid/Syrup",
+        "Patch",
+        "Suppository",
+        "Other",
+      ];
 
-if (
-  typeof medicationForm !== "string" ||
-  !validMedicationForms.includes(medicationForm)
-) {
-  return res.status(400).send({
-    success: false,
-    message: "Please select a valid medication form.",
-  });
-}
-      // 2. Required fields
+      if (!validForms.includes(medicationForm)) {
+        return res.status(400).json({
+          success: false,
+          message: "Please select a valid medication form.",
+        });
+      }
+
       if (
         typeof medicationName !== "string" ||
         !medicationName.trim() ||
@@ -1202,226 +1263,171 @@ if (
         !timing.trim() ||
         !startDate
       ) {
-        return res.status(400).send({
+        return res.status(400).json({
           success: false,
           message: "Please complete all required medication fields.",
         });
       }
 
-      const normalizedDatabaseMedicationName = medicationName.trim();
-      const normalizedFrequency = frequency.trim();
-      const normalizedTiming = timing.trim();
+      const cleanName = medicationName
+        .trim()
+        .replace(/\s+/g, " ");
 
-      // 3. Check duplicate medication name
-      const escapedName = normalizedDatabaseMedicationName.replace(
-        /[.*+?^${}()|[\]\\]/g,
-        "\\$&"
+      const cleanFrequency = frequency.trim();
+      const cleanTiming = timing.trim();
+
+      // 4. PREVENT DUPLICATE MEDICATION NAMES
+      const normalizeName = (value) =>
+        String(value || "")
+          .normalize("NFKC")
+          .trim()
+          .replace(/\s+/g, " ")
+          .toLowerCase();
+
+      const previousNames = await MedicationModel.find({
+        userEmail: patientEmail,
+      }).select("medicationName");
+
+      const duplicateExists = previousNames.some(
+        (item) =>
+          normalizeName(item.medicationName) ===
+          normalizeName(cleanName)
       );
 
-      const existingMedication = await MedicationModel.findOne({
-        userEmail: patientEmail,
-        medicationName: {
-          $regex: `^${escapedName}$`,
-          $options: "i",
-        },
-      });
-
-      if (existingMedication) {
-        return res.status(409).send({
+      if (duplicateExists) {
+        return res.status(409).json({
           success: false,
           message:
-            "This medication has already been added. Please edit the existing medication instead.",
+            "This medication is already added. Please edit the existing medication instead.",
         });
       }
 
-      console.log("SPELLING CHECK:", {
-  userEmail,
-  enteredName: normalizedMedicationName,
-});
+      // 5. Check medication form against Oman dataset
+      const matchingMedications = omanMedications.filter(
+        (entry) =>
+          normalizeName(entry.tradeName) ===
+          normalizeName(cleanName)
+      );
 
-const patientExistingMedications = await MedicationModel.find({
-  userEmail: {
-    $regex: `^${userEmail.trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`,
-    $options: "i",
-  },
-}).select("medicationName");
+      const formKeywords = {
+        Tablet: ["tablet"],
+        Capsule: ["capsule"],
+        Injection: ["injection", "injectable"],
+        "Cream/Ointment": ["cream", "ointment"],
+        Inhaler: ["inhaler"],
+        "Eye Drops": ["ophthalmic", "eye drop"],
+        "Ear Drops": ["otic", "ear drop"],
+        "Liquid/Syrup": [
+          "syrup",
+          "oral liquid",
+          "oral solution",
+        ],
+        Patch: ["patch"],
+        Suppository: ["suppository"],
+      };
 
-console.log("SPELLING DEBUG:", {
-  patientEmail: userEmail,
-  enteredName: normalizedMedicationName,
-  existingMedications: patientExistingMedications.map(
-    (medication) => medication.medicationName
-  ),
-});
+      const recognizedForms = new Set();
 
-const enteredMedicationName = normalizeMedicationName(
-  normalizedMedicationName
-);
+      for (const entry of matchingMedications) {
+        const form = String(
+          entry.dosageForm || entry.form || ""
+        ).toLowerCase();
 
-const similarMedication = patientExistingMedications.find((medication) => {
-  const existingName = normalizeMedicationName(
-    medication.medicationName
-  );
+        for (const [formName, keywords] of Object.entries(
+          formKeywords
+        )) {
+          if (keywords.some((word) => form.includes(word))) {
+            recognizedForms.add(formName);
+          }
+        }
+      }
 
-  if (enteredMedicationName.length < 5 || existingName.length < 5) {
-    return false;
-  }
+      if (
+        recognizedForms.size > 0 &&
+        !recognizedForms.has(medicationForm)
+      ) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Invalid medication form for the selected Oman dataset medicine.",
+        });
+      }
 
-  const distance = medicationNameDistance(
-    enteredMedicationName,
-    existingName
-  );
-
-  const maxDistance =
-  Math.max(2, Math.floor(Math.max(
-    enteredMedicationName.length,
-    existingName.length
-  ) * 0.3));
-
-return distance > 0 && distance <= maxDistance;
-});
-
-if (similarMedication) {
-  return res.status(409).send({
-    success: false,
-    message: `Possible spelling mistake: "${similarMedication.medicationName}" is already in your medication list. Please check the medication name before continuing.`,
-  });
-}
-
-      
-
-
-const medicationNameForDatabaseLookup = String(medicationName)
-  .trim()
-  .toLowerCase();
-
-
-
-
-const matchingMedications = omanMedications.filter(
-  (medication) =>
-    String(medication.tradeName || "").trim().toLowerCase() ===
-    medicationNameForDatabaseLookup
-);
-
-
-const formKeywords = {
-  Tablet: ["tablet"],
-  Capsule: ["capsule"],
-  Injection: ["injection", "injectable"],
-  "Cream/Ointment": ["cream", "ointment"],
-  Inhaler: ["inhaler"],
-  "Eye Drops": ["ophthalmic", "eye drop"],
-  "Ear Drops": ["otic", "ear drop"],
-  "Liquid/Syrup": ["syrup", "oral liquid", "oral solution"],
-  Patch: ["patch"],
-  Suppository: ["suppository"],
-};
-
-const recognizedForms = new Set();
-
-for (const medication of matchingMedications) {
-  const rawForm = String(medication.dosageForm || "")
-    .trim()
-    .toLowerCase();
-
-  for (const [form, keywords] of Object.entries(formKeywords)) {
-    if (keywords.some((keyword) => rawForm.includes(keyword))) {
-      recognizedForms.add(form);
-    }
-  }
-}
-
-if (
-  recognizedForms.size > 0 &&
-  !recognizedForms.has(medicationForm)
-) {
-  return res.status(400).send({
-    success: false,
-    message:
-      "Invalid medication form. Please select a dosage form listed for this medication in the Oman medication database.",
-  });
-}
-
-      // 4. Validate dosage
-      const validDosageUnits = [
-  "mg", "g", "mcg", "ml",
-  "tablet", "tablets",
-  "capsule", "capsules",
-  "drop", "drops",
-  "units",
-  "puff", "puffs",
-  "patch", "patches",
-  "application", "applications",
-  "suppository", "suppositories"
-];
+      // 6. Validate dosage and units
+      const unitsByForm = {
+        Tablet: ["tablet", "tablets", "mg", "mcg", "iu"],
+        Capsule: ["capsule", "capsules", "mg", "mcg", "iu"],
+        Injection: ["units", "ml", "mg", "mcg"],
+        "Cream/Ointment": [
+          "g",
+          "mg",
+          "application",
+          "applications",
+        ],
+        Inhaler: ["puff", "puffs"],
+        "Eye Drops": ["drop", "drops"],
+        "Ear Drops": ["drop", "drops"],
+        "Liquid/Syrup": ["ml", "mg"],
+        Patch: ["patch", "patches"],
+        Suppository: ["suppository", "suppositories"],
+        Other: [
+          "mg", "g", "mcg", "ml", "units",
+          "tablet", "tablets",
+          "capsule", "capsules",
+          "drop", "drops",
+          "puff", "puffs",
+          "patch", "patches",
+          "application", "applications",
+          "suppository", "suppositories",
+        ],
+      };
 
       const dosageMatch = dosage.trim().match(
         /^(\d+(?:\.\d+)?)\s+([a-zA-Z]+)$/
       );
 
+      const amount = dosageMatch
+        ? Number(dosageMatch[1])
+        : NaN;
+
+      const unit = dosageMatch?.[2].toLowerCase();
+
       if (
-        !dosageMatch ||
-        !Number.isFinite(Number(dosageMatch[1])) ||
-        Number(dosageMatch[1]) <= 0 ||
-        !validDosageUnits.includes(dosageMatch[2])
+        !Number.isFinite(amount) ||
+        amount <= 0 ||
+        !unitsByForm[medicationForm].includes(unit)
       ) {
-        return res.status(400).send({
+        return res.status(400).json({
           success: false,
-          message: "Please enter a valid dosage amount and unit.",
+          message:
+            "Please enter a valid dosage amount and unit for the medication form.",
         });
       }
 
-      const allowedUnitsByForm = {
-  Tablet: ["mg", "g", "mcg", "tablet"],
-  Capsule: ["mg", "g", "mcg", "capsule"],
-  Injection: ["mg", "mcg", "ml"],
-  "Cream/Ointment": ["g", "mg"],
-  Inhaler: ["puff"],
-  "Eye Drops": ["drop"],
-  "Ear Drops": ["drop"],
-  "Liquid/Syrup": ["ml"],
-  Patch: ["patch"],
-  Suppository: ["mg", "g", "suppository"],
-  Other: ["mg", "g", "mcg", "ml"],
-};
+      // 7. Validate timing offset
+      let offset = Number(timingOffsetMinutes ?? 0);
 
-const selectedUnit = dosageMatch[2].toLowerCase();
-
-if (!allowedUnitsByForm[medicationForm]?.includes(selectedUnit)) {
-  return res.status(400).send({
-    success: false,
-    message: `Invalid dosage unit for ${medicationForm}.`,
-  });
-}
-
-      // 5. Validate timing offset
-      let parsedTimingOffsetMinutes = Number(
-        timingOffsetMinutes ?? 0
-      );
-
-      if (
-        !Number.isFinite(parsedTimingOffsetMinutes) ||
-        parsedTimingOffsetMinutes < 0
-      ) {
-        return res.status(400).send({
+      if (!Number.isFinite(offset) || offset < 0) {
+        return res.status(400).json({
           success: false,
           message: "Please enter a valid timing offset.",
         });
       }
 
-      if (normalizedTiming === "With Meal") {
-        parsedTimingOffsetMinutes = 0;
+      if (cleanTiming === "With Meal") {
+        offset = 0;
       }
 
-      // 6. Parse reminder times
+      // 8. Parse reminder times
       let parsedReminderTimes = reminderTimes;
 
       if (typeof parsedReminderTimes === "string") {
         try {
-          parsedReminderTimes = JSON.parse(parsedReminderTimes);
+          parsedReminderTimes = JSON.parse(
+            parsedReminderTimes
+          );
         } catch {
-          return res.status(400).send({
+          return res.status(400).json({
             success: false,
             message: "Reminder times are not formatted correctly.",
           });
@@ -1429,32 +1435,34 @@ if (!allowedUnitsByForm[medicationForm]?.includes(selectedUnit)) {
       }
 
       if (!Array.isArray(parsedReminderTimes)) {
-        return res.status(400).send({
+        return res.status(400).json({
           success: false,
           message: "Reminder times must be an array.",
         });
       }
 
-      parsedReminderTimes = parsedReminderTimes.map((time) =>
-        typeof time === "string" ? time.trim() : time
+      parsedReminderTimes = parsedReminderTimes.map(
+        (value) =>
+          typeof value === "string"
+            ? value.trim()
+            : value
       );
 
-      // 7. Validate frequency and reminder schedule
-      const scheduleValidation = validateMedicationSchedule(
-        normalizedFrequency,
+      // 9. Validate frequency and schedule
+      const schedule = validateMedicationSchedule(
+        cleanFrequency,
         parsedReminderTimes
       );
 
-      if (!scheduleValidation.valid) {
-        return res.status(400).send({
+      if (!schedule.valid) {
+        return res.status(400).json({
           success: false,
-          message: scheduleValidation.message,
+          message: schedule.message,
         });
       }
 
-      
-      // 8. Validate weekly days
-      const validWeekdays = [
+      // 10. Validate weekly days
+      const weekdays = [
         "Sunday",
         "Monday",
         "Tuesday",
@@ -1466,14 +1474,22 @@ if (!allowedUnitsByForm[medicationForm]?.includes(selectedUnit)) {
 
       let parsedWeeklyDays = [];
 
-      if (normalizedFrequency === "Weekly") {
+      if (cleanFrequency === "Weekly") {
         try {
-          parsedWeeklyDays =
-            typeof weeklyDay === "string"
-              ? JSON.parse(weeklyDay)
-              : weeklyDay;
+          if (Array.isArray(weeklyDay)) {
+            parsedWeeklyDays = weeklyDay;
+          } else if (
+            typeof weeklyDay === "string" &&
+            weeklyDay.trim()
+          ) {
+            const value = weeklyDay.trim();
+
+            parsedWeeklyDays = value.startsWith("[")
+              ? JSON.parse(value)
+              : [value];
+          }
         } catch {
-          return res.status(400).send({
+          return res.status(400).json({
             success: false,
             message: "Weekly days are not formatted correctly.",
           });
@@ -1483,118 +1499,126 @@ if (!allowedUnitsByForm[medicationForm]?.includes(selectedUnit)) {
           !Array.isArray(parsedWeeklyDays) ||
           parsedWeeklyDays.length === 0 ||
           parsedWeeklyDays.some(
-            (day) => !validWeekdays.includes(day)
+            (day) => !weekdays.includes(day)
           ) ||
-          new Set(parsedWeeklyDays).size !== parsedWeeklyDays.length
+          new Set(parsedWeeklyDays).size !==
+            parsedWeeklyDays.length
         ) {
-          return res.status(400).send({
+          return res.status(400).json({
             success: false,
-            message: "Please select valid, non-duplicate weekly days.",
+            message:
+              "Please select valid, non-duplicate weekly days.",
           });
         }
       } else if (
-        weeklyDay !== undefined &&
-        weeklyDay !== null &&
+        weeklyDay != null &&
         weeklyDay !== "" &&
-        !(Array.isArray(weeklyDay) && weeklyDay.length === 0)
+        !(
+          Array.isArray(weeklyDay) &&
+          weeklyDay.length === 0
+        )
       ) {
-        return res.status(400).send({
+        return res.status(400).json({
           success: false,
-          message: "Weekly days are only allowed for weekly medications.",
+          message:
+            "Weekly days are only allowed for weekly medications.",
         });
       }
 
-
-      // 9. Validate dates
-      const isValidDateString = (value) =>
+      // 11. Validate dates
+      const validDate = (value) =>
         typeof value === "string" &&
         /^\d{4}-\d{2}-\d{2}$/.test(value) &&
         !Number.isNaN(Date.parse(value)) &&
-        new Date(value).toISOString().slice(0, 10) === value;
-
-      if (!isValidDateString(startDate)) {
-        return res.status(400).send({
-          success: false,
-          message: "Please select a valid medication start date.",
-        });
-      }
+        new Date(value).toISOString().slice(0, 10) ===
+          value;
 
       if (
-        endDate !== undefined &&
-        endDate !== null &&
-        endDate !== "" &&
-        !isValidDateString(endDate)
+        !validDate(startDate) ||
+        (endDate && !validDate(endDate))
       ) {
-        return res.status(400).send({
+        return res.status(400).json({
           success: false,
-          message: "Please select a valid medication end date.",
+          message: "Please enter valid medication dates.",
         });
       }
 
-      const parsedStartDate = new Date(startDate);
-      const parsedEndDate = endDate ? new Date(endDate) : null;
-
-      if (
-  Number.isNaN(parsedStartDate.getTime()) ||
-  (parsedEndDate && Number.isNaN(parsedEndDate.getTime()))
-) {
-  return res.status(400).send({
-    success: false,
-    message: "Please enter valid medication start and end dates.",
-  });
-}
-
-      if (parsedEndDate && parsedEndDate < parsedStartDate) {
-        return res.status(400).send({
+      if (endDate && endDate < startDate) {
+        return res.status(400).json({
           success: false,
-          message: "End date cannot be earlier than start date.",
+          message:
+            "End date cannot be earlier than start date.",
         });
       }
 
-      // 10. Create medication for patient
-     const medication = new MedicationModel({
-  userEmail: patientEmail,
-  medicationName:normalizedDatabaseMedicationName,
-  medicationForm,
-  topicalDosage:
-    medicationForm === "Cream/Ointment"
-      ? (topicalDosage || "").trim()
-      : "",
-  dosage: dosage.trim(),
-        frequency: normalizedFrequency,
-        timing: normalizedTiming,
-        timingOffsetMinutes: parsedTimingOffsetMinutes,
+      // 12. Save medication to the selected patient
+      const catalogEntry = matchingMedications[0];
+
+      const medication = new MedicationModel({
+        userEmail: patientEmail,
+        medicationName: cleanName,
+        medicationCatalogId:
+          catalogEntry?.id ||
+          catalogEntry?.registrationNumber ||
+          "",
+        activeIngredient1:
+          catalogEntry?.activeIngredient1 ||
+          catalogEntry?.activeIngredient1Raw ||
+          "",
+        activeIngredient2:
+          catalogEntry?.activeIngredient2 ||
+          catalogEntry?.activeIngredient2Raw ||
+          "",
+        medicationForm,
+        topicalDosage:
+          medicationForm === "Cream/Ointment"
+            ? String(topicalDosage || "").trim()
+            : "",
+        dosage: dosage.trim(),
+        frequency: cleanFrequency,
+        timing: cleanTiming,
+        timingOffsetMinutes: offset,
         reminderTimes: parsedReminderTimes,
-        startDate: parsedStartDate,
+        startDate: new Date(startDate),
         weeklyDay:
-  normalizedFrequency === "Weekly" ? parsedWeeklyDays : [],
-        endDate: parsedEndDate,
+          cleanFrequency === "Weekly"
+            ? parsedWeeklyDays
+            : [],
+        endDate: endDate
+          ? new Date(endDate)
+          : null,
         isActive: true,
         instructions:
           typeof instructions === "string"
             ? instructions.trim()
             : "",
-        prescriptionImage: "",
+        prescriptionImage: req.file
+          ? `/uploads/${req.file.filename}`
+          : "",
       });
 
       await medication.save();
 
-      return res.status(201).send({
+      return res.status(201).json({
         success: true,
         message: "Medication added successfully.",
         medication,
       });
 
     } catch (error) {
-      console.error("Caregiver Add Medication Error:", error);
+      console.error(
+        "Caregiver Add Medication Error:",
+        error
+      );
 
-      return res.status(500).send({
+      return res.status(500).json({
         success: false,
         message: "Unable to add medication.",
       });
     }
   }
 );
+
 
 
 app.post(
@@ -1690,82 +1714,82 @@ app.post(
 
       for (const medication of medications) {
 
-const todayDate = new Date(`${today}T12:00:00Z`);
+        const todayDate = new Date(`${today}T12:00:00Z`);
 
-// Do not automatically schedule as-needed medication
-if (medication.frequency === "As needed") {
-  continue;
-}
+        // Do not automatically schedule as-needed medication
+        if (medication.frequency === "As needed") {
+          continue;
+        }
 
-// Do not schedule medication after its end date
-if (medication.endDate) {
-  const endDateString = new Date(medication.endDate)
-    .toISOString()
-    .split("T")[0];
+        // Do not schedule medication after its end date
+        if (medication.endDate) {
+          const endDateString = new Date(medication.endDate)
+            .toISOString()
+            .split("T")[0];
 
-  if (today > endDateString) {
-    continue;
-  }
-}
+          if (today > endDateString) {
+            continue;
+          }
+        }
 
-const customDateFrequency =
-  /^Every ([1-9]\d*) (days?|weeks?)$/.exec(
-    medication.frequency
-  );
+        const customDateFrequency =
+          /^Every ([1-9]\d*) (days?|weeks?)$/.exec(
+            medication.frequency
+          );
 
-if (customDateFrequency) {
-  const interval = Number(customDateFrequency[1]);
-  const unit = customDateFrequency[2];
+        if (customDateFrequency) {
+          const interval = Number(customDateFrequency[1]);
+          const unit = customDateFrequency[2];
 
-  const intervalDays =
-    unit.startsWith("week")
-      ? interval * 7
-      : interval;
+          const intervalDays =
+            unit.startsWith("week")
+              ? interval * 7
+              : interval;
 
-  const startDay = Date.parse(
-    new Date(medication.startDate)
-      .toISOString()
-      .slice(0, 10) + "T00:00:00Z"
-  );
+          const startDay = Date.parse(
+            new Date(medication.startDate)
+              .toISOString()
+              .slice(0, 10) + "T00:00:00Z"
+          );
 
-  const todayDay = Date.parse(today + "T00:00:00Z");
+          const todayDay = Date.parse(today + "T00:00:00Z");
 
-  const daysSinceStart =
-    Math.round((todayDay - startDay) / 86400000);
+          const daysSinceStart =
+            Math.round((todayDay - startDay) / 86400000);
 
-  if (
-    daysSinceStart < 0 ||
-    daysSinceStart % intervalDays !== 0
-  ) {
-    continue;
-  }
-}
+          if (
+            daysSinceStart < 0 ||
+            daysSinceStart % intervalDays !== 0
+          ) {
+            continue;
+          }
+        }
 
 
- // Weekly medication: schedule on any selected weekday
-if (medication.frequency === "Weekly") {
-  const weekdays = [
-    "Sunday",
-    "Monday",
-    "Tuesday",
-    "Wednesday",
-    "Thursday",
-    "Friday",
-    "Saturday",
-  ];
+        // Weekly medication: schedule on any selected weekday
+        if (medication.frequency === "Weekly") {
+          const weekdays = [
+            "Sunday",
+            "Monday",
+            "Tuesday",
+            "Wednesday",
+            "Thursday",
+            "Friday",
+            "Saturday",
+          ];
 
-  const todayWeekday = weekdays[todayDate.getUTCDay()];
+          const todayWeekday = weekdays[todayDate.getUTCDay()];
 
-  const selectedDays = Array.isArray(medication.weeklyDay)
-    ? medication.weeklyDay
-    : medication.weeklyDay
-      ? [medication.weeklyDay]
-      : [];
+          const selectedDays = Array.isArray(medication.weeklyDay)
+            ? medication.weeklyDay
+            : medication.weeklyDay
+              ? [medication.weeklyDay]
+              : [];
 
-  if (!selectedDays.includes(todayWeekday)) {
-    continue;
-  }
-}
+          if (!selectedDays.includes(todayWeekday)) {
+            continue;
+          }
+        }
 
 
         let scheduledTimes = [
@@ -1777,10 +1801,10 @@ if (medication.frequency === "Weekly") {
 
         // Wake-time reminder
         if (
-  medication.timing === "At Wake Time" &&
-  dailyRoutine.wakeTime &&
-  medication.reminderTimes?.length === 1
-) {
+          medication.timing === "At Wake Time" &&
+          dailyRoutine.wakeTime &&
+          medication.reminderTimes?.length === 1
+        ) {
           if (
             scheduledTimes.length > 0
           ) {
@@ -1873,11 +1897,11 @@ app.get(
       const { email } = req.params;
 
       const today = new Intl.DateTimeFormat("en-CA", {
-  timeZone: "Asia/Muscat",
-  year: "numeric",
-  month: "2-digit",
-  day: "2-digit",
-}).format(new Date());
+        timeZone: "Asia/Muscat",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+      }).format(new Date());
 
       const doses =
         await DoseRecordModel.find({
@@ -2191,16 +2215,33 @@ app.get(
           0
         );
 
-      const formatDate = (date) =>
-        date
-          .toISOString()
-          .split("T")[0];
+
+      const formatDate = (date) => {
+        const year = date.getFullYear();
+
+        const month = String(
+          date.getMonth() + 1
+        ).padStart(2, "0");
+
+        const day = String(
+          date.getDate()
+        ).padStart(2, "0");
+
+        return `${year}-${month}-${day}`;
+      };
+
 
       const startDateString =
         formatDate(startDate);
 
       const endDateString =
         formatDate(endDate);
+
+      console.log("MONTHLY REPORT DATE CHECK:", {
+        startDateString,
+        endDateString,
+      });
+
 
       const doses =
         await DoseRecordModel.find({
@@ -2429,28 +2470,28 @@ app.get(
         patientEmail,
       } = req.params;
 
-const currentUser = await UserModel.findOne({
-  email: caregiverEmail,
-  role: "caregiver",
-}).select("email role");
+      const currentUser = await UserModel.findOne({
+        email: caregiverEmail,
+        role: "caregiver",
+      }).select("email role");
 
-if (
-  !currentUser ||
-  currentUser.role !== "caregiver" ||
-  currentUser.email.toLowerCase() !== caregiverEmail.toLowerCase()
-) {
-  return res.status(403).json({
-    success: false,
-    message: "Unauthorized report access.",
-  });
-}
+      if (
+        !currentUser ||
+        currentUser.role !== "caregiver" ||
+        currentUser.email.toLowerCase() !== caregiverEmail.toLowerCase()
+      ) {
+        return res.status(403).json({
+          success: false,
+          message: "Unauthorized report access.",
+        });
+      }
 
-     const acceptedLink =
-  await CaregiverLinkModel.findOne({
-    caregiverEmail: currentUser.email,
-    patientEmail,
-    status: "Accepted",
-  });
+      const acceptedLink =
+        await CaregiverLinkModel.findOne({
+          caregiverEmail: currentUser.email,
+          patientEmail,
+          status: "Accepted",
+        });
 
       if (!acceptedLink) {
         return res.status(403).send({
@@ -2558,27 +2599,27 @@ app.get(
         patientEmail,
       } = req.params;
 
-     const currentUser = await UserModel.findOne({
-  email: caregiverEmail.trim().toLowerCase(),
-  role: "caregiver",
-}).select("email role");
-if (
-  !currentUser ||
-  currentUser.role !== "caregiver" ||
-  currentUser.email.toLowerCase() !== caregiverEmail.toLowerCase()
-) {
-  return res.status(403).json({
-    success: false,
-    message: "Unauthorized report access.",
-  });
-}
+      const currentUser = await UserModel.findOne({
+        email: caregiverEmail.trim().toLowerCase(),
+        role: "caregiver",
+      }).select("email role");
+      if (
+        !currentUser ||
+        currentUser.role !== "caregiver" ||
+        currentUser.email.toLowerCase() !== caregiverEmail.toLowerCase()
+      ) {
+        return res.status(403).json({
+          success: false,
+          message: "Unauthorized report access.",
+        });
+      }
 
-     const acceptedLink =
-  await CaregiverLinkModel.findOne({
-    caregiverEmail: currentUser.email,
-    patientEmail,
-    status: "Accepted",
-  });
+      const acceptedLink =
+        await CaregiverLinkModel.findOne({
+          caregiverEmail: currentUser.email,
+          patientEmail,
+          status: "Accepted",
+        });
 
       if (!acceptedLink) {
         return res.status(403).send({
@@ -2827,28 +2868,28 @@ app.get(
         patientEmail,
       } = req.params;
 
-  const currentUser = await UserModel.findOne({
-  email: caregiverEmail.trim().toLowerCase(),
-  role: "caregiver",
-}).select("email role");
+      const currentUser = await UserModel.findOne({
+        email: caregiverEmail.trim().toLowerCase(),
+        role: "caregiver",
+      }).select("email role");
 
-if (
-  !currentUser ||
-  currentUser.role !== "caregiver" ||
-  currentUser.email.toLowerCase() !== caregiverEmail.toLowerCase()
-) {
-  return res.status(403).json({
-    success: false,
-    message: "Unauthorized report access.",
-  });
-}
+      if (
+        !currentUser ||
+        currentUser.role !== "caregiver" ||
+        currentUser.email.toLowerCase() !== caregiverEmail.toLowerCase()
+      ) {
+        return res.status(403).json({
+          success: false,
+          message: "Unauthorized report access.",
+        });
+      }
 
       const acceptedLink =
-  await CaregiverLinkModel.findOne({
-    caregiverEmail: currentUser.email,
-    patientEmail,
-    status: "Accepted",
-  });
+        await CaregiverLinkModel.findOne({
+          caregiverEmail: currentUser.email,
+          patientEmail,
+          status: "Accepted",
+        });
 
       if (!acceptedLink) {
         return res.status(403).send({
@@ -3123,13 +3164,13 @@ app.get(
         req.params.userEmail
       );
 
-      
-const today = new Intl.DateTimeFormat("en-CA", {
-  timeZone: "Asia/Muscat",
-  year: "numeric",
-  month: "2-digit",
-  day: "2-digit",
-}).format(new Date());
+
+      const today = new Intl.DateTimeFormat("en-CA", {
+        timeZone: "Asia/Muscat",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+      }).format(new Date());
 
 
       // Get today's doses
@@ -3266,59 +3307,55 @@ app.put("/patient/dose/:doseId/snooze", async (req, res) => {
       });
     }
 
-   
-const MAX_SNOOZES = 2;
-const SNOOZE_MINUTES = 5;
-const MISSED_AFTER_MINUTES = 15;
 
-if ((dose.snoozeCount || 0) >= MAX_SNOOZES) {
-  return res.status(400).send({
-    success: false,
-    message: "Maximum of 2 snoozes reached.",
-  });
-}
+    const MAX_SNOOZES = 2;
+    const SNOOZE_MINUTES = 5;
+    const MISSED_AFTER_MINUTES = 15;
 
-const now = new Date();
+    if ((dose.snoozeCount || 0) >= MAX_SNOOZES) {
+      return res.status(400).send({
+        success: false,
+        message: "Maximum of 2 snoozes reached.",
+      });
+    }
 
-const [year, month, day] = dose.scheduledDate
-  .split("-")
-  .map(Number);
+    const now = new Date();
 
-const [hours, minutes] = dose.scheduledTime
-  .split(":")
-  .map(Number);
+    const [year, month, day] = dose.scheduledDate
+      .split("-")
+      .map(Number);
 
-// Scheduled time in the patient's local timezone
-const scheduledAt = new Date(
-  year,
-  month - 1,
-  day,
-  hours,
-  minutes
+    const [hours, minutes] = dose.scheduledTime
+      .split(":")
+      .map(Number);
+
+    // Scheduled time in the patient's local timezone
+    const scheduledAt = new Date(
+  `${dose.scheduledDate}T${dose.scheduledTime}:00+04:00`
 );
 
-const missedDeadline = new Date(
-  scheduledAt.getTime() +
-    MISSED_AFTER_MINUTES * 60 * 1000
-);
+    const missedDeadline = new Date(
+      scheduledAt.getTime() +
+      MISSED_AFTER_MINUTES * 60 * 1000
+    );
 
-const snoozedUntil = new Date(
-  now.getTime() + SNOOZE_MINUTES * 60 * 1000
-);
+    const snoozedUntil = new Date(
+      now.getTime() + SNOOZE_MINUTES * 60 * 1000
+    );
 
-// Never allow Snooze beyond the 15-minute deadline
-if (snoozedUntil >= missedDeadline) {
-  return res.status(400).send({
-    success: false,
-    message:
-      "Cannot snooze beyond the medication reminder window.",
-  });
-}
+    // Never allow Snooze beyond the 15-minute deadline
+    if (snoozedUntil >= missedDeadline) {
+      return res.status(400).send({
+        success: false,
+        message:
+          "Cannot snooze beyond the medication reminder window.",
+      });
+    }
 
-dose.snoozeCount = (dose.snoozeCount || 0) + 1;
-dose.snoozedUntil = snoozedUntil;
+    dose.snoozeCount = (dose.snoozeCount || 0) + 1;
+    dose.snoozedUntil = snoozedUntil;
 
-await dose.save();
+    await dose.save();
 
 
     return res.send({
@@ -3371,11 +3408,11 @@ app.get(
         timeToMinutes(time);
 
       const upcomingDoses =
-  await DoseRecordModel.find({
-    userEmail,
-    scheduledDate: { $lte: date },
-    status: "Upcoming",
-  });
+        await DoseRecordModel.find({
+          userEmail,
+          scheduledDate: { $lte: date },
+          status: "Upcoming",
+        });
 
       for (const dose of upcomingDoses) {
         const scheduledMinutes =
@@ -3384,23 +3421,23 @@ app.get(
           );
 
         const minutesLate =
-  dose.scheduledDate < date
-    ? 15
-    : currentMinutes - scheduledMinutes;
+          dose.scheduledDate < date
+            ? 15
+            : currentMinutes - scheduledMinutes;
 
 
-const now = new Date();
+        const now = new Date();
 
-const snoozeIsActive =
-  dose.snoozedUntil &&
-  new Date(dose.snoozedUntil).getTime() > now.getTime();
+        const snoozeIsActive =
+          dose.snoozedUntil &&
+          new Date(dose.snoozedUntil).getTime() > now.getTime();
 
-if (minutesLate >= 15 && !snoozeIsActive) {
-  dose.status = "Missed";
-  dose.snoozedUntil = null;
+        if (minutesLate >= 15 && !snoozeIsActive) {
+          dose.status = "Missed";
+          dose.snoozedUntil = null;
 
-  await dose.save();
-}
+          await dose.save();
+        }
 
       }
 
@@ -3421,20 +3458,12 @@ if (minutesLate >= 15 && !snoozeIsActive) {
         });
 
 
-const notifications =
-  todaysDoses.filter((dose) => {
-    // Missed doses still appear as notifications.
-    if (dose.status === "Missed") {
-      return true;
-    }
-
-    // Hide an Upcoming dose while Snooze is active.
-    if (
-      dose.snoozedUntil &&
-      new Date(dose.snoozedUntil).getTime() > Date.now()
-    ) {
-      return false;
-    }
+      const notifications =
+        todaysDoses.filter((dose) => {
+          // Missed doses still appear as notifications.
+          if (dose.status === "Missed") {
+            return true;
+          }
 
 
           const scheduledMinutes =
@@ -3446,10 +3475,7 @@ const notifications =
             currentMinutes -
             scheduledMinutes;
 
-          return (
-            minutesLate >= 0 &&
-            minutesLate < 15
-          );
+        return minutesLate >= 0 && minutesLate < 15;
         });
 
       return res.send({
@@ -3829,27 +3855,27 @@ app.get(
         caregiverEmail,
       } = req.params;
 
-  const currentUser = await UserModel.findOne({
-  email: caregiverEmail.trim().toLowerCase(),
-  role: "caregiver",
-}).select("email role");
+      const currentUser = await UserModel.findOne({
+        email: caregiverEmail.trim().toLowerCase(),
+        role: "caregiver",
+      }).select("email role");
 
-if (
-  !currentUser ||
-  currentUser.role !== "caregiver" ||
-  currentUser.email.toLowerCase() !== caregiverEmail.toLowerCase()
-) {
-  return res.status(403).json({
-    success: false,
-    message: "Unauthorized dashboard access.",
-  });
-}
+      if (
+        !currentUser ||
+        currentUser.role !== "caregiver" ||
+        currentUser.email.toLowerCase() !== caregiverEmail.toLowerCase()
+      ) {
+        return res.status(403).json({
+          success: false,
+          message: "Unauthorized dashboard access.",
+        });
+      }
 
-     const acceptedLinks =
-  await CaregiverLinkModel.find({
-    caregiverEmail: currentUser.email,
-    status: "Accepted",
-  });
+      const acceptedLinks =
+        await CaregiverLinkModel.find({
+          caregiverEmail: currentUser.email,
+          status: "Accepted",
+        });
 
       const patientEmails =
         acceptedLinks.map(
@@ -3963,11 +3989,11 @@ if (
 app.post("/register", async (req, res) => {
   try {
     if (!["patient", "caregiver"].includes(req.body.role)) {
-  return res.status(403).json({
-    success: false,
-    message: "Only patient and caregiver registration is allowed.",
-  });
-}
+      return res.status(403).json({
+        success: false,
+        message: "Only patient and caregiver registration is allowed.",
+      });
+    }
     const {
       name,
       email,
@@ -4190,16 +4216,16 @@ app.post("/login", async (req, res) => {
 
 
 
-const safeUser = user.toObject();
+    const safeUser = user.toObject();
 
-delete safeUser.password;
-delete safeUser.emailVerificationToken;
-delete safeUser.emailVerificationExpires;
+    delete safeUser.password;
+    delete safeUser.emailVerificationToken;
+    delete safeUser.emailVerificationExpires;
 
-res.send({
-  user: safeUser,
-  message: "success",
-});
+    res.send({
+      user: safeUser,
+      message: "success",
+    });
   } catch (error) {
     console.log("Login Error:", error);
 
@@ -4439,22 +4465,22 @@ app.delete("/caregiver-links/disconnect", async (req, res) => {
     const caregiver = caregiverEmail.trim().toLowerCase();
     const patient = patientEmail.trim().toLowerCase();
 
-const caregiverAccount = await UserModel.findOne({
-  email: caregiver,
-  role: "caregiver",
-}).select("_id");
+    const caregiverAccount = await UserModel.findOne({
+      email: caregiver,
+      role: "caregiver",
+    }).select("_id");
 
-const patientAccount = await UserModel.findOne({
-  email: patient,
-  role: "patient",
-}).select("_id");
+    const patientAccount = await UserModel.findOne({
+      email: patient,
+      role: "patient",
+    }).select("_id");
 
-if (!caregiverAccount || !patientAccount) {
-  return res.status(404).json({
-    success: false,
-    message: "Patient or caregiver account not found.",
-  });
-}
+    if (!caregiverAccount || !patientAccount) {
+      return res.status(404).json({
+        success: false,
+        message: "Patient or caregiver account not found.",
+      });
+    }
 
     const deletedLink = await CaregiverLinkModel.findOneAndDelete({
       caregiverEmail: caregiver,
@@ -5024,6 +5050,7 @@ app.put(
   }
 );
 
+
 app.put("/patient/caregiver-request/:requestId", async (req, res) => {
   try {
     const { requestId } = req.params;
@@ -5036,9 +5063,20 @@ app.put("/patient/caregiver-request/:requestId", async (req, res) => {
       });
     }
 
+    if (
+      !mongoose.isValidObjectId(requestId) ||
+      typeof patientEmail !== "string" ||
+      !patientEmail.trim()
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid request information.",
+      });
+    }
+
     const request = await CaregiverLinkModel.findOne({
       _id: requestId,
-      patientEmail,
+      patientEmail: patientEmail.trim().toLowerCase(),
       status: "Pending",
     });
 
@@ -5049,10 +5087,24 @@ app.put("/patient/caregiver-request/:requestId", async (req, res) => {
       });
     }
 
+    if (status === "Accepted") {
+      const validation = await checkCaregiverPatientLimit(
+        request.caregiverEmail,
+        request.patientEmail
+      );
+
+      if (!validation.allowed) {
+        return res.status(409).json({
+          success: false,
+          message: validation.message,
+        });
+      }
+    }
+
     request.status = status;
     await request.save();
 
-    res.json({
+    return res.json({
       success: true,
       message:
         status === "Accepted"
@@ -5063,12 +5115,13 @@ app.put("/patient/caregiver-request/:requestId", async (req, res) => {
   } catch (error) {
     console.error("Update caregiver request error:", error);
 
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: "Unable to update caregiver request.",
     });
   }
 });
+
 
 app.get(
   "/caregiver/patient-preview/:patientLinkCode",
@@ -5529,6 +5582,43 @@ app.put("/patient/remove-caregiver", async (req, res) => {
   }
 });
 
+
+const MAX_PATIENTS_PER_CAREGIVER = 2;
+
+const checkCaregiverPatientLimit = async (
+  caregiverEmail,
+  patientEmail
+) => {
+  const normalizedCaregiverEmail = caregiverEmail.trim().toLowerCase();
+  const normalizedPatientEmail = patientEmail.trim().toLowerCase();
+
+  const existingPatientCaregiver = await CaregiverLinkModel.findOne({
+    patientEmail: normalizedPatientEmail,
+    status: "Accepted",
+  });
+
+  if (existingPatientCaregiver) {
+    return {
+      allowed: false,
+      message: "This patient already has an active caregiver.",
+    };
+  }
+
+  const activePatientCount = await CaregiverLinkModel.countDocuments({
+    caregiverEmail: normalizedCaregiverEmail,
+    status: "Accepted",
+  });
+
+  if (activePatientCount >= MAX_PATIENTS_PER_CAREGIVER) {
+    return {
+      allowed: false,
+      message: "This caregiver has reached the maximum of 2 patients.",
+    };
+  }
+
+  return { allowed: true };
+};
+
 app.get(
   "/caregiver/patient-requests/:caregiverEmail",
   async (req, res) => {
@@ -5617,74 +5707,82 @@ app.get(
   }
 );
 
+
 app.put(
   "/caregiver/patient-request/:requestId",
   async (req, res) => {
     try {
-      const { requestId } =
-        req.params;
+      const { requestId } = req.params;
+      const { caregiverEmail, status } = req.body;
 
-      const {
-        caregiverEmail,
-        status,
-      } = req.body;
-
-      if (
-        !["Accepted", "Rejected"].includes(
-          status
-        )
-      ) {
-        return res.status(400).send({
+      if (!["Accepted", "Rejected"].includes(status)) {
+        return res.status(400).json({
           success: false,
-          message:
-            "Invalid request status.",
+          message: "Invalid request status.",
         });
       }
 
-      const request =
-        await CaregiverLinkModel.findOne({
-          _id: requestId,
-          caregiverEmail,
-          status: "Pending",
-          requestedBy: "patient",
+      if (
+        !mongoose.isValidObjectId(requestId) ||
+        typeof caregiverEmail !== "string" ||
+        !caregiverEmail.trim()
+      ) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid request information.",
         });
+      }
+
+      const request = await CaregiverLinkModel.findOne({
+        _id: requestId,
+        caregiverEmail: caregiverEmail.trim().toLowerCase(),
+        status: "Pending",
+        requestedBy: "patient",
+      });
 
       if (!request) {
-        return res.status(404).send({
+        return res.status(404).json({
           success: false,
-          message:
-            "Patient request not found.",
+          message: "Patient request not found.",
         });
+      }
+
+      if (status === "Accepted") {
+        const validation = await checkCaregiverPatientLimit(
+          request.caregiverEmail,
+          request.patientEmail
+        );
+
+        if (!validation.allowed) {
+          return res.status(409).json({
+            success: false,
+            message: validation.message,
+          });
+        }
       }
 
       request.status = status;
-
       await request.save();
 
-      return res.send({
+      return res.json({
         success: true,
-
         message:
           status === "Accepted"
             ? "Patient request accepted."
             : "Patient request rejected.",
-
         request,
       });
     } catch (error) {
-      console.error(
-        "Update patient request error:",
-        error
-      );
+      console.error("Update patient request error:", error);
 
-      return res.status(500).send({
+      return res.status(500).json({
         success: false,
-        message:
-          "Unable to update patient request.",
+        message: "Unable to update patient request.",
       });
     }
   }
 );
+
 
 
 app.get(
@@ -5935,112 +6033,112 @@ const validateMedicationSchedule = (frequency, reminderTimes) => {
 
   const customMatch = /^Every ([1-9]\d*) (hour|hours|day|days|week|weeks)$/.exec(frequency);
 
-if (frequency === "Other") {
-  return {
-    valid: false,
-    message: "Please specify a custom frequency interval.",
-  };
-}
-
-if (customMatch) {
-  const interval = Number(customMatch[1]);
-  const unit = customMatch[2];
-
-  if (
-    !Number.isSafeInteger(interval) ||
-    (interval === 1 && unit.endsWith("s")) ||
-    (interval !== 1 && !unit.endsWith("s"))
-  ) {
+  if (frequency === "Other") {
     return {
       valid: false,
-      message: "Please enter a valid custom frequency.",
+      message: "Please specify a custom frequency interval.",
     };
   }
 
-  if (unit === "hour" || unit === "hours") {
-  if (interval > 24 || 24 % interval !== 0) {
-    return {
-      valid: false,
-      message: "Hourly interval must divide evenly into 24 hours.",
-    };
-  }
+  if (customMatch) {
+    const interval = Number(customMatch[1]);
+    const unit = customMatch[2];
 
-  const requiredCount = 24 / interval;
-
-  if (
-    !Array.isArray(reminderTimes) ||
-    reminderTimes.length !== requiredCount
-  ) {
-    return {
-      valid: false,
-      message: `This frequency requires ${requiredCount} reminder times.`,
-    };
-  }
-
-  const minutes = reminderTimes.map((time) => {
     if (
-      typeof time !== "string" ||
-      !/^([01]\d|2[0-3]):[0-5]\d$/.test(time)
+      !Number.isSafeInteger(interval) ||
+      (interval === 1 && unit.endsWith("s")) ||
+      (interval !== 1 && !unit.endsWith("s"))
     ) {
-      return NaN;
-    }
-
-    const [hours, mins] = time.split(":").map(Number);
-    return hours * 60 + mins;
-  });
-
-  if (minutes.some((minute) => !Number.isFinite(minute))) {
-    return {
-      valid: false,
-      message: "Please enter valid reminder times.",
-    };
-  }
-
-  const sorted = [...minutes].sort((a, b) => a - b);
-  const expected = interval * 60;
-
-  for (let i = 0; i < sorted.length; i++) {
-    const current = sorted[i];
-    const next = sorted[(i + 1) % sorted.length];
-
-    if ((next - current + 1440) % 1440 !== expected) {
       return {
         valid: false,
-        message: `Reminder times must be exactly ${interval} hours apart.`,
+        message: "Please enter a valid custom frequency.",
       };
     }
-  }
 
-  return { valid: true };
-}
+    if (unit === "hour" || unit === "hours") {
+      if (interval > 24 || 24 % interval !== 0) {
+        return {
+          valid: false,
+          message: "Hourly interval must divide evenly into 24 hours.",
+        };
+      }
 
-if (
-  unit === "day" ||
-  unit === "days" ||
-  unit === "week" ||
-  unit === "weeks"
-) {
-  if (
-    !Array.isArray(reminderTimes) ||
-    reminderTimes.length !== 1 ||
-    typeof reminderTimes[0] !== "string" ||
-    !/^([01]\d|2[0-3]):[0-5]\d$/.test(reminderTimes[0])
-  ) {
+      const requiredCount = 24 / interval;
+
+      if (
+        !Array.isArray(reminderTimes) ||
+        reminderTimes.length !== requiredCount
+      ) {
+        return {
+          valid: false,
+          message: `This frequency requires ${requiredCount} reminder times.`,
+        };
+      }
+
+      const minutes = reminderTimes.map((time) => {
+        if (
+          typeof time !== "string" ||
+          !/^([01]\d|2[0-3]):[0-5]\d$/.test(time)
+        ) {
+          return NaN;
+        }
+
+        const [hours, mins] = time.split(":").map(Number);
+        return hours * 60 + mins;
+      });
+
+      if (minutes.some((minute) => !Number.isFinite(minute))) {
+        return {
+          valid: false,
+          message: "Please enter valid reminder times.",
+        };
+      }
+
+      const sorted = [...minutes].sort((a, b) => a - b);
+      const expected = interval * 60;
+
+      for (let i = 0; i < sorted.length; i++) {
+        const current = sorted[i];
+        const next = sorted[(i + 1) % sorted.length];
+
+        if ((next - current + 1440) % 1440 !== expected) {
+          return {
+            valid: false,
+            message: `Reminder times must be exactly ${interval} hours apart.`,
+          };
+        }
+      }
+
+      return { valid: true };
+    }
+
+    if (
+      unit === "day" ||
+      unit === "days" ||
+      unit === "week" ||
+      unit === "weeks"
+    ) {
+      if (
+        !Array.isArray(reminderTimes) ||
+        reminderTimes.length !== 1 ||
+        typeof reminderTimes[0] !== "string" ||
+        !/^([01]\d|2[0-3]):[0-5]\d$/.test(reminderTimes[0])
+      ) {
+        return {
+          valid: false,
+          message:
+            "Custom daily and weekly frequencies require exactly one valid reminder time.",
+        };
+      }
+
+      return { valid: true };
+    }
+
     return {
       valid: false,
-      message:
-        "Custom daily and weekly frequencies require exactly one valid reminder time.",
+      message: "Invalid custom frequency.",
     };
   }
-
-  return { valid: true };
-}
-
-return {
-  valid: false,
-  message: "Invalid custom frequency.",
-};
-}
 
   if (!(frequency in requiredCounts)) {
     return {
@@ -6108,17 +6206,25 @@ return {
   return { valid: true };
 };
 
+const normalizeMedicationNameForLookup = (value) =>
+  String(value || "")
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, " ")
+    .replace(/\s+/g, " ");
+
 // Add medication
 app.post("/medications",
   upload.single("prescription"),
   async (req, res) => {
-    console.log("PATIENT MEDICATION POST ROUTE REACHED");
     try {
       const {
         userEmail,
         medicationName,
-         medicationForm,
-         topicalDosage,
+        medicationCatalogId,
+        confirmSimilarMedication,
+        medicationForm,
+        topicalDosage,
         dosage,
         frequency,
         timing,
@@ -6130,6 +6236,26 @@ app.post("/medications",
         isActive,
         instructions,
       } = req.body;
+
+      // Find the selected medication in the Oman catalog
+      const catalogId = String(
+        medicationCatalogId || ""
+      ).trim();
+
+      const catalogMedication = catalogId
+        ? omanMedications.find(
+          (medication) =>
+            String(medication.id) === catalogId
+        )
+        : null;
+
+      if (catalogId && !catalogMedication) {
+        return res.status(400).send({
+          success: false,
+          message:
+            "The selected medication was not found in the Oman medication database. Please select it again.",
+        });
+      }
 
       if (
         !userEmail ||
@@ -6148,57 +6274,57 @@ app.post("/medications",
       }
 
 
-      
-const patientMedicationName = String(medicationName)
-  .trim()
-  .toLowerCase();
 
-const patientMatchingMedications = omanMedications.filter(
-  (medication) =>
-    String(medication.tradeName || "").trim().toLowerCase() ===
-    patientMedicationName
-);
+      const patientMedicationName = String(medicationName)
+        .trim()
+        .toLowerCase();
 
-const patientFormKeywords = {
-  Tablet: ["tablet"],
-  Capsule: ["capsule"],
-  Injection: ["injection", "injectable"],
-  "Cream/Ointment": ["cream", "ointment"],
-  Inhaler: ["inhaler"],
-  "Eye Drops": ["ophthalmic", "eye drop"],
-  "Ear Drops": ["otic", "ear drop"],
-  "Liquid/Syrup": ["syrup", "oral liquid", "oral solution"],
-  Patch: ["patch"],
-  Suppository: ["suppository"],
-};
+      const patientMatchingMedications = omanMedications.filter(
+        (medication) =>
+          String(medication.tradeName || "").trim().toLowerCase() ===
+          patientMedicationName
+      );
 
-const patientRecognizedForms = new Set();
+      const patientFormKeywords = {
+        Tablet: ["tablet"],
+        Capsule: ["capsule"],
+        Injection: ["injection", "injectable"],
+        "Cream/Ointment": ["cream", "ointment"],
+        Inhaler: ["inhaler"],
+        "Eye Drops": ["ophthalmic", "eye drop"],
+        "Ear Drops": ["otic", "ear drop"],
+        "Liquid/Syrup": ["syrup", "oral liquid", "oral solution"],
+        Patch: ["patch"],
+        Suppository: ["suppository"],
+      };
 
-for (const medication of patientMatchingMedications) {
-  const rawForm = String(medication.dosageForm || "")
-    .trim()
-    .toLowerCase();
+      const patientRecognizedForms = new Set();
 
-  for (const [form, keywords] of Object.entries(patientFormKeywords)) {
-    if (keywords.some((keyword) => rawForm.includes(keyword))) {
-      patientRecognizedForms.add(form);
-    }
-  }
-}
+      for (const medication of patientMatchingMedications) {
+        const rawForm = String(medication.dosageForm || "")
+          .trim()
+          .toLowerCase();
 
-if (
-  patientRecognizedForms.size > 0 &&
-  !patientRecognizedForms.has(medicationForm)
-) {
-  return res.status(400).send({
-    success: false,
-    message:
-      "Invalid medication form. Please select a dosage form listed for this medication in the Oman medication database.",
-  });
-}
+        for (const [form, keywords] of Object.entries(patientFormKeywords)) {
+          if (keywords.some((keyword) => rawForm.includes(keyword))) {
+            patientRecognizedForms.add(form);
+          }
+        }
+      }
+
+      if (
+        patientRecognizedForms.size > 0 &&
+        !patientRecognizedForms.has(medicationForm)
+      ) {
+        return res.status(400).send({
+          success: false,
+          message:
+            "Invalid medication form. Please select a dosage form listed for this medication in the Oman medication database.",
+        });
+      }
 
       const validDosageUnits = [
-  "mg", "g", "mcg", "ml",
+  "mg", "g", "mcg", "ml", "IU",
   "tablet", "tablets",
   "capsule", "capsules",
   "drop", "drops",
@@ -6206,33 +6332,33 @@ if (
   "puff", "puffs",
   "patch", "patches",
   "application", "applications",
-  "suppository", "suppositories"
+  "suppository", "suppositories",
 ];
 
-const medicationDosageUnits = {
-  Tablet: ["tablet", "tablets", "mg", "mcg"],
-  Capsule: ["capsule", "capsules", "mg", "mcg"],
-  Injection: ["units", "ml", "mg", "mcg"],
-  "Cream/Ointment": ["g", "mg", "application", "applications"],
-  Inhaler: ["puff", "puffs"],
-  "Eye Drops": ["drop", "drops"],
-  "Ear Drops": ["drop", "drops"],
-  "Liquid/Syrup": ["ml", "mg"],
-  Patch: ["patch", "patches"],
-  Suppository: ["suppository", "suppositories"],
-  Other: validDosageUnits,
-};
+      const medicationDosageUnits = {
+        Tablet: ["tablet", "tablets", "mg", "mcg"],
+        Capsule: ["capsule", "capsules", "mg", "mcg"],
+        Injection: ["units", "ml", "mg", "mcg"],
+        "Cream/Ointment": ["g", "mg", "application", "applications"],
+        Inhaler: ["puff", "puffs"],
+        "Eye Drops": ["drop", "drops"],
+        "Ear Drops": ["drop", "drops"],
+        "Liquid/Syrup": ["ml", "mg"],
+        Patch: ["patch", "patches"],
+        Suppository: ["suppository", "suppositories"],
+        Other: validDosageUnits,
+      };
 
-if (!Object.hasOwn(medicationDosageUnits, medicationForm)) {
-  return res.status(400).send({
-    success: false,
-    message: "Please select a valid medication form.",
-  });
-}
+      if (!Object.hasOwn(medicationDosageUnits, medicationForm)) {
+        return res.status(400).send({
+          success: false,
+          message: "Please select a valid medication form.",
+        });
+      }
 
       const dosageMatch = String(dosage || "")
-  .trim()
-  .match(/^(\d+(?:\.\d+)?)\s+([a-zA-Z]+)$/);
+        .trim()
+        .match(/^(\d+(?:\.\d+)?)\s+([a-zA-Z]+)$/);
 
       if (!dosageMatch) {
         return res.status(400).send({
@@ -6245,11 +6371,11 @@ if (!Object.hasOwn(medicationDosageUnits, medicationForm)) {
       const dosageUnit = dosageMatch[2];
 
       if (!medicationDosageUnits[medicationForm].includes(dosageUnit)) {
-  return res.status(400).send({
-    success: false,
-    message: "Dosage unit is not valid for the selected medication form.",
-  });
-}
+        return res.status(400).send({
+          success: false,
+          message: "Dosage unit is not valid for the selected medication form.",
+        });
+      }
 
       if (
         !Number.isFinite(dosageAmount) ||
@@ -6373,10 +6499,82 @@ if (!Object.hasOwn(medicationDosageUnits, medicationForm)) {
         });
       }
 
+      const patientMedications = await MedicationModel.find({
+        userEmail: {
+          $regex: `^${String(userEmail).trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`,
+          $options: "i",
+        },
+      });
+
+      const exactDuplicate = patientMedications.find(
+        (existingMedication) =>
+          String(existingMedication.medicationName || "")
+            .trim()
+            .toLowerCase() ===
+          String(medicationName || "")
+            .trim()
+            .toLowerCase()
+      );
+
+      if (exactDuplicate) {
+        return res.status(409).json({
+          success: false,
+          message:
+            "This medication is already in your medication list. Please edit the existing medication instead of adding it again.",
+        });
+      }
+
+      // Compare the selected catalog medication with existing medications.
+      // Do not block or warn yet.
+      const ingredientMatches = catalogMedication
+        ? patientMedications
+          .map((existingMedication) => ({
+            medicationName: existingMedication.medicationName,
+            sharedIngredients: findSharedIngredients(
+              catalogMedication,
+              existingMedication
+            ),
+          }))
+          .filter(
+            (result) => result.sharedIngredients.length > 0
+          )
+        : [];
+
+      const similarNameMatches = patientMedications
+        .filter((existingMedication) => {
+          const existingName = normalizeMedicationName(
+            existingMedication.medicationName
+          );
+
+          const newName = normalizeMedicationName(medicationName);
+
+          if (existingName.length < 5 || newName.length < 5) {
+            return false;
+          }
+
+          const distance = medicationNameDistance(
+            existingName,
+            newName
+          );
+
+          const maxDistance = Math.max(
+            2,
+            Math.floor(Math.max(existingName.length, newName.length) * 0.3)
+          );
+
+          return distance > 0 && distance <= maxDistance;
+        })
+        .map((existingMedication) => ({
+          medicationName: existingMedication.medicationName,
+          sharedIngredients: [],
+        }));
+
+      // Allow the patient to confirm and continue.
+
 
       const normalizedMedicationName = medicationName.trim();
 
-      const existingMedication = await MedicationModel.findOne({
+      const existingMedications = await MedicationModel.find({
         userEmail: {
           $regex: `^${userEmail.trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`,
           $options: "i",
@@ -6387,7 +6585,15 @@ if (!Object.hasOwn(medicationDosageUnits, medicationForm)) {
         },
       });
 
-      if (existingMedication) {
+      if (
+        existingMedications.some(
+          (med) =>
+            med.dosage?.trim().toLowerCase() ===
+            dosage?.trim().toLowerCase() &&
+            med.medicationForm?.trim().toLowerCase() ===
+            medicationForm?.trim().toLowerCase()
+        )
+      ) {
         return res.status(409).send({
           success: false,
           message:
@@ -6395,103 +6601,155 @@ if (!Object.hasOwn(medicationDosageUnits, medicationForm)) {
         });
       }
 
+      const hasIngredientWarning = ingredientMatches.length > 0;
+      const hasSimilarNameWarning = similarNameMatches.length > 0;
+
+      if (
+        (hasIngredientWarning || hasSimilarNameWarning) &&
+        String(confirmSimilarMedication) !== "true"
+      ) {
+        return res.status(409).json({
+          success: false,
+          requiresConfirmation: true,
+          warningType:
+            hasIngredientWarning && hasSimilarNameWarning
+              ? "MULTIPLE_WARNINGS"
+              : hasIngredientWarning
+                ? "DUPLICATE_INGREDIENT"
+                : "SIMILAR_NAME",
+          message:
+            hasIngredientWarning && hasSimilarNameWarning
+              ? "This medication may share an active ingredient with an existing medication and has a similar name. Please review both warnings before continuing."
+              : hasIngredientWarning
+                ? "This medication may contain an active ingredient already present in your medication list. Please review before continuing."
+                : "This medication has a name similar to an existing medication. Please verify that you selected the correct medication.",
+          addingMedication: {
+  medicationName: medicationName.trim(),
+  strength: catalogMedication?.medicationStrength || "",
+},
+
+
+matches: [
+  ...ingredientMatches,
+  ...similarNameMatches,
+].reduce((unique, match) => {
+  const existing = unique.find(
+    (item) => item.medicationName === match.medicationName
+  );
+
+  if (existing) {
+    existing.sharedIngredients = [
+      ...new Set([
+        ...(existing.sharedIngredients || []),
+        ...(match.sharedIngredients || []),
+      ]),
+    ];
+  } else {
+    unique.push({ ...match });
+  }
+
+  return unique;
+}, []),
+ });
+      }
+
 
       const prescriptionImage = req.file
         ? `/uploads/${req.file.filename}`
         : "";
 
-        
-
-const validWeekdays = [
-  "Sunday",
-  "Monday",
-  "Tuesday",
-  "Wednesday",
-  "Thursday",
-  "Friday",
-  "Saturday",
-];
-
-let parsedWeeklyDays = [];
-
-if (frequency === "Weekly") {
-  try {
-    parsedWeeklyDays =
-      typeof weeklyDay === "string"
-        ? JSON.parse(weeklyDay)
-        : weeklyDay;
-  } catch {
-    return res.status(400).send({
-      success: false,
-      message: "Weekly days are not formatted correctly.",
-    });
-  }
-
-  if (
-    !Array.isArray(parsedWeeklyDays) ||
-    parsedWeeklyDays.length === 0 ||
-    parsedWeeklyDays.some(
-      (day) => !validWeekdays.includes(day)
-    ) ||
-    new Set(parsedWeeklyDays).size !== parsedWeeklyDays.length
-  ) {
-    return res.status(400).send({
-      success: false,
-      message: "Please select valid, non-duplicate weekly days.",
-    });
-  }
-} else if (weeklyDay !== undefined && weeklyDay !== "") {
-  return res.status(400).send({
-    success: false,
-    message: "Weekly days are only allowed for weekly medications.",
-  });
-}
 
 
-const parsedEndDate = endDate ? new Date(endDate) : null;
-const parsedStartDateForValidation = new Date(startDate);
+      const validWeekdays = [
+        "Sunday",
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday",
+        "Friday",
+        "Saturday",
+      ];
 
-if (
-  Number.isNaN(parsedStartDateForValidation.getTime()) ||
-  (parsedEndDate && Number.isNaN(parsedEndDate.getTime()))
-) {
-  return res.status(400).send({
-    success: false,
-    message: "Please enter valid medication dates.",
-  });
-}
+      let parsedWeeklyDays = [];
 
-// Today's date in Oman (YYYY-MM-DD)
-const omanDateParts = new Intl.DateTimeFormat("en-GB", {
-  timeZone: "Asia/Muscat",
-  year: "numeric",
-  month: "2-digit",
-  day: "2-digit",
-}).formatToParts(new Date());
+      if (frequency === "Weekly") {
+        try {
+          parsedWeeklyDays =
+            typeof weeklyDay === "string"
+              ? JSON.parse(weeklyDay)
+              : weeklyDay;
+        } catch {
+          return res.status(400).send({
+            success: false,
+            message: "Weekly days are not formatted correctly.",
+          });
+        }
 
-const getOmanPart = (type) =>
-  omanDateParts.find((part) => part.type === type)?.value;
+        if (
+          !Array.isArray(parsedWeeklyDays) ||
+          parsedWeeklyDays.length === 0 ||
+          parsedWeeklyDays.some(
+            (day) => !validWeekdays.includes(day)
+          ) ||
+          new Set(parsedWeeklyDays).size !== parsedWeeklyDays.length
+        ) {
+          return res.status(400).send({
+            success: false,
+            message: "Please select valid, non-duplicate weekly days.",
+          });
+        }
+      } else if (weeklyDay !== undefined && weeklyDay !== "") {
+        return res.status(400).send({
+          success: false,
+          message: "Weekly days are only allowed for weekly medications.",
+        });
+      }
 
-const todayInOman = [
-  getOmanPart("year"),
-  getOmanPart("month"),
-  getOmanPart("day"),
-].join("-");
 
-if (startDate < todayInOman) {
-  return res.status(400).send({
-    success: false,
-    message: "Medication start date cannot be in the past.",
-  });
-}
+      const parsedEndDate = endDate ? new Date(endDate) : null;
+      const parsedStartDateForValidation = new Date(startDate);
 
-if (parsedEndDate && parsedEndDate < parsedStartDateForValidation) {
-  return res.status(400).send({
-    success: false,
-    message: "End date cannot be earlier than start date.",
-  });
-}
-  
+      if (
+        Number.isNaN(parsedStartDateForValidation.getTime()) ||
+        (parsedEndDate && Number.isNaN(parsedEndDate.getTime()))
+      ) {
+        return res.status(400).send({
+          success: false,
+          message: "Please enter valid medication dates.",
+        });
+      }
+
+      // Today's date in Oman (YYYY-MM-DD)
+      const omanDateParts = new Intl.DateTimeFormat("en-GB", {
+        timeZone: "Asia/Muscat",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+      }).formatToParts(new Date());
+
+      const getOmanPart = (type) =>
+        omanDateParts.find((part) => part.type === type)?.value;
+
+      const todayInOman = [
+        getOmanPart("year"),
+        getOmanPart("month"),
+        getOmanPart("day"),
+      ].join("-");
+
+      if (startDate < todayInOman) {
+        return res.status(400).send({
+          success: false,
+          message: "Medication start date cannot be in the past.",
+        });
+      }
+
+      if (parsedEndDate && parsedEndDate < parsedStartDateForValidation) {
+        return res.status(400).send({
+          success: false,
+          message: "End date cannot be earlier than start date.",
+        });
+      }
+
 
       const newMedication =
         new MedicationModel({
@@ -6500,11 +6758,17 @@ if (parsedEndDate && parsedEndDate < parsedStartDateForValidation) {
           medicationName:
             medicationName.trim(),
 
-            medicationForm: medicationForm,
-topicalDosage:
-  medicationForm === "Cream/Ointment"
-    ? String(topicalDosage || "").trim()
-    : "",
+          medicationCatalogId: catalogMedication?.id || "",
+
+          activeIngredient1: catalogMedication?.activeIngredient1 || "",
+
+          activeIngredient2: catalogMedication?.activeIngredient2 || "",
+
+          medicationForm: medicationForm,
+          topicalDosage:
+            medicationForm === "Cream/Ointment"
+              ? String(topicalDosage || "").trim()
+              : "",
 
           dosage: dosage.trim(),
 
@@ -6527,8 +6791,8 @@ topicalDosage:
               ? false
               : true,
 
-              weeklyDay: frequency === "Weekly" ? parsedWeeklyDays : [],
-endDate: parsedEndDate,
+          weeklyDay: frequency === "Weekly" ? parsedWeeklyDays : [],
+          endDate: parsedEndDate,
 
           instructions:
             instructions?.trim() || "",
@@ -6702,6 +6966,18 @@ app.put("/medications/:id", async (req, res) => {
       });
     }
 
+    // Prevent changing medication identity during editing
+if (
+  medicationName.trim() !== currentMedication.medicationName ||
+  req.body.medicationForm !== currentMedication.medicationForm
+) {
+  return res.status(400).json({
+    success: false,
+    message:
+      "Medication name and form cannot be changed. Please add a new medication instead.",
+  });
+}
+
     const normalizedDatabaseMedicationName = medicationName.trim();
     const normalizedFrequency = frequency.trim();
     const normalizedTiming = timing.trim();
@@ -6728,78 +7004,78 @@ app.put("/medications/:id", async (req, res) => {
           "This medication has already been added. Please edit the existing medication instead.",
       });
     }
-const validMedicationForms = [
-  "Tablet",
-  "Capsule",
-  "Injection",
-  "Cream/Ointment",
-  "Inhaler",
-  "Eye Drops",
-  "Ear Drops",
-  "Liquid/Syrup",
-  "Patch",
-  "Suppository",
-  "Other",
-];
+    const validMedicationForms = [
+      "Tablet",
+      "Capsule",
+      "Injection",
+      "Cream/Ointment",
+      "Inhaler",
+      "Eye Drops",
+      "Ear Drops",
+      "Liquid/Syrup",
+      "Patch",
+      "Suppository",
+      "Other",
+    ];
 
-const medicationDosageUnits = {
-  Tablet: ["tablet", "tablets", "mg", "mcg"],
-  Capsule: ["capsule", "capsules", "mg", "mcg"],
-  Injection: ["units", "ml", "mg", "mcg"],
-  "Cream/Ointment": ["g", "mg", "application", "applications"],
-  Inhaler: ["puff", "puffs"],
-  "Eye Drops": ["drop", "drops"],
-  "Ear Drops": ["drop", "drops"],
-  "Liquid/Syrup": ["ml", "mg"],
-  Patch: ["patch", "patches"],
-  Suppository: ["suppository", "suppositories"],
-  Other: [
-    "mg", "g", "mcg", "ml", "units",
-    "tablet", "tablets",
-    "capsule", "capsules",
-    "drop", "drops",
-    "puff", "puffs",
-    "patch", "patches",
-    "application", "applications",
-    "suppository", "suppositories",
-  ],
-};
+    const medicationDosageUnits = {
+      Tablet: ["tablet", "tablets", "mg", "mcg"],
+      Capsule: ["capsule", "capsules", "mg", "mcg"],
+      Injection: ["units", "ml", "mg", "mcg"],
+      "Cream/Ointment": ["g", "mg", "application", "applications"],
+      Inhaler: ["puff", "puffs"],
+      "Eye Drops": ["drop", "drops"],
+      "Ear Drops": ["drop", "drops"],
+      "Liquid/Syrup": ["ml", "mg"],
+      Patch: ["patch", "patches"],
+      Suppository: ["suppository", "suppositories"],
+      Other: [
+        "mg", "g", "mcg", "ml", "units",
+        "tablet", "tablets",
+        "capsule", "capsules",
+        "drop", "drops",
+        "puff", "puffs",
+        "patch", "patches",
+        "application", "applications",
+        "suppository", "suppositories",
+      ],
+    };
 
-if (!validMedicationForms.includes(req.body.medicationForm)) {
-  return res.status(400).json({
-    message: "Please select a valid medication form.",
-  });
-}
+    if (!validMedicationForms.includes(req.body.medicationForm)) {
+      return res.status(400).json({
+        message: "Please select a valid medication form.",
+      });
+    }
     // 4. Validate dosage
     const validDosageUnits = [
-  "mg", "g", "mcg", "ml",
-  "tablet", "tablets",
-  "capsule", "capsules",
-  "drop", "drops",
-  "unit", "units",
-  "puff", "puffs",
-  "patch", "patches",
-  "suppository", "suppositories",
-  "application", "applications",
-];
+      "mg", "g", "mcg", "ml",
+      "tablet", "tablets",
+      "capsule", "capsules",
+      "drop", "drops",
+      "unit", "units",
+      "puff", "puffs",
+      "patch", "patches",
+      "suppository", "suppositories",
+      "application", "applications",
+    ];
 
     const dosageMatch = dosage.trim().match(
       /^(\d+(?:\.\d+)?)\s+([a-zA-Z]+)$/
     );
 
-      const dosageParts = dosage.trim().match(
-  /^(\d+(?:\.\d+)?)\s+([a-zA-Z]+)$/
-);
+    const dosageParts = dosage.trim().match(
+      /^(\d+(?:\.\d+)?)\s+([a-zA-Z]+)$/
+    );
     const dosageAmount = dosageParts
-  ? Number(dosageParts[1])
-  : NaN;
+      ? Number(dosageParts[1])
+      : NaN;
 
-if (!Number.isFinite(dosageAmount) || dosageAmount <= 0) {
-  return res.status(400).json({
-    success: false,
-    message: "Dosage amount must be a valid positive number.",
-  });
-}
+    if (!Number.isFinite(dosageAmount) || dosageAmount <= 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Dosage amount must be a valid positive number.",
+      });
+    }
 
     if (
       !dosageMatch ||
@@ -6813,19 +7089,19 @@ if (!Number.isFinite(dosageAmount) || dosageAmount <= 0) {
       });
     }
 
-  
 
-if (
-  !dosageParts ||
-  Number(dosageParts[1]) <= 0 ||
-  !medicationDosageUnits[req.body.medicationForm]?.includes(
-    dosageParts[2]
-  )
-) {
-  return res.status(400).json({
-    message: "Dosage unit does not match the selected medication form.",
-  });
-}
+
+    if (
+      !dosageParts ||
+      Number(dosageParts[1]) <= 0 ||
+      !medicationDosageUnits[req.body.medicationForm]?.includes(
+        dosageParts[2]
+      )
+    ) {
+      return res.status(400).json({
+        message: "Dosage unit does not match the selected medication form.",
+      });
+    }
 
     // 5. Validate timing offset
     let parsedTimingOffsetMinutes = Number(
@@ -6885,7 +7161,7 @@ if (
       });
     }
 
-    
+
     // 8. Validate weekly days
     const validWeekdays = [
       "Sunday",
@@ -6986,22 +7262,22 @@ if (
       currentMedication.frequency !== normalizedFrequency ||
       currentMedication.timing !== normalizedTiming ||
       Number(currentMedication.timingOffsetMinutes || 0) !==
-        parsedTimingOffsetMinutes ||
-     
-JSON.stringify(
-  [...(Array.isArray(currentMedication.weeklyDay)
-    ? currentMedication.weeklyDay
-    : currentMedication.weeklyDay
-      ? [currentMedication.weeklyDay]
-      : [])].sort()
-) !== JSON.stringify([...normalizedWeeklyDay].sort()) ||
+      parsedTimingOffsetMinutes ||
+
+      JSON.stringify(
+        [...(Array.isArray(currentMedication.weeklyDay)
+          ? currentMedication.weeklyDay
+          : currentMedication.weeklyDay
+            ? [currentMedication.weeklyDay]
+            : [])].sort()
+      ) !== JSON.stringify([...normalizedWeeklyDay].sort()) ||
 
       (currentMedication.startDate?.toISOString().slice(0, 10) || "") !==
-        startDate ||
+      startDate ||
       (currentMedication.endDate?.toISOString().slice(0, 10) || null) !==
-        (endDate || null) ||
+      (endDate || null) ||
       JSON.stringify(currentMedication.reminderTimes || []) !==
-        JSON.stringify(parsedReminderTimes) ||
+      JSON.stringify(parsedReminderTimes) ||
       currentMedication.isActive !== newIsActive;
 
     // 11. Update medication
@@ -7010,13 +7286,11 @@ JSON.stringify(
         req.params.id,
         {
           $set: {
-            medicationName: normalizedDatabaseMedicationName,
             dosage: dosage.trim(),
-            medicationForm: req.body.medicationForm,
-topicalDosage:
-  req.body.medicationForm === "Cream/Ointment"
-    ? (req.body.topicalDosage || "").trim()
-    : "",
+            topicalDosage:
+              req.body.medicationForm === "Cream/Ointment"
+                ? (req.body.topicalDosage || "").trim()
+                : "",
             frequency: normalizedFrequency,
             timing: normalizedTiming,
             timingOffsetMinutes: parsedTimingOffsetMinutes,
@@ -7135,17 +7409,17 @@ app.put("/patient/notification-settings", async (req, res) => {
   try {
     const { patientEmail } = req.body;
 
-if (typeof patientEmail !== "string" || !patientEmail.trim()) {
-  return res.status(400).json({
-    success: false,
-    message: "Patient email is required.",
-  });
-}
+    if (typeof patientEmail !== "string" || !patientEmail.trim()) {
+      return res.status(400).json({
+        success: false,
+        message: "Patient email is required.",
+      });
+    }
 
-const user = await UserModel.findOne({
-  email: patientEmail.trim().toLowerCase(),
-  role: "patient",
-});
+    const user = await UserModel.findOne({
+      email: patientEmail.trim().toLowerCase(),
+      role: "patient",
+    });
 
     if (!user || user.role !== "patient") {
       return res.status(403).json({
@@ -7190,17 +7464,17 @@ app.put("/patient/daily-routine", async (req, res) => {
   try {
     const { patientEmail } = req.body;
 
-if (typeof patientEmail !== "string" || !patientEmail.trim()) {
-  return res.status(400).json({
-    success: false,
-    message: "Patient email is required.",
-  });
-}
+    if (typeof patientEmail !== "string" || !patientEmail.trim()) {
+      return res.status(400).json({
+        success: false,
+        message: "Patient email is required.",
+      });
+    }
 
-const user = await UserModel.findOne({
-  email: patientEmail.trim().toLowerCase(),
-  role: "patient",
-});
+    const user = await UserModel.findOne({
+      email: patientEmail.trim().toLowerCase(),
+      role: "patient",
+    });
 
     // 1. Check patient role.
     if (!user || user.role !== "patient") {
@@ -7267,18 +7541,21 @@ const user = await UserModel.findOne({
       validatedRoutine[activity] = time;
     }
 
-    // 5. Check the correct activity order.
+
+    // 5. Validate activity order, including overnight bedtime.
     const { wake, breakfast, lunch, dinner, sleep } =
       validatedRoutine;
 
-    if (
-      !(
-        wake < breakfast &&
-        breakfast < lunch &&
-        lunch < dinner &&
-        dinner < sleep
-      )
-    ) {
+    const daytimeOrderIsValid =
+      wake < breakfast &&
+      breakfast < lunch &&
+      lunch < dinner;
+
+    // Bedtime can be on the same day or after midnight.
+    const bedtimeIsValid =
+      sleep > dinner || sleep < wake;
+
+    if (!daytimeOrderIsValid || !bedtimeIsValid) {
       return res.status(400).json({
         success: false,
         errorCode: "INVALID_ROUTINE_ORDER",
@@ -7286,6 +7563,7 @@ const user = await UserModel.findOne({
           "Invalid daily routine. The correct order is: Wake Up → Breakfast → Lunch → Dinner → Sleep.",
       });
     }
+
 
     // 6. Save the routine to MongoDB.
     user.dailyRoutine = validatedRoutine;
@@ -7317,19 +7595,19 @@ const user = await UserModel.findOne({
 
 app.put("/patient/daily-routine/skip", async (req, res) => {
   try {
-   const { patientEmail } = req.body;
+    const { patientEmail } = req.body;
 
-if (typeof patientEmail !== "string" || !patientEmail.trim()) {
-  return res.status(400).json({
-    success: false,
-    message: "Patient email is required.",
-  });
-}
+    if (typeof patientEmail !== "string" || !patientEmail.trim()) {
+      return res.status(400).json({
+        success: false,
+        message: "Patient email is required.",
+      });
+    }
 
-const user = await UserModel.findOne({
-  email: patientEmail.trim().toLowerCase(),
-  role: "patient",
-});
+    const user = await UserModel.findOne({
+      email: patientEmail.trim().toLowerCase(),
+      role: "patient",
+    });
 
     if (!user || user.role !== "patient") {
       return res.status(403).json({
