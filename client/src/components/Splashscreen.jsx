@@ -302,9 +302,9 @@ const handleLanguageToggle = () => {
         </div>
 
 
-        {/* ===================================
+        {/* 
             LOGIN
-        ==================================== */}
+         */}
 
         <div className="login-section">
 
@@ -344,9 +344,9 @@ const handleLanguageToggle = () => {
       </section>
 
 
-      {/* ===================================
+      {/* 
           RIGHT SIDE
-      ==================================== */}
+       */}
 
       <section className="splash-visual">
   <img
