@@ -24,9 +24,38 @@ import {
 } from "jspdf-autotable";
 
 import Header from "./Header";
-import Footer from "./footer";
+import Footer from "./Footer";
 
 const Reports = () => {
+
+  
+const [language, setLanguage] = useState(
+  () => localStorage.getItem("medimindLanguage") || "en"
+);
+
+const isArabic = language === "ar";
+
+const t = (english, arabic) =>
+  isArabic ? arabic : english;
+
+useEffect(() => {
+  const handleLanguageChange = () => {
+    setLanguage(localStorage.getItem("medimindLanguage") || "en");
+  };
+
+  window.addEventListener(
+    "medimind-language-change",
+    handleLanguageChange
+  );
+
+  return () => {
+    window.removeEventListener(
+      "medimind-language-change",
+      handleLanguageChange
+    );
+  };
+}, []);
+
   const user = useSelector(
     (state) => state.user.user
   );
@@ -93,6 +122,12 @@ const Reports = () => {
               )}`
             );
 
+            
+console.log(
+  "MONTHLY API DATE CHECK:",
+  response.data?.report?.dailyBreakdown?.slice(0, 3)
+);
+
           setReportData(
             response.data?.report ||
               null
@@ -119,64 +154,60 @@ const Reports = () => {
     selectedReport,
   ]);
 
-  const getReportTitle = () => {
-    if (
-      selectedReport === "daily"
-    ) {
-      return "Daily Report";
-    }
 
-    if (
-      selectedReport === "weekly"
-    ) {
-      return "Weekly Report";
-    }
+const getReportTitle = () => {
+  if (selectedReport === "daily") {
+    return t("Daily Report", "التقرير اليومي");
+  }
 
-    return "Monthly Report";
-  };
+  if (selectedReport === "weekly") {
+    return t("Weekly Report", "التقرير الأسبوعي");
+  }
 
-  const getReportSubtitle = () => {
-    if (
-      selectedReport === "daily"
-    ) {
-      return "Medication adherence for today.";
-    }
+  return t("Monthly Report", "التقرير الشهري");
+};
 
-    if (
-      selectedReport === "weekly"
-    ) {
-      return "Medication adherence during the last 7 days.";
-    }
 
-    return "Medication adherence during this month.";
-  };
-
-  const formatDate = (date) => {
-    if (!date) {
-      return "";
-    }
-
-    const parsedDate =
-      new Date(
-        `${date}T00:00:00`
-      );
-
-    if (
-      Number.isNaN(
-        parsedDate.getTime()
-      )
-    ) {
-      return date;
-    }
-
-    return parsedDate.toLocaleDateString(
-      "en-US",
-      {
-        day: "numeric",
-        month: "short",
-      }
+ 
+const getReportSubtitle = () => {
+  if (selectedReport === "daily") {
+    return t(
+      "Medication adherence for today.",
+      "مدى الالتزام بتناول الأدوية اليوم."
     );
-  };
+  }
+
+  if (selectedReport === "weekly") {
+    return t(
+      "Medication adherence during the last 7 days.",
+      "مدى الالتزام بتناول الأدوية خلال آخر 7 أيام."
+    );
+  }
+
+  return t(
+    "Medication adherence during this month.",
+    "مدى الالتزام بتناول الأدوية خلال هذا الشهر."
+  );
+};
+
+
+  
+const formatDate = (date, locale = "en-US") => {
+  if (!date) return "";
+
+  const [year, month, day] = date.split("-").map(Number);
+
+  if (!year || !month || !day) return date;
+
+  return new Date(
+    Date.UTC(year, month - 1, day)
+  ).toLocaleDateString(locale, {
+    month: "short",
+    day: "numeric",
+    timeZone: "UTC",
+  });
+};
+
 
   const getPeriodLabel = () => {
     if (!reportData) {
@@ -281,6 +312,29 @@ const Reports = () => {
       color: "#1e3a8a",
     };
   };
+
+  
+const formatDoseDetails = (dose) => {
+  const dosage = String(dose.dosage || "");
+
+  if (!isArabic) {
+    return `${dosage} · ${formatTime(dose.scheduledTime)}`;
+  }
+
+  const arabicDosage = dosage
+    .replace(/\btablets\b/gi, "أقراص")
+    .replace(/\btablet\b/gi, "قرص")
+    .replace(/\bcapsules\b/gi, "كبسولات")
+    .replace(/\bcapsule\b/gi, "كبسولة")
+    .replace(/\bmg\b/gi, "ملغ")
+    .replace(/\bml\b/gi, "مل");
+
+  const arabicTime = formatTime(dose.scheduledTime)
+    .replace(/\bAM\b/gi, "ص")
+    .replace(/\bPM\b/gi, "م");
+
+  return `الجرعة: ${arabicDosage} · الوقت: ${arabicTime}`;
+};
 
   const formatTime = (time) => {
     if (!time) {
@@ -414,6 +468,14 @@ const Reports = () => {
       return;
     }
 
+    
+console.log("PDF EXPORT DATE CHECK:", {
+  rawDate: reportData.dailyBreakdown?.[0]?.date,
+  formattedDate: formatDate(
+    reportData.dailyBreakdown?.[0]?.date
+  ),
+});
+
     const doc =
       new jsPDF({
         orientation: "portrait",
@@ -470,7 +532,7 @@ const Reports = () => {
     doc.setFontSize(13);
 
     doc.text(
-      getReportTitle(),
+     `${selectedReport.charAt(0).toUpperCase() + selectedReport.slice(1)} Report`,
       14,
       21
     );
@@ -970,8 +1032,8 @@ const Reports = () => {
     ]);
 
     rows.push([
-      "Report Type",
-      getReportTitle(),
+     "Report Type",
+`${selectedReport.charAt(0).toUpperCase() + selectedReport.slice(1)} Report`,
     ]);
 
     rows.push([
@@ -1175,30 +1237,26 @@ const Reports = () => {
     );
   };
 
-  const tabs = [
-    {
-      key: "daily",
-      label: "Daily",
-    },
-    {
-      key: "weekly",
-      label: "Weekly",
-    },
-    {
-      key: "monthly",
-      label: "Monthly",
-    },
-  ];
+  
+const tabs = [
+  { key: "daily", label: t("Daily", "يومي") },
+  { key: "weekly", label: t("Weekly", "أسبوعي") },
+  { key: "monthly", label: t("Monthly", "شهري") },
+];
+
 
   return (
-    <Container
-      fluid
-      className="dashboard-page"
-      style={{
-        backgroundColor: "#f7f9fc",
-        minHeight: "100vh",
-      }}
-    >
+   
+
+<Container
+  fluid
+  className={`dashboard-page reports-page ${
+    isArabic ? "reports-ar" : ""
+  }`}
+  dir={isArabic ? "rtl" : "ltr"}
+>
+
+
       <Header />
 
       <Row className="py-5 px-3">
@@ -1215,7 +1273,7 @@ const Reports = () => {
                 marginBottom: "6px",
               }}
             >
-              Adherence Reports
+             {t("Adherence Reports", "تقارير الالتزام بالأدوية")}
             </h2>
 
             <p
@@ -1224,10 +1282,12 @@ const Reports = () => {
                 marginBottom: 0,
               }}
             >
-              Review your medication
-              adherence across daily,
-              weekly, and monthly
-              periods.
+             
+{t(
+  "Review your medication adherence across daily, weekly, and monthly periods.",
+  "راجع مدى التزامك بتناول أدويتك خلال الفترات اليومية والأسبوعية والشهرية."
+)}
+
             </p>
           </div>
 
@@ -1239,7 +1299,7 @@ const Reports = () => {
               marginBottom: "28px",
             }}
           >
-            <div
+            <div  className="reports-tabs"
               style={{
                 display: "flex",
                 width: "100%",
@@ -1260,6 +1320,7 @@ const Reports = () => {
                   <button
                     key={tab.key}
                     type="button"
+                    aria-selected={active}
                     onClick={() =>
                       setSelectedReport(
                         tab.key
@@ -1303,7 +1364,7 @@ const Reports = () => {
           </div>
 
           {/* Report content */}
-          <div
+          <div className="reports-panel"
             style={{
               backgroundColor: "#dce9f8",
               borderRadius: "22px",
@@ -1356,7 +1417,61 @@ const Reports = () => {
                           "#6b7280",
                       }}
                     >
-                      {getPeriodLabel()}
+                      
+{(() => {
+  const label = getPeriodLabel();
+
+  if (!isArabic) return label;
+
+  
+const arabicMonths = {
+  Jan: "يناير", Feb: "فبراير", Mar: "مارس",
+  Apr: "أبريل", May: "مايو", Jun: "يونيو",
+  Jul: "يوليو", Aug: "أغسطس", Sep: "سبتمبر",
+  Oct: "أكتوبر", Nov: "نوفمبر", Dec: "ديسمبر",
+};
+
+const arabicNumber = (value) =>
+  String(value).replace(/\d/g, (digit) => "٠١٢٣٤٥٦٧٨٩"[Number(digit)]);
+
+if (selectedReport === "weekly") {
+  const match = label.match(
+    /^([A-Za-z]{3})\s+(\d{1,2})\s*[—–-]\s*([A-Za-z]{3})\s+(\d{1,2})$/
+  );
+
+  if (match) {
+    const [, startMonth, startDay, endMonth, endDay] = match;
+
+    return `${arabicNumber(startDay)} ${
+      arabicMonths[startMonth] || startMonth
+    } — ${arabicNumber(endDay)} ${
+      arabicMonths[endMonth] || endMonth
+    }`;
+  }
+}
+
+
+  const months = {
+  Jan: "يناير", January: "يناير",
+  Feb: "فبراير", February: "فبراير",
+  Mar: "مارس", March: "مارس",
+  Apr: "أبريل", April: "أبريل",
+  May: "مايو",
+  Jun: "يونيو", June: "يونيو",
+  Jul: "يوليو", July: "يوليو",
+  Aug: "أغسطس", August: "أغسطس",
+  Sep: "سبتمبر", Sept: "سبتمبر", September: "سبتمبر",
+  Oct: "أكتوبر", October: "أكتوبر",
+  Nov: "نوفمبر", November: "نوفمبر",
+  Dec: "ديسمبر", December: "ديسمبر",
+};
+
+  return arabicNumber(label.replace(
+  /\b(January|February|March|April|May|June|July|August|September|October|November|December|Jan|Feb|Mar|Apr|Jun|Jul|Aug|Sept|Sep|Oct|Nov|Dec)\b/g,
+  (month) => months[month] || month
+  ));
+})()}
+
                     </small>
                   )}
                 </div>
@@ -1389,11 +1504,11 @@ const Reports = () => {
                       !reportData
                     }
                   >
-                    Export 
+                   {t("Export", "تصدير")}
                   </button>
 
                   {showExportMenu && (
-                    <div
+                    <div className="reports-export-menu"
                       style={{
                         position:
                           "absolute",
@@ -1451,7 +1566,7 @@ const Reports = () => {
                             "#ffffff";
                         }}
                       >
-                        Export PDF
+                       {t("Export PDF", "تصدير PDF")}
                       </button>
 
                       <button
@@ -1495,7 +1610,7 @@ const Reports = () => {
                             "#ffffff";
                         }}
                       >
-                        Export CSV
+                       {t("Export CSV", "تصدير CSV")}
                       </button>
                     </div>
                   )}
@@ -1512,9 +1627,10 @@ const Reports = () => {
                 {reportLoading ? (
                   <div className="text-center py-5">
                     <p className="text-muted">
-                      Loading{" "}
-                      {selectedReport}{" "}
-                      report...
+                     {t(
+  `Loading ${selectedReport} report...`,
+  "جارٍ تحميل التقرير..."
+)}
                     </p>
                   </div>
                 ) : reportError ? (
@@ -1523,7 +1639,8 @@ const Reports = () => {
                   </div>
                 ) : reportData ? (
                   <>
-<div
+<div className="reports-card"
+
                       style={{
                         backgroundColor:
                           "#ffffff",
@@ -1564,15 +1681,21 @@ const Reports = () => {
                                     "5px",
                                 }}
                               >
-                                No adherence
-                                score yet
+                               {t("No adherence score yet", "لا توجد نسبة التزام حتى الآن")}
                               </h4>
 
                               <p className="text-muted mb-0">
-                                {reportData.total ===
-                                0
-                                  ? "No medication doses were scheduled for this period."
-                                  : "The scheduled doses are still upcoming."}
+                               
+{reportData.total === 0
+  ? t(
+      "No medication doses were scheduled for this period.",
+      "لم تتم جدولة أي جرعات دوائية خلال هذه الفترة."
+    )
+  : t(
+      "The scheduled doses are still upcoming.",
+      "الجرعات المجدولة لم يحن موعدها بعد."
+    )}
+
                               </p>
                             </>
                           );
@@ -1597,13 +1720,13 @@ const Reports = () => {
                             </h2>
 
                             <p className="text-muted mb-0">
-                              {selectedReport ===
-                              "daily"
-                                ? "Today's Adherence"
-                                : selectedReport ===
-                                  "weekly"
-                                ? "Weekly Adherence"
-                                : "Monthly Adherence"}
+                             
+{selectedReport === "daily"
+  ? t("Today's Adherence", "الالتزام اليومي")
+  : selectedReport === "weekly"
+  ? t("Weekly Adherence", "الالتزام الأسبوعي")
+  : t("Monthly Adherence", "الالتزام الشهري")}
+
                             </p>
                           </>
                         );
@@ -1614,7 +1737,7 @@ const Reports = () => {
                       <Row className="g-4">
                         {/* LEFT HALF: BREAKDOWN */}
                         <Col lg="6">
-                          <div
+                          <div className="reports-card"
                             style={{
                               backgroundColor: "#ffffff",
                               borderRadius: "18px",
@@ -1633,9 +1756,11 @@ const Reports = () => {
                                 marginBottom: "16px",
                               }}
                             >
-                              {selectedReport === "weekly"
-                                ? "Daily Breakdown"
-                                : "Month Breakdown"}
+                              
+{selectedReport === "weekly"
+  ? t("Daily Breakdown", "التفاصيل اليومية")
+  : t("Month Breakdown", "التفاصيل الشهرية")}
+
                             </h6>
 
                             {reportData.dailyBreakdown?.length > 0 ? (
@@ -1660,13 +1785,40 @@ const Reports = () => {
                                           color: "#1e3a8a",
                                         }}
                                       >
-                                        {selectedReport === "weekly"
-                                          ? day.dayName
-                                          : `${day.dayNumber} ${day.dayName}`}
+                                       
+{(() => {
+ 
+const arabicDays = {
+  Sun: "الأحد",
+  Mon: "الاثنين",
+  Tue: "الثلاثاء",
+  Wed: "الأربعاء",
+  Thu: "الخميس",
+  Fri: "الجمعة",
+  Sat: "السبت",
+  Sunday: "الأحد",
+  Monday: "الاثنين",
+  Tuesday: "الثلاثاء",
+  Wednesday: "الأربعاء",
+  Thursday: "الخميس",
+  Friday: "الجمعة",
+  Saturday: "السبت",
+};
+
+
+  const dayName = isArabic
+    ? arabicDays[day.dayName] || day.dayName
+    : day.dayName;
+
+  return selectedReport === "weekly"
+    ? dayName
+    : `${day.dayNumber} ${dayName}`;
+})()}
+
                                       </strong>
 
                                       <div className="small text-muted">
-                                        {formatDate(day.date)}
+                                       {formatDate(day.date, isArabic ? "ar-OM" : "en-US")}
                                       </div>
                                     </div>
 
@@ -1677,12 +1829,37 @@ const Reports = () => {
                                             dayStatus.color,
                                         }}
                                       >
-                                        {dayStatus.main}
+                                        
+{isArabic
+  ? dayStatus.main === "No scheduled doses"
+    ? "لا توجد جرعات مجدولة"
+    : dayStatus.main === "Upcoming"
+    ? "قادمة"
+    : dayStatus.main
+  : dayStatus.main}
+
                                       </strong>
 
                                       {dayStatus.secondary && (
                                         <div className="small text-muted">
-                                          {dayStatus.secondary}
+                                          
+{isArabic
+  ? day.total === 0
+    ? ""
+    : (day.taken || 0) +
+        (day.missed || 0) +
+        (day.skipped || 0) ===
+      0
+    ? `${day.upcoming || 0} جرعة بانتظار موعدها`
+    : `${day.taken || 0} تم تناولها · ${
+        day.missed || 0
+      } فائتة${
+        (day.skipped || 0) > 0
+          ? ` · ${day.skipped} تم تخطيها`
+          : ""
+      }`
+  : dayStatus.secondary}
+
                                         </div>
                                       )}
                                     </div>
@@ -1691,7 +1868,10 @@ const Reports = () => {
                               })
                             ) : (
                               <p className="text-muted text-center mb-0">
-                                No breakdown data is available for this period.
+                               {t(
+  "No breakdown data is available for this period.",
+  "لا تتوفر تفاصيل يومية لهذه الفترة."
+)}
                               </p>
                             )}
                           </div>
@@ -1699,7 +1879,7 @@ const Reports = () => {
 
                         {/* RIGHT HALF: MEDICATION SUMMARY */}
                         <Col lg="6">
-                          <div
+                          <div className="reports-card"
                             style={{
                               backgroundColor: "#ffffff",
                               borderRadius: "18px",
@@ -1718,7 +1898,7 @@ const Reports = () => {
                                 marginBottom: "14px",
                               }}
                             >
-                              Medication Summary
+                             {t("Medication Summary", "ملخص الأدوية")}
                             </h6>
 
                             {reportData.doses?.length > 0 ? (
@@ -1754,8 +1934,14 @@ const Reports = () => {
                                     </div>
 
                                     <span className="small text-muted">
-                                      {medication.total} dose
-                                      {medication.total !== 1 ? "s" : ""}
+                                     
+{medication.total}{" "}
+{isArabic
+  ? "جرعة"
+  : medication.total === 1
+  ? "dose"
+  : "doses"}
+
                                     </span>
                                   </div>
 
@@ -1779,7 +1965,7 @@ const Reports = () => {
                                           textAlign: "center",
                                         }}
                                       >
-                                        Taken {medication.Taken}
+                                       {t("Taken", "تم التناول")} {medication.Taken}
                                       </span>
                                     )}
 
@@ -1794,7 +1980,7 @@ const Reports = () => {
                                           textAlign: "center",
                                         }}
                                       >
-                                        Missed {medication.Missed}
+                                      {t("Missed", "فائتة")} {medication.Missed}
                                       </span>
                                     )}
 
@@ -1809,7 +1995,7 @@ const Reports = () => {
                                           textAlign: "center",
                                         }}
                                       >
-                                        Skipped {medication.Skipped}
+                                       {t("Skipped", "تم التخطي")} {medication.Skipped}
                                       </span>
                                     )}
 
@@ -1824,7 +2010,7 @@ const Reports = () => {
                                           textAlign: "center",
                                         }}
                                       >
-                                        Upcoming {medication.Upcoming}
+                                        {t("Upcoming", "قادمة")} {medication.Upcoming}
                                       </span>
                                     )}
                                   </div>
@@ -1832,7 +2018,10 @@ const Reports = () => {
                               ))
                             ) : (
                               <p className="text-muted text-center mb-0">
-                                No medication doses were found for this period.
+                               {t(
+  "No medication doses were found for this period.",
+  "لم يتم العثور على جرعات دوائية خلال هذه الفترة."
+)}
                               </p>
                             )}
                           </div>
@@ -1840,7 +2029,7 @@ const Reports = () => {
                       </Row>
                     ) : (
                       /* DAILY: no breakdown, just today's doses */
-                      <div
+                      <div className="reports-card"
                         style={{
                           backgroundColor: "#ffffff",
                           borderRadius: "18px",
@@ -1856,7 +2045,7 @@ const Reports = () => {
                             marginBottom: "14px",
                           }}
                         >
-                          Today's Doses
+                         {t("Today's Doses", "جرعات اليوم")}
                         </h6>
 
                         {reportData.doses?.length > 0 ? (
@@ -1881,10 +2070,8 @@ const Reports = () => {
                                 </strong>
 
                                 <div className="small text-muted mt-1">
-                                  {dose.dosage} ·{" "}
-                                  {formatTime(
-                                    dose.scheduledTime
-                                  )}
+                                  {formatDoseDetails(dose)}
+                                  
                                 </div>
                               </div>
 
@@ -1893,13 +2080,24 @@ const Reports = () => {
                                   dose.status
                                 )}
                               >
-                                {dose.status}
+                                {t(
+  dose.status,
+  ({
+    Taken: "تم التناول",
+    Missed: "فائتة",
+    Skipped: "تم التخطي",
+    Upcoming: "قادمة",
+  })[dose.status] || dose.status
+)}
                               </span>
                             </div>
                           ))
                         ) : (
                           <p className="text-muted text-center mb-0">
-                            No medication doses were found for today.
+                           {t(
+  "No medication doses were found for today.",
+  "لم يتم العثور على جرعات دوائية لهذا اليوم."
+)}
                           </p>
                         )}
                       </div>
@@ -1925,6 +2123,31 @@ const Reports = () => {
               transform: translateX(0);
             }
           }
+            
+.reports-ar {
+  font-family: Tahoma, Arial, sans-serif;
+  text-align: right;
+}
+
+.reports-ar h2,
+.reports-ar h4,
+.reports-ar h6 {
+  font-weight: 700;
+}
+
+.reports-ar .text-end {
+  text-align: left !important;
+}
+
+.reports-ar .reports-export-menu {
+  right: auto !important;
+  left: 0 !important;
+}
+
+.reports-ar .reports-export-menu button {
+  text-align: right !important;
+}
+
         `}
       </style>
 
