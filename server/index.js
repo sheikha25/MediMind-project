@@ -33,7 +33,7 @@ const normalizeMedicationName = (name) =>
 
 
 
-const medicationNameDistance = (first, second) => {
+const medicationNameDistance = (first, second) => (
   const a = normalizeMedicationName(first);
   const b = normalizeMedicationName(second);
 
