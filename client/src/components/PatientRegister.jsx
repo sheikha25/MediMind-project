@@ -9,7 +9,7 @@ import { FaEye, FaEyeSlash, FaPlus, FaTimes } from "react-icons/fa";
 import medimindlogo from "../assets/medimind-symbol.png";
 import { RegisterValidation } from "../validations/RegisterValidation";
 import {addUser,clearUserMessage,} from "../features/UserSlice";
-import Footer from "./footer";
+import Footer from "./Footer";
 
 const PatientRegister = () => {
   const dispatch = useDispatch();
