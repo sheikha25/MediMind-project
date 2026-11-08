@@ -21,7 +21,7 @@ import {
 } from "react-router-dom";
 
 import Header from "./Header";
-import Footer from "./footer";
+import Footer from "./Footer";
 
 const standardFrequencies = [
   "Once daily",
@@ -93,7 +93,96 @@ const medicationDosageUnits = {
   ],
 };
 
+
+const translateDosageUnit = (unit, isArabic) => {
+  if (!isArabic) return unit;
+
+  const translations = {
+    tablet: "قرص",
+    tablets: "أقراص",
+    capsule: "كبسولة",
+    capsules: "كبسولات",
+    mg: "ملغ",
+    mcg: "ميكروغرام",
+    g: "غرام",
+    ml: "مل",
+    units: "وحدات",
+    application: "مرة استخدام",
+    applications: "مرات استخدام",
+    puff: "بخة",
+    puffs: "بخات",
+    drop: "قطرة",
+    drops: "قطرات",
+    patch: "لصقة",
+    patches: "لصقات",
+    suppository: "تحميلة",
+    suppositories: "تحاميل",
+  };
+
+  return translations[unit] || unit;
+};
+
 const EditMedication = () => {
+
+  
+  const [language, setLanguage] = useState(
+    () => localStorage.getItem("medimindLanguage") || "en"
+  );
+
+  const isArabic = language === "ar";
+
+  const t = (english, arabic) =>
+    isArabic ? arabic : english;
+
+  useEffect(() => {
+    const handleLanguageChange = () => {
+      setLanguage(
+        localStorage.getItem("medimindLanguage") || "en"
+      );
+    };
+
+    window.addEventListener(
+      "medimind-language-change",
+      handleLanguageChange
+    );
+
+    return () => {
+      window.removeEventListener(
+        "medimind-language-change",
+        handleLanguageChange
+      );
+    };
+  }, []);
+
+  
+const translateMessage = (message) => {
+  if (!isArabic) return message;
+
+  const translations = {
+    "Medication not found.": "لم يتم العثور على الدواء.",
+    "An error occurred while loading the medication.": "حدث خطأ أثناء تحميل بيانات الدواء.",
+    "Please complete all required medication fields.": "يرجى إكمال جميع حقول الدواء المطلوبة.",
+    "Medication end date is required.": "تاريخ انتهاء الدواء مطلوب.",
+    "End date cannot be earlier than start date.": "لا يمكن أن يكون تاريخ الانتهاء قبل تاريخ البدء.",
+    "Please select a weekday.": "يرجى اختيار يوم من الأسبوع.",
+    "Please select a valid medication form.": "يرجى اختيار شكل دوائي صالح.",
+    "Please enter a valid dosage amount.": "يرجى إدخال كمية جرعة صحيحة.",
+    "Please select a valid dosage unit for this medication form.": "يرجى اختيار وحدة جرعة مناسبة لشكل الدواء.",
+    "Please enter a valid timing offset.": "يرجى إدخال مدة زمنية صحيحة.",
+    "Please enter how long before or after the meal this medication should be taken.": "يرجى تحديد المدة قبل الوجبة أو بعدها لتناول الدواء.",
+    "Please provide at least one reminder time.": "يرجى تحديد وقت تذكير واحد على الأقل.",
+    "Please complete all reminder times.": "يرجى إكمال جميع أوقات التذكير.",
+    "Please select a different time for each dose.": "يرجى اختيار وقت مختلف لكل جرعة.",
+    "Medication updated successfully.": "تم تحديث الدواء بنجاح.",
+    "Medication updated successfully": "تم تحديث الدواء بنجاح.",
+    "The medication could not be updated.": "تعذر تحديث الدواء.",
+    "An error occurred while updating the medication.": "حدث خطأ أثناء تحديث الدواء.",
+  };
+
+  return translations[message] || message;
+};
+
+
   const { id } = useParams();
   const navigate = useNavigate();
 
@@ -212,25 +301,29 @@ const [topicalDosage, setTopicalDosage] = useState("");
     );
   };
 
-  const getDoseLabel = (time, index) => {
-  if (!time) return `Dose ${index + 1}`;
+  
+const getDoseLabel = (time, index) => {
+  if (!time) {
+    return t(`Dose ${index + 1}`, `الجرعة ${index + 1}`);
+  }
 
   const hour = Number(time.split(":")[0]);
 
   if (hour >= 5 && hour < 12) {
-    return "Morning Dose";
+    return t("Morning Dose", "الجرعة الصباحية");
   }
 
   if (hour >= 12 && hour < 17) {
-    return "Afternoon Dose";
+    return t("Afternoon Dose", "جرعة بعد الظهر");
   }
 
   if (hour >= 17 && hour < 21) {
-    return "Evening Dose";
+    return t("Evening Dose", "الجرعة المسائية");
   }
 
-  return "Night Dose";
+  return t("Night Dose", "الجرعة الليلية");
 };
+
 
   const handleReminderTimeChange = (
     index,
@@ -286,9 +379,11 @@ const [topicalDosage, setTopicalDosage] = useState("");
           );
           const savedDosage = (medication.dosage || "").trim();
 
+
 const dosageMatch = savedDosage.match(
   /^(\d+(?:\.\d+)?)\s+([a-zA-Z]+)$/
 );
+
 
 setDosageAmount(dosageMatch ? dosageMatch[1] : "");
 setDosageUnit(dosageMatch ? dosageMatch[2] : "");
@@ -645,10 +740,15 @@ isActive,
   };
 
   return (
-    <Container
-      fluid
-      className="dashboard-page"
-    >
+    
+<Container
+  fluid
+  className={`dashboard-page edit-medication-page ${
+    isArabic ? "edit-medication-ar" : ""
+  }`}
+  dir={isArabic ? "rtl" : "ltr"}
+>
+
       <Header />
 
       <Row className="py-5 px-3 justify-content-center">
@@ -660,7 +760,9 @@ isActive,
                 fontWeight: "700",
               }}
             >
-              Edit Medication
+              
+{t("Edit Medication", "تعديل الدواء")}
+
             </h2>
 
             <p
@@ -668,9 +770,12 @@ isActive,
                 color: "#6b7280",
               }}
             >
-              Update the medication
-              information and schedule, then
-              save your changes.
+             
+{t(
+  "Update the medication information and schedule, then save your changes.",
+  "قم بتحديث معلومات الدواء وجدول مواعيده، ثم احفظ التغييرات."
+)}
+
             </p>
           </div>
 
@@ -688,7 +793,7 @@ isActive,
                 <Alert
                   color={messageType}
                 >
-                  {message}
+                  {translateMessage(message)}
                 </Alert>
               )}
 
@@ -702,14 +807,16 @@ isActive,
                       marginTop: "12px",
                     }}
                   >
-                    Loading medication...
+                   {t("Loading medication...", "جارٍ تحميل بيانات الدواء...")}
                   </p>
                 </div>
               ) : (
                 <>
                   <FormGroup>
                     <Label>
-                      Medication Name{" "}
+                     
+{t("Medication Name", "اسم الدواء")}{" "}
+
                       <span
                         style={{
                           color:
@@ -720,58 +827,79 @@ isActive,
                       </span>
                     </Label>
 
-                    <Input
-                      type="text"
-                      value={
-                        medicationName
-                      }
-                      onChange={(
-                        event
-                      ) => {
-                        setMedicationName(
-                          event.target
-                            .value
-                        );
+                  <Input
+  type="text"
+  value={medicationName}
+  className="mm-edit-medication-name"
+  disabled
+  readOnly
+/>
 
-                        clearMessage();
-                      }}
-                    />
+
+<small className="text-muted">
+  {t(
+    "Medication name cannot be changed. To use a different medication, add it as a new medication.",
+    "لا يمكن تغيير اسم الدواء. لاستخدام دواء مختلف، أضفه كدواء جديد."
+  )}
+</small>
+
                   </FormGroup>
 
 <FormGroup>
   <Label>
-    Medication Form <span className="text-danger">*</span>
+   {t("Medication Form", "شكل الدواء")} <span className="text-danger">*</span>
   </Label>
 
   <Input
     type="select"
     value={medicationForm}
-    onChange={(event) => {
-      const selectedForm = event.target.value;
-
-      setMedicationForm(selectedForm);
-      setDosageUnit(
-        medicationDosageUnits[selectedForm]?.[0] || ""
-      );
-      clearMessage();
-    }}
+     disabled
   >
-    <option value="">Select medication form</option>
-    {Object.keys(medicationDosageUnits).map((form) => (
-      <option key={form} value={form}>
-        {form}
-      </option>
-    ))}
+    
+<option value="">
+  {t("Select medication form", "اختر شكل الدواء")}
+</option>
+
+    
+{Object.keys(medicationDosageUnits).map((form) => (
+  <option key={form} value={form}>
+    {isArabic
+      ? ({
+          Tablet: "أقراص",
+          Capsule: "كبسولات",
+          Injection: "حقن",
+          "Cream/Ointment": "كريم / مرهم",
+          Inhaler: "بخاخ",
+          "Eye Drops": "قطرات العين",
+          "Ear Drops": "قطرات الأذن",
+          "Liquid/Syrup": "سائل / شراب",
+          Patch: "لصقات",
+          Suppository: "تحاميل",
+          Other: "أخرى",
+        }[form] || form)
+      : form}
+  </option>
+))}
+
   </Input>
 </FormGroup>
 
 {medicationForm === "Cream/Ointment" && (
   <FormGroup>
-    <Label>Application Instructions</Label>
+   
+<Label>
+  {t("Application Instructions", "تعليمات الاستخدام")}
+</Label>
+
 
     <Input
       type="text"
-      placeholder="e.g. Apply a thin layer to the affected area"
+      
+placeholder={t(
+  "e.g. Apply a thin layer to the affected area",
+  "مثال: ضع طبقة رقيقة على المنطقة المصابة"
+)}
+
       value={topicalDosage}
       onChange={(event) => {
         setTopicalDosage(event.target.value);
@@ -782,7 +910,9 @@ isActive,
 )}
                   <FormGroup>
                     <Label>
-                      Dosage{" "}
+                      
+{t("Dosage", "الجرعة")}{" "}
+
                       <span
                         style={{
                           color:
@@ -799,7 +929,9 @@ isActive,
       type="number"
       min="0"
       step="any"
-      placeholder="For example, 500"
+      
+placeholder={t("For example, 500", "مثال: 500")}
+
       value={dosageAmount}
       onChange={(event) => {
         setDosageAmount(event.target.value);
@@ -817,11 +949,13 @@ isActive,
         clearMessage();
       }}
     >
-      {(medicationDosageUnits[medicationForm] || []).map((unit) => (
-        <option key={unit} value={unit}>
-          {unit}
-        </option>
-      ))}
+     
+{(medicationDosageUnits[medicationForm] || []).map((unit) => (
+  <option key={unit} value={unit}>
+    {translateDosageUnit(unit, isArabic)}
+  </option>
+))}
+
     </Input>
   </Col>
 </Row>
@@ -829,7 +963,7 @@ isActive,
 
                   <FormGroup>
                     <Label>
-                      Frequency{" "}
+                     {t("Frequency", "عدد مرات تناول الدواء")}{" "}
                       <span
                         style={{
                           color:
@@ -873,52 +1007,54 @@ isActive,
                         clearMessage();
                       }}
                     >
-                      <option value="">
-                        Select frequency
-                      </option>
+                     
+<option value="">
+  {t("Select frequency", "اختر عدد مرات تناول الدواء")}
+</option>
 
-                      <option value="Once daily">
-                        Once daily
-                      </option>
+<option value="Once daily">
+  {t("Once daily", "مرة واحدة يوميًا")}
+</option>
 
-                      <option value="Twice daily">
-                        Twice daily
-                      </option>
+<option value="Twice daily">
+  {t("Twice daily", "مرتين يوميًا")}
+</option>
 
-                      <option value="Three times daily">
-                        Three times daily
-                      </option>
+<option value="Three times daily">
+  {t("Three times daily", "ثلاث مرات يوميًا")}
+</option>
 
-                      <option value="Every 6 hours">
-                        Every 6 hours
-                      </option>
+<option value="Every 6 hours">
+  {t("Every 6 hours", "كل 6 ساعات")}
+</option>
 
-                      <option value="Every 8 hours">
-                        Every 8 hours
-                      </option>
+<option value="Every 8 hours">
+  {t("Every 8 hours", "كل 8 ساعات")}
+</option>
 
-                      <option value="Every 12 hours">
-                        Every 12 hours
-                      </option>
+<option value="Every 12 hours">
+  {t("Every 12 hours", "كل 12 ساعة")}
+</option>
 
-                      <option value="Weekly">
-                        Weekly
-                      </option>
+<option value="Weekly">
+  {t("Weekly", "أسبوعيًا")}
+</option>
 
-                      <option value="As needed">
-                        As needed
-                      </option>
+<option value="As needed">
+  {t("As needed", "عند الحاجة")}
+</option>
 
-                      <option value="Other">
-                        Other
-                      </option>
+<option value="Other">
+  {t("Other", "أخرى")}
+</option>
+
                     </Input>
                   </FormGroup>
 
 {frequency === "Weekly" && (
   <FormGroup>
     <Label>
-      Select Weekday <span style={{ color: "#dc3545" }}>*</span>
+     {t("Select Weekday", "اختر يوم الأسبوع")}<span style={{ color: "#dc3545" }}>*</span>
     </Label>
 
     <Input
@@ -929,7 +1065,9 @@ isActive,
         clearMessage();
       }}
     >
-      <option value="">Select a day</option>
+      <option value="">
+  {t("Select a day", "اختر يومًا")}
+</option>
       {[
         "Sunday",
         "Monday",
@@ -940,7 +1078,17 @@ isActive,
         "Saturday",
       ].map((day) => (
         <option key={day} value={day}>
-          {day}
+           {isArabic
+      ? ({
+          Sunday: "الأحد",
+          Monday: "الاثنين",
+          Tuesday: "الثلاثاء",
+          Wednesday: "الأربعاء",
+          Thursday: "الخميس",
+          Friday: "الجمعة",
+          Saturday: "السبت",
+        }[day] || day)
+      : day}
         </option>
       ))}
     </Input>
@@ -951,7 +1099,7 @@ isActive,
                     "Other" && (
                     <FormGroup>
                       <Label>
-                        Enter Frequency{" "}
+                       {t("Enter Frequency", "أدخل عدد مرات تناول الدواء")}{" "}
                         <span
                           style={{
                             color:
@@ -964,7 +1112,10 @@ isActive,
 
                       <Input
                         type="text"
-                        placeholder="For example, every other day"
+                        placeholder={t(
+  "For example, every other day",
+  "مثال: يومًا بعد يوم"
+)}
                         value={
                           customFrequency
                         }
@@ -984,7 +1135,7 @@ isActive,
 
                   <FormGroup>
                     <Label>
-                      Timing{" "}
+                      {t("Timing", "وقت تناول الدواء")}{" "}
                       <span
                         style={{
                           color:
@@ -1036,40 +1187,17 @@ isActive,
                         clearMessage();
                       }}
                     >
-                      <option value="Before Meal">
-                        Before Meal
-                      </option>
+                      
+<option value="Before Meal">{t("Before Meal", "قبل الوجبة")}</option>
+<option value="With Meal">{t("With Meal", "مع الوجبة")}</option>
+<option value="After Meal">{t("After Meal", "بعد الوجبة")}</option>
+<option value="Morning">{t("Morning", "صباحًا")}</option>
+<option value="At Wake Time">{t("At Wake Time", "عند الاستيقاظ")}</option>
+<option value="Afternoon">{t("Afternoon", "بعد الظهر")}</option>
+<option value="Evening">{t("Evening", "مساءً")}</option>
+<option value="Before Sleep">{t("Before Sleep", "قبل النوم")}</option>
+<option value="Any Time">{t("Any Time", "في أي وقت")}</option>
 
-                      <option value="With Meal">
-                        With Meal
-                      </option>
-
-                      <option value="After Meal">
-                        After Meal
-                      </option>
-
-                      <option value="Morning">
-                        Morning
-                      </option>
-
-<option value="At Wake Time">
-  At Wake Time
-</option>
-                      <option value="Afternoon">
-                        Afternoon
-                      </option>
-
-                      <option value="Evening">
-                        Evening
-                      </option>
-
-                      <option value="Before Sleep">
-                        Before Sleep
-                      </option>
-
-                      <option value="Any Time">
-                        Any Time
-                      </option>
                     </Input>
                   </FormGroup>
 
@@ -1086,22 +1214,14 @@ isActive,
                       {timing !==
                         "With Meal" && (
                         <FormGroup>
-                          <Label>
-                            How long{" "}
-                            {timing ===
-                            "After Meal"
-                              ? "after"
-                              : "before"}{" "}
-                            the meal?{" "}
-                            <span
-                              style={{
-                                color:
-                                  "#dc3545",
-                              }}
-                            >
-                              *
-                            </span>
-                          </Label>
+                          
+<Label>
+  {timing === "After Meal"
+    ? t("How long after the meal?", "بعد كم من الوقت من الوجبة؟")
+    : t("How long before the meal?", "قبل كم من الوقت من الوجبة؟")}
+  {" "}<span style={{ color: "#dc3545" }}>*</span>
+</Label>
+
 
                           <Row>
                             <Col
@@ -1112,7 +1232,7 @@ isActive,
                                 type="number"
                                 min="0"
                                 step="1"
-                                placeholder="Hours"
+                               placeholder={t("Hours", "ساعات")}
                                 value={
                                   timingOffsetHours
                                 }
@@ -1136,7 +1256,7 @@ isActive,
                                 min="0"
                                 max="59"
                                 step="1"
-                                placeholder="Minutes"
+                                placeholder={t("Minutes", "دقائق")}
                                 value={
                                   timingOffsetMinutes
                                 }
@@ -1154,15 +1274,12 @@ isActive,
                               />
                             </Col>
                           </Row>
-
-                          <small className="text-muted">
-                            Enter the timing
-                            given in the
-                            medication
-                            instructions or by
-                            your healthcare
-                            provider.
-                          </small>
+<small className="text-muted">
+                          {t(
+  "Enter the timing given in the medication instructions or by your healthcare provider.",
+  "أدخل الوقت المحدد في تعليمات الدواء أو من قِبل مقدم الرعاية الصحية."
+)}
+</small>
                         </FormGroup>
                       )}
                     </>
@@ -1170,7 +1287,7 @@ isActive,
 
                   <FormGroup>
                     <Label>
-                      Medication Start Date{" "}
+                      {t("Medication Start Date", "تاريخ بدء الدواء")}{" "}
                       <span
                         style={{
                           color:
@@ -1198,7 +1315,7 @@ isActive,
                   </FormGroup>
                   <FormGroup>
   <Label>
-    Medication End Date{" "}
+    {t("Medication End Date", "تاريخ انتهاء الدواء")}{" "}
     <span style={{ color: "#dc3545" }}>*</span>
   </Label>
 
@@ -1217,21 +1334,15 @@ isActive,
                     frequency !==
                       "As needed" && (
                       <FormGroup>
-                        <Label>
-                          Reminder Time
-                          {reminderTimes.length >
-                          1
-                            ? "s"
-                            : ""}{" "}
-                          <span
-                            style={{
-                              color:
-                                "#dc3545",
-                            }}
-                          >
-                            *
-                          </span>
-                        </Label>
+                       
+<Label>
+  {t(
+    reminderTimes.length > 1 ? "Reminder Times" : "Reminder Time",
+    "أوقات التذكير"
+  )}{" "}
+  <span style={{ color: "#dc3545" }}>*</span>
+</Label>
+
 
                         <p
                           style={{
@@ -1243,8 +1354,10 @@ isActive,
                               "10px",
                           }}
                         >
-                          Choose the time for
-                          each scheduled dose.
+                        {t(
+  "Choose the time for each scheduled dose.",
+  "اختر وقت كل جرعة مجدولة."
+)}
                         </p>
 
                         <Row>
@@ -1288,9 +1401,7 @@ isActive,
                   {frequency ===
                     "As needed" && (
                     <Alert color="info">
-                      Reminder times are
-                      optional for medication
-                      taken only when needed.
+                      {t("Reminder times are optional for medication taken only when needed.", "أوقات التذكير اختيارية للأدوية التي تؤخذ عند الحاجة فقط.")}
                     </Alert>
                   )}
 
@@ -1315,26 +1426,26 @@ isActive,
                       for="medicationStatus"
                       check
                     >
-                      Medication is active
+                     {t("Medication is active", "الدواء نشط")}
                     </Label>
                   </FormGroup>
 
                   <small className="text-muted d-block mb-4">
-                    Inactive medications will
-                    remain in your list but
-                    will not generate new
-                    daily doses.
+                    {t("Inactive medications will remain in your list but will not generate new daily doses.", "ستبقى الأدوية غير النشطة في قائمتك، ولكن لن تُنشأ لها جرعات يومية جديدة.")}
                   </small>
 
                   <FormGroup>
                     <Label>
-                      Instructions
+                      {t("Instructions", "تعليمات إضافية")}
                     </Label>
 
                     <Input
                       type="textarea"
                       rows="4"
-                      placeholder="Enter any additional instructions"
+                      placeholder={t(
+  "Enter any additional instructions",
+  "أدخل أي تعليمات إضافية"
+)}
                       value={instructions}
                       onChange={(
                         event
@@ -1367,7 +1478,7 @@ isActive,
                       }}
                     >
                       <strong>
-                        Existing Prescription
+                        {t("Existing Prescription", "الوصفة الطبية الحالية")}
                       </strong>
 
                       <div className="mt-2">
@@ -1382,7 +1493,7 @@ isActive,
                               "underline",
                           }}
                         >
-                          View Prescription
+                         {t("View Prescription", "عرض الوصفة الطبية")}
                         </a>
                       </div>
                     </div>
@@ -1404,7 +1515,7 @@ isActive,
                         )
                       }
                     >
-                      Cancel
+                      {t("Cancel", "إلغاء")}
                     </Button>
 
                     <Button
@@ -1415,9 +1526,11 @@ isActive,
                       }
                       disabled={isSaving}
                     >
-                      {isSaving
-                        ? "Saving Changes..."
-                        : "Save Changes"}
+                     
+{isSaving
+  ? t("Saving Changes...", "جارٍ حفظ التغييرات...")
+  : t("Save Changes", "حفظ التغييرات")}
+
                     </Button>
                   </div>
                 </>
